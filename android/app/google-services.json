@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "560407368750",
+    "project_id": "undercovergame-ae096",
+    "storage_bucket": "undercovergame-ae096.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:560407368750:android:e6a1c3b28c2e6777e6bbbf",
+        "android_client_info": {
+          "package_name": "com.undercover.undercovergame"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA76dxo3iW81Ix9l7KjcSPZxRLKLAtILAQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:560407368750:android:f344688034b89c91e6bbbf",
+        "android_client_info": {
+          "package_name": "com.undercover.undercoverleague.undercoverleague"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA76dxo3iW81Ix9l7KjcSPZxRLKLAtILAQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:560407368750:android:5b178ab1c160a194e6bbbf",
+        "android_client_info": {
+          "package_name": "com.undercovergame.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA76dxo3iW81Ix9l7KjcSPZxRLKLAtILAQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

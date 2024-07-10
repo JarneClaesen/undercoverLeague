@@ -1,15 +1,18 @@
-// main.dart
-
 import 'package:flutter/material.dart';
-import 'package:undercoverleague/screens/add_players_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:undercoverleague/screens/home_screen.dart';
+import 'package:undercoverleague/widgets/responsive_layout.dart';
+import 'firebase_options.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -29,7 +32,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.dark, // Set to dark mode by default
-      home: AddPlayersScreen(),
+      home: ResponsiveLayout(child: HomeScreen()),
     );
   }
 }

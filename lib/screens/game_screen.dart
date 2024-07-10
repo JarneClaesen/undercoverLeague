@@ -1,138 +1,181 @@
-// screens/game_screen.dart
-
 import 'package:flutter/material.dart';
-import '../data/data.dart';
-import 'round_screen.dart';
-import 'add_players_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:undercoverleague/services/firebase_service.dart';
+import 'package:undercoverleague/screens/player_role_screen.dart';
+import 'package:undercoverleague/screens/round_screen.dart';
+import 'package:undercoverleague/screens/voting_screen.dart';
 
 class GameScreen extends StatefulWidget {
-  final List<String> players;
-  final bool useChampions;
-  final bool useItems;
+  final String lobbyId;
+  final String playerName;
+  final String hostName;
 
-  GameScreen({required this.players, required this.useChampions, required this.useItems});
+  GameScreen({required this.lobbyId, required this.playerName, required this.hostName});
 
   @override
   _GameScreenState createState() => _GameScreenState();
 }
 
 class _GameScreenState extends State<GameScreen> {
-  Map<String, String> roles = {};
-  String selectedItem = '';
-  List<bool> revealedStatus = [];
+  bool _isReturningToLobby = false;
 
-  @override
-  void initState() {
-    super.initState();
-    assignRoles();
-    revealedStatus = List.generate(widget.players.length, (_) => false);
-  }
-
-  void assignRoles() {
-    setState(() {
-      roles.clear();
-      List<String> combinedList = [];
-      if (widget.useChampions) combinedList.addAll(champions);
-      if (widget.useItems) combinedList.addAll(items);
-      selectedItem = (combinedList..shuffle()).first;
-      List<String> shuffledPlayers = List.from(widget.players)..shuffle();
-      roles[shuffledPlayers.first] = 'Undercover';
-      for (var i = 1; i < shuffledPlayers.length; i++) {
-        roles[shuffledPlayers[i]] = selectedItem;
-      }
-      revealedStatus = List.generate(widget.players.length, (_) => false);
-    });
-  }
-
-  bool allRolesRevealed() {
-    return revealedStatus.every((revealed) => revealed);
-  }
-
-  void startRounds() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => RoundScreen(
-          players: widget.players,
-          roles: roles,
-          useChampions: widget.useChampions,
-          useItems: widget.useItems,
-        ),
-      ),
+  void _showEndGameConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('End Game'),
+          content: Text('Are you sure you want to end the game and return to the lobby?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('End Game'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                FirebaseService().endGameAndReturnToLobby(widget.lobbyId);
+              },
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  void _returnToLobby() {
+    if (!_isReturningToLobby) {
+      _isReturningToLobby = true;
+      Navigator.of(context).pop();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Undercover Game'),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => AddPlayersScreen(),
+    return WillPopScope(
+      onWillPop: () async {
+        if (widget.playerName == widget.hostName) {
+          _showEndGameConfirmationDialog();
+        }
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Undercover Game'),
+          automaticallyImplyLeading: false,
+          actions: [
+            if (widget.playerName == widget.hostName)
+              IconButton(
+                icon: Icon(Icons.stop),
+                onPressed: _showEndGameConfirmationDialog,
+                tooltip: 'End Game',
               ),
-            );
+          ],
+        ),
+        body: StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseService().gameStream(widget.lobbyId),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+
+            var gameData = snapshot.data!.data() as Map<String, dynamic>?;
+
+            if (gameData == null) {
+              return Center(child: Text('Game data not found'));
+            }
+
+            bool gameStarted = gameData['gameStarted'] ?? false;
+            if (!gameStarted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _returnToLobby();
+              });
+              return Center(child: Text('Game ended. Returning to lobby...'));
+            }
+
+            String gamePhase = gameData['gamePhase'] ?? '';
+            Map<String, String> roles = Map<String, String>.from(gameData['roles'] ?? {});
+            List<String> alivePlayers = List<String>.from(gameData['alivePlayers'] ?? []);
+            List<String> roundOrder = List<String>.from(gameData['roundOrder'] ?? []);
+            int currentPlayerIndex = gameData['currentPlayerIndex'] ?? 0;
+            bool isRoundFinished = gameData['roundFinished'] ?? false;
+            String selectedItem = gameData['selectedItem'] ?? '';
+            Map<String, bool> rolesAcknowledged = Map<String, bool>.from(gameData['rolesAcknowledged'] ?? {});
+
+            if (gamePhase == 'gameOver') {
+              String winner = gameData['winner'] ?? 'Unknown';
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Game Over!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 20),
+                    Text('$winner win!', style: TextStyle(fontSize: 20)),
+                    SizedBox(height: 40),
+                    ElevatedButton(
+                      onPressed: () {
+                        FirebaseService().resetGame(widget.lobbyId).then((_) {
+                          _returnToLobby();
+                        });
+                      },
+                      child: Text('Return to Lobby'),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        textStyle: TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (gamePhase == 'revealingRoles') {
+              String playerRole = roles[widget.playerName] ?? 'Spectator';
+              String playerWord = selectedItem;
+
+              bool allAcknowledged = rolesAcknowledged.values.every((v) => v == true);
+
+              if (allAcknowledged) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  FirebaseService().startGameRounds(widget.lobbyId);
+                });
+              }
+
+              return PlayerRoleScreen(
+                lobbyId: widget.lobbyId,
+                playerName: widget.playerName,
+                role: playerRole,
+                word: playerWord,
+                rolesAcknowledged: rolesAcknowledged,
+              );
+            }
+
+            if (!alivePlayers.contains(widget.playerName) && widget.playerName != widget.hostName) {
+              return Center(child: Text('You have been eliminated!'));
+            }
+
+            if (gamePhase == 'playing') {
+              if (!isRoundFinished) {
+                return RoundScreen(
+                  lobbyId: widget.lobbyId,
+                  players: roundOrder,
+                  currentPlayerIndex: currentPlayerIndex,
+                  isCurrentPlayer: roundOrder[currentPlayerIndex] == widget.playerName,
+                );
+              } else {
+                return VotingScreen(
+                  lobbyId: widget.lobbyId,
+                  alivePlayers: alivePlayers,
+                  playerName: widget.playerName,
+                  hostName: widget.hostName,
+                );
+              }
+            }
+
+            return Center(child: Text('Waiting for game to start...'));
           },
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: widget.players.length,
-              itemBuilder: (context, index) {
-                String player = widget.players[index];
-                return Card(
-                  child: ExpansionTile(
-                    title: Text(player),
-                    trailing: Icon(revealedStatus[index] ? Icons.check : Icons.arrow_drop_down),
-                    onExpansionChanged: (expanded) {
-                      if (expanded && !revealedStatus[index]) {
-                        setState(() {
-                          revealedStatus[index] = true;
-                        });
-                      }
-                    },
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text(
-                          roles[player] ?? 'Role not assigned',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                ElevatedButton(
-                  onPressed: assignRoles,
-                  child: Text('Randomize Roles'),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 50),
-                  ),
-                ),
-                SizedBox(height: 10),
-                if (allRolesRevealed())
-                  ElevatedButton(
-                    onPressed: startRounds,
-                    child: Text('Start Rounds'),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 50),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
