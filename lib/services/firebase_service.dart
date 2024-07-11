@@ -197,8 +197,11 @@ class FirebaseService {
 
     // Count votes
     Map<String, int> voteCount = {};
+    int skipVotes = 0;
     for (var vote in votes.values) {
-      if (vote != 'skip' && alivePlayers.contains(vote)) {
+      if (vote == 'skip') {
+        skipVotes++;
+      } else if (alivePlayers.contains(vote)) {
         voteCount[vote] = (voteCount[vote] ?? 0) + 1;
       }
     }
@@ -213,8 +216,8 @@ class FirebaseService {
       }
     });
 
-    // Eliminate player if there's a clear winner and at least one vote was cast
-    if (playerToEliminate != null && maxVotes > 0) {
+    // Eliminate player if there's a clear winner, more votes than skips, and at least one vote was cast
+    if (playerToEliminate != null && maxVotes > skipVotes && maxVotes > 0) {
       alivePlayers.remove(playerToEliminate);
 
       if (roles[playerToEliminate] == 'Undercover') {
@@ -236,7 +239,7 @@ class FirebaseService {
       }
     }
 
-    // Continue the game if it's not over
+    // Continue the game
     await _firestore.collection('lobbies').doc(lobbyId).update({
       'alivePlayers': alivePlayers,
       'roundFinished': false,
@@ -245,6 +248,7 @@ class FirebaseService {
       'votes': {},
     });
   }
+
 
 
   Future<void> endGameAndReturnToLobby(String lobbyId) async {
