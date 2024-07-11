@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:undercoverleague/data/data.dart';
+import 'dart:math';
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -89,15 +90,16 @@ class FirebaseService {
     List<String> players = List<String>.from(lobby['players']);
     players.shuffle();
 
-    Map<String, String> roles = {};
-    roles[players.first] = 'Undercover';
-    for (var i = 1; i < players.length; i++) {
-      roles[players[i]] = selectedItem;
-    }
+    // Randomly select the Undercover player
+    int undercoverIndex = Random().nextInt(players.length);
 
-    Map<String, bool> rolesRevealed = {};
-    for (var player in players) {
-      rolesRevealed[player] = false;
+    Map<String, String> roles = {};
+    for (var i = 0; i < players.length; i++) {
+      if (i == undercoverIndex) {
+        roles[players[i]] = 'Undercover';
+      } else {
+        roles[players[i]] = selectedItem;
+      }
     }
 
     Map<String, bool> rolesAcknowledged = {};
@@ -120,6 +122,7 @@ class FirebaseService {
       'gamePhase': 'revealingRoles',
     });
   }
+
 
   Future<void> endGame(String lobbyId) async {
     await _firestore.collection('lobbies').doc(lobbyId).update({
