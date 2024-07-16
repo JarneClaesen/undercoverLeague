@@ -95,12 +95,11 @@ class _GameScreenState extends State<GameScreen> {
             }
 
             String gamePhase = gameData['gamePhase'] ?? '';
-            Map<String, String> roles = Map<String, String>.from(gameData['roles'] ?? {});
+            Map<String, dynamic> rolesData = gameData['roles'] ?? {};
             List<String> alivePlayers = List<String>.from(gameData['alivePlayers'] ?? []);
             List<String> roundOrder = List<String>.from(gameData['roundOrder'] ?? []);
             int currentPlayerIndex = gameData['currentPlayerIndex'] ?? 0;
             bool isRoundFinished = gameData['roundFinished'] ?? false;
-            String selectedItem = gameData['selectedItem'] ?? '';
             Map<String, bool> rolesAcknowledged = Map<String, bool>.from(gameData['rolesAcknowledged'] ?? {});
 
             if (gamePhase == 'gameOver') {
@@ -131,8 +130,10 @@ class _GameScreenState extends State<GameScreen> {
             }
 
             if (gamePhase == 'revealingRoles') {
-              String playerRole = roles[widget.playerName] ?? 'Spectator';
-              String playerWord = selectedItem;
+              Map<String, dynamic> playerInfo = rolesData[widget.playerName] ?? {'role': 'Spectator', 'word': '', 'isChampion': 'true'};
+              String playerRole = playerInfo['role'] ?? 'Spectator';
+              String playerWord = playerInfo['word'] ?? '';
+              bool isChampion = playerInfo['isChampion'] == 'true';
 
               bool allAcknowledged = rolesAcknowledged.values.every((v) => v == true);
 
@@ -148,6 +149,7 @@ class _GameScreenState extends State<GameScreen> {
                 role: playerRole,
                 word: playerWord,
                 rolesAcknowledged: rolesAcknowledged,
+                isChampion: isChampion,
               );
             }
 
@@ -157,11 +159,18 @@ class _GameScreenState extends State<GameScreen> {
 
             if (gamePhase == 'playing') {
               if (!isRoundFinished) {
+                Map<String, dynamic> playerInfo = rolesData[widget.playerName] ?? {'role': 'Spectator', 'word': '', 'isChampion': 'true'};
+                String playerRole = playerInfo['role'] ?? 'Spectator';
+                String playerWord = playerInfo['word'] ?? '';
+                bool isChampion = playerInfo['isChampion'] == 'true';
                 return RoundScreen(
                   lobbyId: widget.lobbyId,
                   players: roundOrder,
                   currentPlayerIndex: currentPlayerIndex,
                   isCurrentPlayer: roundOrder[currentPlayerIndex] == widget.playerName,
+                  playerRole: playerRole,
+                  word: playerWord,
+                  isChampion: isChampion,
                 );
               } else {
                 return VotingScreen(

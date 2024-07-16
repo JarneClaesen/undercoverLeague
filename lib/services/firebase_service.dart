@@ -81,25 +81,32 @@ class FirebaseService {
   }
 
   Future<void> startGame(String lobbyId, bool useChampions, bool useItems) async {
-    List<String> combinedList = [];
+    List<Map<String, String>> combinedList = [];
     if (useChampions) combinedList.addAll(champions);
     if (useItems) combinedList.addAll(items);
-    String selectedItem = (combinedList..shuffle()).first;
+
+    if (combinedList.isEmpty) {
+      throw Exception('At least one of useChampions or useItems must be true');
+    }
+
+    Map<String, String> selectedWord = (combinedList..shuffle()).first;
 
     DocumentSnapshot lobby = await _firestore.collection('lobbies').doc(lobbyId).get();
     List<String> players = List<String>.from(lobby['players']);
     players.shuffle();
 
-    // Randomly select the Undercover player
     int undercoverIndex = Random().nextInt(players.length);
 
-    Map<String, String> roles = {};
+    Map<String, Map<String, String>> roles = {};
     for (var i = 0; i < players.length; i++) {
-      if (i == undercoverIndex) {
-        roles[players[i]] = 'Undercover';
-      } else {
-        roles[players[i]] = selectedItem;
-      }
+      bool isUndercover = i == undercoverIndex;
+      bool isChampion = useChampions && (!useItems || (useItems && !isUndercover));
+
+      roles[players[i]] = {
+        'role': isUndercover ? 'Undercover' : 'Civilian',
+        'word': selectedWord['name']!,
+        'isChampion': isChampion.toString(),
+      };
     }
 
     Map<String, bool> rolesAcknowledged = {};
@@ -110,7 +117,7 @@ class FirebaseService {
     await _firestore.collection('lobbies').doc(lobbyId).update({
       'gameStarted': true,
       'roles': roles,
-      'selectedItem': selectedItem,
+      'selectedWord': selectedWord['name'],
       'currentPlayerIndex': 0,
       'roundFinished': false,
       'alivePlayers': players,
@@ -120,23 +127,31 @@ class FirebaseService {
       'hostEliminated': false,
       'rolesAcknowledged': rolesAcknowledged,
       'gamePhase': 'revealingRoles',
+      'useChampions': useChampions,
+      'useItems': useItems,
     });
   }
+
+
 
 
   Future<void> endGame(String lobbyId) async {
     await _firestore.collection('lobbies').doc(lobbyId).update({
       'gameStarted': false,
       'roles': {},
-      'selectedItem': '',
+      'selectedWord': '', // Changed from 'selectedItem'
       'currentPlayerIndex': 0,
       'roundFinished': false,
       'alivePlayers': [],
       'roundOrder': [],
       'votes': {},
       'hostEliminated': false,
+      'useChampions': false,
+      'useItems': false,
+      'gamePhase': 'lobby',
     });
   }
+
 
   Stream<DocumentSnapshot> gameStream(String lobbyId) {
     return _firestore.collection('lobbies').doc(lobbyId).snapshots();
@@ -193,7 +208,7 @@ class FirebaseService {
     DocumentSnapshot lobby = await _firestore.collection('lobbies').doc(lobbyId).get();
     Map<String, dynamic> votes = Map<String, dynamic>.from(lobby['votes'] ?? {});
     List<String> alivePlayers = List<String>.from(lobby['alivePlayers']);
-    Map<String, String> roles = Map<String, String>.from(lobby['roles']);
+    Map<String, dynamic> roles = Map<String, dynamic>.from(lobby['roles']);
 
     // Count votes
     Map<String, int> voteCount = {};
@@ -220,7 +235,7 @@ class FirebaseService {
     if (playerToEliminate != null && maxVotes > skipVotes && maxVotes > 0) {
       alivePlayers.remove(playerToEliminate);
 
-      if (roles[playerToEliminate] == 'Undercover') {
+      if (roles[playerToEliminate]?['role'] == 'Undercover') {
         // Undercover was eliminated, Civilians win
         await _firestore.collection('lobbies').doc(lobbyId).update({
           'gamePhase': 'gameOver',
@@ -228,7 +243,7 @@ class FirebaseService {
           'alivePlayers': alivePlayers,
         });
         return;
-      } else if (alivePlayers.length == 1 && roles[alivePlayers.first] == 'Undercover') {
+      } else if (alivePlayers.length == 1 && roles[alivePlayers.first]?['role'] == 'Undercover') {
         // Only Undercover remains, Undercover wins
         await _firestore.collection('lobbies').doc(lobbyId).update({
           'gamePhase': 'gameOver',
@@ -251,12 +266,14 @@ class FirebaseService {
 
 
 
+
+
   Future<void> endGameAndReturnToLobby(String lobbyId) async {
     await _firestore.collection('lobbies').doc(lobbyId).update({
       'gameStarted': false,
       'gamePhase': 'lobby',
       'roles': {},
-      'selectedItem': '',
+      'selectedWord': '',
       'currentPlayerIndex': 0,
       'roundFinished': false,
       'alivePlayers': [],
@@ -264,15 +281,18 @@ class FirebaseService {
       'votes': {},
       'rolesAcknowledged': {},
       'winner': null,
+      'useChampions': false,
+      'useItems': false,
     });
   }
+
 
   Future<void> resetGame(String lobbyId) async {
     await _firestore.collection('lobbies').doc(lobbyId).update({
       'gameStarted': false,
       'gamePhase': 'lobby',
       'roles': {},
-      'selectedItem': '',
+      'selectedWord': '',
       'currentPlayerIndex': 0,
       'roundFinished': false,
       'alivePlayers': [],
@@ -280,8 +300,11 @@ class FirebaseService {
       'votes': {},
       'rolesAcknowledged': {},
       'winner': null,
+      'useChampions': false,
+      'useItems': false,
     });
   }
+
 
 
 }
