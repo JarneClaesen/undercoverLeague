@@ -20,6 +20,7 @@ import 'package:undercoverleague/widgets/phase_header.dart';
 import 'package:undercoverleague/widgets/phase_switcher.dart';
 import 'package:undercoverleague/widgets/reaction_overlay.dart';
 import 'package:undercoverleague/widgets/reveal_card.dart';
+import 'package:undercoverleague/widgets/rules_info.dart';
 import 'package:undercoverleague/widgets/status_notice.dart';
 import 'package:undercoverleague/widgets/turn_timer.dart';
 
@@ -195,6 +196,13 @@ class _GameScreenState extends State<GameScreen> {
             title: 'Undercover',
             subtitle: widget.lobbyId,
             actions: [
+              if (lobby != null)
+                IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  color: context.hextech.accent,
+                  onPressed: () => showRulesInfo(context, lobby.settings),
+                  tooltip: rulesInfoTitle,
+                ),
               if (isHost)
                 IconButton(
                   icon: const Icon(Icons.stop_circle_outlined),

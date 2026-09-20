@@ -13,6 +13,7 @@ import 'package:undercoverleague/widgets/clue_log.dart';
 import 'package:undercoverleague/widgets/reaction_bar.dart';
 import 'package:undercoverleague/widgets/reaction_overlay.dart';
 import 'package:undercoverleague/widgets/reveal_card.dart';
+import 'package:undercoverleague/widgets/rules_info.dart';
 import 'package:undercoverleague/widgets/turn_timer.dart';
 
 const _players = ['Ashe', 'Braum', 'Caitlyn', 'Draven'];
@@ -138,6 +139,31 @@ void main() {
     await tester.pump();
 
     expect(find.byTooltip('End game'), findsNothing);
+    // The rules sheet is for everyone, host or not.
+    expect(find.byTooltip(rulesInfoTitle), findsOneWidget);
+  });
+
+  testWidgets('the info action opens the rules sheet for the running game', (tester) async {
+    await tester.pumpWidget(_host(
+      _lobby(roundFinished: true, settings: const GameSettings(undercovers: 2, decoyWord: true, turnSeconds: 30)),
+      'Braum',
+    ));
+    await tester.pump();
+
+    await tester.tap(find.byTooltip(rulesInfoTitle));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(RulesInfoContent), findsOneWidget);
+    expect(find.text('2 Undercovers, the rest civilians'), findsOneWidget);
+    expect(find.text('On: Undercovers get a look-alike word'), findsOneWidget);
+    expect(find.text('Fixed order · 30 s per turn'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(RulesInfoContent), findsNothing);
+    expect(find.byType(VotingScreen), findsOneWidget);
   });
 
   testWidgets('voting shows the ballot with the timer and the log', (tester) async {

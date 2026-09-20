@@ -11,6 +11,7 @@ import 'package:undercoverleague/widgets/daily_theme_card.dart';
 import 'package:undercoverleague/widgets/lobby_filters.dart';
 import 'package:undercoverleague/widgets/lobby_rules.dart';
 import 'package:undercoverleague/widgets/player_tile.dart';
+import 'package:undercoverleague/widgets/rules_info.dart';
 
 Lobby _lobby({
   List<String> players = const ['Ashe', 'Braum', 'Caitlyn', 'Draven', 'Ezreal'],
@@ -123,6 +124,56 @@ void main() {
     expect(find.text('SUMMONERS · 4 · 1 WATCHING'), findsOneWidget);
     expect(find.text('SPECTATING'), findsOneWidget);
     expect(find.text('SIT OUT'), findsOneWidget);
+  });
+
+  testWidgets('the info action opens the rules sheet for the lobby\'s settings', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_host(
+      _lobby(settings: const GameSettings(champSeasons: (1, 16), itemSeasons: (3, 16), mrWhites: 1, decoyWord: true)),
+      'Ashe',
+    ));
+    await tester.pump();
+
+    expect(find.byTooltip(rulesInfoTitle), findsOneWidget);
+    await tester.tap(find.byTooltip(rulesInfoTitle));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(RulesInfoContent), findsOneWidget);
+    expect(find.text('HOW THIS LOBBY PLAYS'), findsOneWidget);
+    expect(find.text('1 Undercover, 1 Mr. White, the rest civilians'), findsOneWidget);
+    expect(find.text('On: Undercovers get a look-alike word'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(RulesInfoContent), findsNothing);
+
+    // The decoy row's own "i" lands straight on the decoy section.
+    await tester.tap(find.byTooltip('About Decoy word'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.textContaining('told a different but similar word'), findsOneWidget);
+  });
+
+  testWidgets('non-hosts get the info button beside the rules summary', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_host(_lobby(), 'Braum'));
+    await tester.pump();
+
+    // One in the header, one on the summary panel.
+    expect(find.byTooltip(rulesInfoTitle), findsNWidgets(2));
+    await tester.tap(find.byTooltip(rulesInfoTitle).last);
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(RulesInfoContent), findsOneWidget);
+    expect(find.text('Off: Undercovers get no word'), findsOneWidget);
   });
 
   testWidgets('the impostor steppers respect the player count', (tester) async {

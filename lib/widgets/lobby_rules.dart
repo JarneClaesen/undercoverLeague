@@ -3,6 +3,7 @@ import 'package:undercoverleague/models/game_settings.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
 import 'package:undercoverleague/widgets/hextech_chip.dart';
 import 'package:undercoverleague/widgets/motion_size.dart';
+import 'package:undercoverleague/widgets/rules_info.dart';
 
 /// How many impostors (Undercovers + Mr. Whites) a game of [activePlayers]
 /// can hold: the server requires `2 * impostors < players`. Never below 1,
@@ -60,6 +61,7 @@ class LobbyRules extends StatelessWidget {
           value: s.decoyWord,
           // Mixed mode needs decoys, so the switch is locked while it is on.
           onChanged: mixed ? null : (v) => onChanged(s.copyWith(decoyWord: v)),
+          onInfo: () => showRulesInfo(context, s, topic: RulesTopic.decoy),
         ),
         _RuleSwitch(
           title: 'Mixed mode (Mr. White)',
@@ -68,6 +70,7 @@ class LobbyRules extends StatelessWidget {
           onChanged: maxImpostors - s.undercovers < 1 && !mixed
               ? null
               : (v) => onChanged(v ? s.copyWith(mrWhites: 1, decoyWord: true) : s.copyWith(mrWhites: 0)),
+          onInfo: () => showRulesInfo(context, s, topic: RulesTopic.decoy),
         ),
         MotionSize(
           child: mixed
@@ -151,10 +154,40 @@ class LobbyRulesSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const HextechSectionLabel('Rules'),
+        Row(
+          children: [
+            const Expanded(child: HextechSectionLabel('Rules')),
+            _InfoButton(
+              tooltip: rulesInfoTitle,
+              onPressed: () => showRulesInfo(context, settings, topic: settings.decoyWord ? RulesTopic.decoy : null),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         Text(describe(settings), style: textTheme.bodyMedium?.copyWith(color: hextech.textPrimary)),
       ],
+    );
+  }
+}
+
+/// The small accent "i" that opens the rules sheet next to a rule.
+class _InfoButton extends StatelessWidget {
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _InfoButton({required this.tooltip, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.info_outline),
+      iconSize: 20,
+      color: context.hextech.accent,
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      padding: EdgeInsets.zero,
+      onPressed: onPressed,
     );
   }
 }
@@ -165,11 +198,15 @@ class _RuleSwitch extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
 
+  /// Adds a small info icon beside the title that explains the rule.
+  final VoidCallback? onInfo;
+
   const _RuleSwitch({
     required this.title,
     required this.subtitle,
     required this.value,
     required this.onChanged,
+    this.onInfo,
   });
 
   @override
@@ -189,9 +226,20 @@ class _RuleSwitch extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    title,
-                    style: textTheme.bodyLarge?.copyWith(color: enabled ? hextech.textPrimary : hextech.textDisabled),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: textTheme.bodyLarge
+                              ?.copyWith(color: enabled ? hextech.textPrimary : hextech.textDisabled),
+                        ),
+                      ),
+                      if (onInfo != null) ...[
+                        const SizedBox(width: 4),
+                        _InfoButton(tooltip: 'About $title', onPressed: onInfo!),
+                      ],
+                    ],
                   ),
                   Text(subtitle, style: textTheme.bodySmall?.copyWith(color: hextech.textSecondary)),
                 ],

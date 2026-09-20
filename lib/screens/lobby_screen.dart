@@ -26,6 +26,7 @@ import 'package:undercoverleague/widgets/lobby_open_seat.dart';
 import 'package:undercoverleague/widgets/lobby_filters.dart';
 import 'package:undercoverleague/widgets/lobby_rules.dart';
 import 'package:undercoverleague/widgets/player_tile.dart';
+import 'package:undercoverleague/widgets/rules_info.dart';
 import 'package:undercoverleague/widgets/status_notice.dart';
 
 class LobbyScreen extends StatefulWidget {
@@ -275,6 +276,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
     Navigator.push(context, hextechRoute(AchievementsScreen(playerName: widget.playerName)));
   }
 
+  /// The settings as the screen currently shows them: the host's unsent
+  /// draft first, else the server's view, else the defaults.
+  GameSettings get _currentSettings => _draft ?? _lobbyService.currentLobby?.settings ?? const GameSettings();
+
+  void _openRules() => showRulesInfo(context, _currentSettings);
+
   /// Notices the build in which the lobby first becomes startable, and queues
   /// a one-shot shimmer over the start button to say so.
   void _trackPlayerCount(int count) {
@@ -298,6 +305,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
       child: HextechScaffold(
         title: 'Lobby',
         actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            color: hextech.accent,
+            tooltip: rulesInfoTitle,
+            onPressed: _openRules,
+          ),
           IconButton(
             icon: const Icon(Icons.leaderboard_outlined),
             color: hextech.accent,
