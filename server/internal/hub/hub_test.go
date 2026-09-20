@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -433,6 +434,62 @@ func TestHostLeaveClosesLobby(t *testing.T) {
 	}
 	if len(h.LiveIDs()) != 0 {
 		t.Error("room still live")
+	}
+}
+
+func TestKick(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+	ps := threePlayers(t, h)
+	a, b, c := ps[0], ps[1], ps[2]
+
+	if err := h.Kick(b.c, "C"); code(err) != "notHost" {
+		t.Errorf("non-host kick: %v", err)
+	}
+	if err := h.Kick(a.c, "A"); code(err) != "invalid" {
+		t.Errorf("self kick: %v", err)
+	}
+	if err := h.Kick(a.c, "C"); err != nil {
+		t.Fatal(err)
+	}
+	c.s.next(t, "kicked")
+	select {
+	case reason := <-c.s.closed:
+		if reason != "kicked" {
+			t.Errorf("close reason %q", reason)
+		}
+	default:
+		t.Error("C not closed")
+	}
+	for _, p := range []*player{a, b} {
+		if v := p.s.latestLobby(t); len(v.Players) != 2 || slices.Contains(v.Players, "C") {
+			t.Errorf("%s sees %v", p.name, v.Players)
+		}
+	}
+	// The kicked connection is unbound and its token is gone.
+	if err := h.Kick(c.c, "B"); code(err) != "invalid" {
+		t.Errorf("kicked client still bound: %v", err)
+	}
+	if err := h.Resume(NewClient(newFake()), 1, "L", c.token); code(err) != "expired" {
+		t.Errorf("kicked token should be revoked: %v", err)
+	}
+	// Nothing bars them from coming back.
+	join(t, h, "L", "C")
+}
+
+func TestKickDisconnectedPlayerMidGame(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+	ps := threePlayers(t, h)
+	startAndAck(t, h, ps)
+	h.Disconnected(ps[2].c)
+	if err := h.Kick(ps[0].c, "C"); err != nil {
+		t.Fatal(err)
+	}
+	v := ps[0].s.latestLobby(t)
+	if slices.Contains(v.Players, "C") || v.GamePhase != game.PhaseGameOver {
+		t.Errorf("view %+v", v)
+	}
+	if len(h.rooms["L"].timers) != 0 {
+		t.Error("grace timer still pending for C")
 	}
 }
 

@@ -40,9 +40,9 @@ sit a game out as spectators (they see the word, never the roles) and
 the audience can send emoji reactions. Voting out a player who had no
 word gives them one last guess at it, which wins the game outright if
 right. The lobby keeps a scoreboard, per-player stats and achievements
-across games. Commands are `create join resume leave settings spectate
+across games. Commands are `create join resume leave settings spectate kick
 start ack nextPlayer clue vote guess reset playAgain react`; events are
-`lobby joined error lobbyClosed reaction`. `CLAUDE.md` has the field-level
+`lobby joined error lobbyClosed kicked reaction`. `CLAUDE.md` has the field-level
 contract.
 
 ### Word pool

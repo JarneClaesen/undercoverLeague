@@ -357,6 +357,22 @@ func (l *Lobby) Leave(name string, now time.Time, rng *rand.Rand) (closed bool) 
 	return false
 }
 
+// CanKick says whether caller may remove name on the host's behalf, in any
+// phase; the removal itself is a Leave. The host cannot kick themselves:
+// that would close the lobby, which is what leaving is for.
+func (l *Lobby) CanKick(caller, name string) error {
+	if caller != l.Host {
+		return ErrNotHost
+	}
+	if name == caller {
+		return invalid("You cannot remove yourself.")
+	}
+	if !slices.Contains(l.Players, name) {
+		return invalid("That player is not in this lobby.")
+	}
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // Game flow
 // ---------------------------------------------------------------------------

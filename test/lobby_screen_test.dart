@@ -8,6 +8,7 @@ import 'package:undercoverleague/screens/lobby_screen.dart';
 import 'package:undercoverleague/services/game_connection.dart';
 import 'package:undercoverleague/theme/app_theme.dart';
 import 'package:undercoverleague/widgets/daily_theme_card.dart';
+import 'package:undercoverleague/widgets/hextech_menu.dart';
 import 'package:undercoverleague/widgets/lobby_filters.dart';
 import 'package:undercoverleague/widgets/lobby_rules.dart';
 import 'package:undercoverleague/widgets/player_tile.dart';
@@ -122,6 +123,39 @@ void main() {
     expect(find.text('SUMMONERS · 4 · 1 WATCHING'), findsOneWidget);
     expect(find.text('SPECTATING'), findsOneWidget);
     expect(find.text('SIT OUT'), findsOneWidget);
+  });
+
+  testWidgets('the host gets a kebab on every other row that offers to remove them', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_host(_lobby(), 'Ashe'));
+    await tester.pump();
+
+    // Four other players, no menu on the host's own row.
+    expect(find.byWidgetPredicate((w) => w is HextechMenuButton), findsNWidgets(4));
+    expect(find.byTooltip('Options for Ashe'), findsNothing);
+
+    await tester.tap(find.byTooltip('Options for Draven'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove from lobby'), findsOneWidget);
+
+    await tester.tap(find.text('Remove from lobby'));
+    await tester.pumpAndSettle();
+    expect(find.text('REMOVE PLAYER'), findsOneWidget);
+    expect(find.textContaining('Remove Draven from the lobby?'), findsOneWidget);
+  });
+
+  testWidgets('non-hosts get no kebab', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_host(_lobby(), 'Braum'));
+    await tester.pump();
+
+    expect(find.byWidgetPredicate((w) => w is HextechMenuButton), findsNothing);
   });
 
   testWidgets('the info action opens the rules sheet for the lobby\'s settings', (tester) async {

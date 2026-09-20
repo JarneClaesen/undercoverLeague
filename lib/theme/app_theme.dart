@@ -175,6 +175,17 @@ ThemeData hextechTheme() {
       ),
     ),
 
+    popupMenuTheme: PopupMenuThemeData(
+      color: HextechColors.navy,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      textStyle: text.bodyMedium,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(color: HextechColors.goldDark),
+      ),
+    ),
+
     dividerTheme: const DividerThemeData(
       color: HextechColors.goldDark,
       thickness: 1,

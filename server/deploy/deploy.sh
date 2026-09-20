@@ -9,8 +9,13 @@ set -eu
 cd "$(dirname "$0")/../.."
 
 if [ -z "${SKIP_WEB:-}" ]; then
-  echo "==> flutter build web"
-  flutter build web --release
+  echo "==> flutter build web --wasm"
+  # Dart is compiled to WebAssembly with a dart2js fallback; flutter.js picks
+  # at load time (Safari < 17 and browsers without WasmGC get main.dart.js).
+  # The server deliberately sends no COOP/COEP headers: skwasm then runs
+  # single-threaded instead of failing, and cross-origin Data Dragon icons
+  # keep loading without CORP headers we don't control.
+  flutter build web --release --wasm
 fi
 if [ ! -f build/web/index.html ]; then
   echo "build/web/index.html missing; run without SKIP_WEB" >&2

@@ -23,7 +23,7 @@ import (
 
 // Event is a server -> client message.
 type Event struct {
-	Type  string `json:"type"` // lobby | joined | error | lobbyClosed | reaction
+	Type  string `json:"type"` // lobby | joined | error | lobbyClosed | kicked | reaction
 	ReqID int    `json:"reqId,omitempty"`
 
 	Lobby *game.View `json:"lobby,omitempty"`
@@ -331,6 +331,29 @@ func (h *Hub) Reset(c *Client) error {
 
 func (h *Hub) PlayAgain(c *Client) error {
 	return h.Apply(c, func(l *game.Lobby, p string) error { return l.PlayAgain(p) })
+}
+
+// Kick removes another player at the host's request. The target's
+// connection is told why and closed; like any leaver they may join again
+// under the same name (the lobby permitting).
+func (h *Hub) Kick(c *Client, name string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if c.room == nil {
+		return &game.Error{Code: "invalid", Message: "Not in a lobby."}
+	}
+	r := c.room
+	if err := r.state.CanKick(c.player, name); err != nil {
+		return err
+	}
+	if target := r.conns[name]; target != nil {
+		delete(r.conns, name)
+		target.room = nil
+		target.sender.Send(Event{Type: "kicked"})
+		target.sender.Close("kicked")
+	}
+	h.removePlayer(r, name)
+	return nil
 }
 
 // React relays an emoji from a watcher to everyone in the room. Nothing is

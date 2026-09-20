@@ -93,8 +93,9 @@ class GameConnection {
   final ValueNotifier<ConnectionStatus> status = ValueNotifier(ConnectionStatus.disconnected);
   Session? session;
 
-  /// Why the last session ended: 'closed' (host left), 'expired' (could not
-  /// resume) or 'unreachable' (gave up reconnecting). Cleared by [takeCloseReason].
+  /// Why the last session ended: 'closed' (host left), 'kicked' (the host
+  /// removed this player), 'expired' (could not resume) or 'unreachable'
+  /// (gave up reconnecting). Cleared by [takeCloseReason].
   String? _lastCloseReason;
 
   String? takeCloseReason() {
@@ -193,6 +194,9 @@ class GameConnection {
         _lobbyController.add(lobby);
       case 'lobbyClosed':
         _lastCloseReason = 'closed';
+        _end();
+      case 'kicked':
+        _lastCloseReason = 'kicked';
         _end();
       case 'reaction':
         final emoji = event['emoji'] as String? ?? '';

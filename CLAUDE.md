@@ -43,7 +43,7 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
   `VoteTile`, `TurnTimer`, `ClueLog`, `ReactionBar`/`ReactionOverlay`,
   `RevealSequence`, `AchievementBadge`, `ScoreRow`, `LobbyRules`, `LobbyFilters`,
   `LobbyPoolToggles`, `DailyThemeCard`, `HomeThemeBanner`, `showLobbyQrDialog`,
-  `MotionSize`). Use them; no hard-coded colours or font sizes in screens, and
+  `HextechMenuButton` (the kebab menu), `MotionSize`). Use them; no hard-coded colours or font sizes in screens, and
   every animation checks `Motion.reduced(context)`.
 - Never use `AnimatedSize` directly: it asserts on `Duration.zero`, which
   `Motion.of` yields under reduced motion. `MotionSize` (`lib/widgets/motion_size.dart`)
@@ -142,13 +142,18 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
   `gamesPlayed`, `stats {civilianSurvivals,impostorGames,games}` and
   `achievements {name: [sorted ids]}` are awarded once per game in
   `Lobby.finish` (`scoring.go`) and live as long as the lobby does.
+- `kick{name}` (host, any phase, not themselves) removes a player exactly
+  like a leave; the target's connection gets `{"type":"kicked"}` and is
+  closed (`GameConnection.takeCloseReason()` returns `kicked`). Nothing
+  stops them joining again. The lobby roster shows the host a kebab on
+  every other row for it.
 - `react{emoji}` (allowlist `game.Reactions`, not from alive players, 700 ms
   per player) is relayed as `{"type":"reaction","playerName","emoji"}` to
   the room without persisting or bumping `version`.
 - Item names are the identity across seasons (case-insensitive); Data
   Dragon champion ids key `champion_seasons.json`, `champion_regions.json`
-  and `champions.seasons`/`champions.regions` in the overrides, display
-  names key the excludes and `skinLines.exclude`.
+  and `champions.seasons`/`champions.regions`/`champions.lanes` in the
+  overrides, display names key the excludes and `skinLines.exclude`.
 - `create` with an empty `lobbyId` returns a generated 5-letter code in the
   `joined` event; the client reads it from `GameConnection.session.lobbyId`.
   `isHost` must be derived from `lobby.host` in the live view (it rotates).

@@ -17,6 +17,7 @@ import 'package:undercoverleague/widgets/daily_theme_card.dart';
 import 'package:undercoverleague/widgets/hextech_button.dart';
 import 'package:undercoverleague/widgets/hextech_chip.dart';
 import 'package:undercoverleague/widgets/hextech_dialog.dart';
+import 'package:undercoverleague/widgets/hextech_menu.dart';
 import 'package:undercoverleague/widgets/hextech_panel.dart';
 import 'package:undercoverleague/widgets/hextech_route.dart';
 import 'package:undercoverleague/widgets/hextech_scaffold.dart';
@@ -28,6 +29,9 @@ import 'package:undercoverleague/widgets/lobby_rules.dart';
 import 'package:undercoverleague/widgets/player_tile.dart';
 import 'package:undercoverleague/widgets/rules_info.dart';
 import 'package:undercoverleague/widgets/status_notice.dart';
+
+/// What the host's kebab menu on another player's row can do.
+enum _PlayerAction { kick }
 
 class LobbyScreen extends StatefulWidget {
   final String lobbyId;
@@ -140,6 +144,23 @@ class _LobbyScreenState extends State<LobbyScreen> {
       danger: true,
     );
     if (confirmed) await _leaveLobby();
+  }
+
+  Future<void> _confirmKick(String player) async {
+    final confirmed = await showHextechDialog(
+      context,
+      title: 'Remove player',
+      message: 'Remove $player from the lobby? They can join again with the code.',
+      confirmLabel: 'Remove',
+      danger: true,
+    );
+    if (!confirmed || !mounted) return;
+    try {
+      _lobbyService.kickPlayer(player);
+    } catch (e) {
+      debugPrint('Error kicking player: $e');
+      if (mounted) showHextechSnack(context, 'Could not remove $player.', tone: SnackTone.error);
+    }
   }
 
   Future<void> _startGame() async {
@@ -488,11 +509,38 @@ class _LobbyScreenState extends State<LobbyScreen> {
   /// before the game can start.
   List<Widget> _roster(Lobby lobby, List<String> players, String hostName) {
     final rows = <Widget>[];
+    final viewerIsHost = _isHost(lobby);
     for (var i = 0; i < players.length; i++) {
       final player = players[i];
       final isYou = player == widget.playerName;
       final spectating = lobby.isSpectator(player);
       if (i > 0) rows.add(const SizedBox(height: 8));
+      // Your own row toggles your seat; the host gets a kebab on everyone
+      // else's row to remove them.
+      final Widget? trailing = isYou
+          ? HextechChip(
+              label: 'Sit out',
+              dense: true,
+              icon: Icons.visibility_outlined,
+              selected: spectating,
+              onSelected: _toggleSpectating,
+            )
+          : viewerIsHost
+              ? HextechMenuButton<_PlayerAction>(
+                  tooltip: 'Options for $player',
+                  items: const [
+                    HextechMenuItem(
+                      value: _PlayerAction.kick,
+                      label: 'Remove from lobby',
+                      icon: Icons.person_remove_outlined,
+                      danger: true,
+                    ),
+                  ],
+                  onSelected: (action) {
+                    if (action == _PlayerAction.kick) _confirmKick(player);
+                  },
+                )
+              : null;
       rows.add(
         PlayerTile(
           key: ValueKey(player),
@@ -502,15 +550,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           isSpectator: spectating,
           connected: lobby.connected[player] ?? true,
           index: i,
-          trailing: isYou
-              ? HextechChip(
-                  label: 'Sit out',
-                  dense: true,
-                  icon: Icons.visibility_outlined,
-                  selected: spectating,
-                  onSelected: _toggleSpectating,
-                )
-              : null,
+          trailing: trailing,
         ),
       );
     }

@@ -24,12 +24,13 @@ import (
 // are set; the rest are omitted on the wire.
 type Command struct {
 	// Type is one of create | join | resume | leave | settings | spectate |
-	// start | ack | nextPlayer | clue | vote | guess | reset | playAgain | react.
+	// kick | start | ack | nextPlayer | clue | vote | guess | reset |
+	// playAgain | react.
 	Type  string `json:"type"`
 	ReqID int    `json:"reqId,omitempty"`
 
 	LobbyID string `json:"lobbyId,omitempty"`
-	Name    string `json:"name,omitempty"`
+	Name    string `json:"name,omitempty"` // create, join: own name; kick: target
 	Token   string `json:"token,omitempty"`
 
 	Settings      *game.Settings `json:"settings,omitempty"`
@@ -164,6 +165,8 @@ func (h *Handler) dispatch(client *hub.Client, cmd Command) error {
 			return &game.Error{Code: "invalid", Message: "spectating is required."}
 		}
 		return h.Hub.Spectate(client, *cmd.Spectating)
+	case "kick":
+		return h.Hub.Kick(client, strings.TrimSpace(cmd.Name))
 	case "start":
 		return h.Hub.Start(client)
 	case "ack":

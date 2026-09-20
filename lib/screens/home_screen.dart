@@ -101,6 +101,8 @@ class _HomeScreenState extends State<HomeScreen> {
       switch (GameConnection.instance.takeCloseReason()) {
         case 'closed':
           _showCloseNotice('The host closed the lobby.');
+        case 'kicked':
+          _showCloseNotice('The host removed you from the lobby.');
         case 'expired':
           _showCloseNotice('Your seat in the lobby is gone. Join again with the same name to get it back.');
         case 'unreachable':

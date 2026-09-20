@@ -470,6 +470,28 @@ func TestWinConditions(t *testing.T) {
 	})
 }
 
+func TestCanKick(t *testing.T) {
+	l := New("L", "A", time.Now())
+	l.Join("B")
+	if err := l.CanKick("B", "A"); err != ErrNotHost {
+		t.Errorf("non-host: %v", err)
+	}
+	if err := l.CanKick("A", "A"); errCode(err) != "invalid" {
+		t.Errorf("self: %v", err)
+	}
+	if err := l.CanKick("A", "Z"); errCode(err) != "invalid" {
+		t.Errorf("stranger: %v", err)
+	}
+	if err := l.CanKick("A", "B"); err != nil {
+		t.Errorf("host kicks B: %v", err)
+	}
+	// Mid-game too: an absent player is removed the same way as a leaver.
+	l = newStarted(t, "A", "B", "C", "D")
+	if err := l.CanKick("A", "C"); err != nil {
+		t.Errorf("mid-game: %v", err)
+	}
+}
+
 func TestLeave(t *testing.T) {
 	t.Run("host closes lobby", func(t *testing.T) {
 		l := New("L", "A", time.Now())

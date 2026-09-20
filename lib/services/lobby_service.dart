@@ -125,6 +125,10 @@ class LobbyService {
   /// Sit this game out (or rejoin the seats); lobby phase only, for yourself.
   void setSpectating(bool spectating) => _connection.send({'type': 'spectate', 'spectating': spectating});
 
+  /// Host only: removes [name] from the lobby, in any phase. They are told
+  /// why and may join again.
+  void kickPlayer(String name) => _connection.send({'type': 'kick', 'name': name});
+
   /// Host only; draws from the settings last sent with [updateSettings].
   void startGame() => _connection.send({'type': 'start'});
 
