@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%">
+      <stop offset="0" stop-color="#0E2A4A"/>
+      <stop offset="0.55" stop-color="#0A1428"/>
+      <stop offset="1" stop-color="#010A13"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#0AC8B9" stop-opacity="0.55"/>
+      <stop offset="0.6" stop-color="#0397AB" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#005A82" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="goldStroke" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0E6D2"/>
+      <stop offset="0.45" stop-color="#C8AA6E"/>
+      <stop offset="1" stop-color="#785A28"/>
+    </linearGradient>
+    <linearGradient id="gemTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0E6D2"/>
+      <stop offset="1" stop-color="#C8AA6E"/>
+    </linearGradient>
+    <linearGradient id="gemBottom" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C89B3C"/>
+      <stop offset="1" stop-color="#785A28"/>
+    </linearGradient>
+  </defs>
+
+  <g id="background">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+    <!-- faint outer crest so the icon reads as hextech even before the emblem -->
+    <polygon points="512,52 910,282 910,742 512,972 114,742 114,282" fill="none" stroke="#C8AA6E" stroke-opacity="0.10" stroke-width="6"/>
+  </g>
+
+  <g id="emblem">
+    <circle cx="512" cy="512" r="260" fill="url(#glow)"/>
+    <!-- outer hexagon, vertex up -->
+    <polygon points="512,168 810,340 810,684 512,856 214,684 214,340" fill="none" stroke="url(#goldStroke)" stroke-width="30" stroke-linejoin="miter"/>
+    <!-- inner hexagon -->
+    <polygon points="512,246 742,379 742,645 512,778 282,645 282,379" fill="none" stroke="#C8AA6E" stroke-opacity="0.75" stroke-width="9"/>
+    <!-- gem: two facets so it has depth at small sizes -->
+    <polygon points="512,332 646,512 378,512" fill="url(#gemTop)"/>
+    <polygon points="378,512 646,512 512,692" fill="url(#gemBottom)"/>
+    <polygon points="512,332 646,512 512,692 378,512" fill="none" stroke="#010A13" stroke-opacity="0.55" stroke-width="6"/>
+    <line x1="378" y1="512" x2="646" y2="512" stroke="#010A13" stroke-opacity="0.35" stroke-width="5"/>
+    <line x1="512" y1="332" x2="512" y2="692" stroke="#F0E6D2" stroke-opacity="0.35" stroke-width="4"/>
+  </g>
+</svg>

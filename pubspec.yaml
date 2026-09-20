@@ -37,10 +37,12 @@ dependencies:
   cupertino_icons: ^1.0.6
   web_socket_channel: ^3.0.3
   flutter_animate: ^4.5.0
+  shared_preferences: ^2.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -61,9 +63,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
+  # Champion and item art comes from Data Dragon via the server; only the
+  # placeholder shown to the Undercover is bundled.
   assets:
-    - assets/champions/
-    - assets/items/
     - assets/default_icon.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -86,3 +88,26 @@ flutter:
 
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+# App icon for every platform, generated with `dart run flutter_launcher_icons`
+# from the vector emblem in assets/icon/ (see CLAUDE.md).
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+  android: true
+  adaptive_icon_background: "#010A13"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  adaptive_icon_monochrome: "assets/icon/icon_foreground.png"
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    background_color: "#010A13"
+    theme_color: "#010A13"
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: "assets/icon/icon.png"
