@@ -23,17 +23,16 @@ import (
 // Command is a client -> server message. Only the fields relevant to Type
 // are set; the rest are omitted on the wire.
 type Command struct {
-	Type  string `json:"type"` // create | join | resume | leave | start | ack | nextPlayer | vote | reset
+	Type  string `json:"type"` // create | join | resume | leave | settings | start | ack | nextPlayer | vote | reset
 	ReqID int    `json:"reqId,omitempty"`
 
 	LobbyID string `json:"lobbyId,omitempty"`
 	Name    string `json:"name,omitempty"`
 	Token   string `json:"token,omitempty"`
 
-	UseChampions  *bool  `json:"useChampions,omitempty"`
-	UseItems      *bool  `json:"useItems,omitempty"`
-	ExpectedIndex *int   `json:"expectedIndex,omitempty"`
-	VotedFor      string `json:"votedFor,omitempty"`
+	Settings      *game.Filter `json:"settings,omitempty"`
+	ExpectedIndex *int         `json:"expectedIndex,omitempty"`
+	VotedFor      string       `json:"votedFor,omitempty"`
 }
 
 const (
@@ -149,8 +148,13 @@ func (h *Handler) dispatch(client *hub.Client, cmd Command) error {
 		return h.Hub.Join(client, cmd.ReqID, strings.TrimSpace(cmd.LobbyID), strings.TrimSpace(cmd.Name))
 	case "resume":
 		return h.Hub.Resume(client, cmd.ReqID, strings.TrimSpace(cmd.LobbyID), cmd.Token)
+	case "settings":
+		if cmd.Settings == nil {
+			return &game.Error{Code: "invalid", Message: "settings is required."}
+		}
+		return h.Hub.Settings(client, *cmd.Settings)
 	case "start":
-		return h.Hub.Start(client, boolOr(cmd.UseChampions, true), boolOr(cmd.UseItems, true))
+		return h.Hub.Start(client)
 	case "ack":
 		return h.Hub.Acknowledge(client)
 	case "nextPlayer":
@@ -218,11 +222,4 @@ func (c *conn) pingLoop() {
 			}
 		}
 	}
-}
-
-func boolOr(b *bool, def bool) bool {
-	if b == nil {
-		return def
-	}
-	return *b
 }

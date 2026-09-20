@@ -1,0 +1,33 @@
+{
+  "items": {
+    "exclude": [
+      "Cappa Juice"
+    ],
+    "excludeSeasons": {},
+    "include": [
+      {
+        "name": "Muramana",
+        "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3042.png",
+        "tier": "legendary",
+        "seasons": [3, 16]
+      },
+      {
+        "name": "Seraph's Embrace",
+        "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3040.png",
+        "tier": "legendary",
+        "seasons": [3, 16]
+      },
+      {
+        "name": "Fimbulwinter",
+        "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3121.png",
+        "tier": "legendary",
+        "seasons": [11, 16]
+      }
+    ],
+    "tiers": {}
+  },
+  "champions": {
+    "exclude": [],
+    "seasons": {}
+  }
+}

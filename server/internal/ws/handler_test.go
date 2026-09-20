@@ -12,6 +12,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 
+	"github.com/JarneClaesen/underCoverLeague/server/internal/game"
 	"github.com/JarneClaesen/underCoverLeague/server/internal/hub"
 	"github.com/JarneClaesen/underCoverLeague/server/internal/store"
 )
@@ -61,7 +62,7 @@ func TestEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer st.Close()
-	h := hub.New(st, 50*time.Millisecond, slog.Default())
+	h := hub.New(st, 50*time.Millisecond, slog.Default(), testCatalog())
 	srv := httptest.NewServer(&Handler{Hub: h, Log: slog.Default()})
 	defer srv.Close()
 
@@ -89,12 +90,36 @@ func TestEndToEnd(t *testing.T) {
 	c.send(Command{Type: "join", ReqID: 4, LobbyID: "t1", Name: "Cara"})
 	c.expect("joined")
 
+	// Settings are a host-only lobby mutation; the reply is a broadcast view
+	// with the server's pool counts, and rejections are plain errors.
+	b.send(Command{Type: "settings", Settings: &game.Filter{UseChampions: true, UseItems: true}})
+	if ev := b.expect("error"); ev.Code != "notHost" {
+		t.Fatalf("non-host settings %+v", ev)
+	}
+	a.send(Command{Type: "settings"})
+	if ev := a.expect("error"); ev.Code != "invalid" {
+		t.Fatalf("missing settings %+v", ev)
+	}
+	a.send(Command{Type: "settings", Settings: &game.Filter{UseChampions: true, ChampSeasons: [2]int{15, 16}}})
+	for {
+		ev := a.expect("lobby")
+		if ev.Lobby.Settings.ChampSeasons == [2]int{15, 15} {
+			if ev.Lobby.PoolSize == nil || ev.Lobby.PoolSize.Champions != 1 || ev.Lobby.PoolSize.Items != 0 {
+				t.Fatalf("pool size %+v", ev.Lobby.PoolSize)
+			}
+			break
+		}
+	}
+
 	// Host starts; everyone gets a revealing view.
 	a.send(Command{Type: "start"})
 	for _, p := range []*testClient{a, b, c} {
 		for {
 			ev := p.expect("lobby")
 			if ev.Lobby.GamePhase == "revealingRoles" {
+				if ev.Lobby.MyRole == game.RoleCivilian && (ev.Lobby.MyWord == nil || *ev.Lobby.MyWord != "Mel" || ev.Lobby.MyIcon != "https://x/Mel_0.jpg") {
+					t.Fatalf("civilian view %+v", ev.Lobby)
+				}
 				break
 			}
 		}
@@ -121,7 +146,7 @@ func TestEndToEnd(t *testing.T) {
 func TestOversizedFrameIsRejected(t *testing.T) {
 	st, _ := store.Open(filepath.Join(t.TempDir(), "ws.db"))
 	defer st.Close()
-	h := hub.New(st, time.Minute, slog.Default())
+	h := hub.New(st, time.Minute, slog.Default(), testCatalog())
 	srv := httptest.NewServer(&Handler{Hub: h, Log: slog.Default()})
 	defer srv.Close()
 
@@ -132,5 +157,18 @@ func TestOversizedFrameIsRejected(t *testing.T) {
 	var ev hub.Event
 	if err := wsjson.Read(ctx, c.ws, &ev); err == nil {
 		t.Fatalf("expected the server to close the socket, got %+v", ev)
+	}
+}
+
+func testCatalog() *game.Catalog {
+	var all game.SeasonSet
+	all.Add(16)
+	return &game.Catalog{
+		Patch: "16.18.1",
+		Champions: []game.Champion{
+			{Name: "Ahri", Icon: "https://x/Ahri_0.jpg", Season: 1},
+			{Name: "Mel", Icon: "https://x/Mel_0.jpg", Season: 15},
+		},
+		Items: []game.Item{{Name: "Boots", Icon: "https://x/1001.png", Seasons: all, Tier: game.TierBoots}},
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	mathrand "math/rand/v2"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/JarneClaesen/underCoverLeague/server/internal/game"
@@ -78,24 +79,35 @@ type Hub struct {
 	mu    sync.Mutex
 	rooms map[string]*room
 	store *store.Store
-	words *game.Words
-	grace time.Duration
-	rng   *mathrand.Rand
-	log   *slog.Logger
-	now   func() time.Time
+	// catalog is swapped whole by SetCatalog when Data Dragon is refreshed;
+	// a lobby that already drew its word is unaffected.
+	catalog atomic.Pointer[game.Catalog]
+	grace   time.Duration
+	rng     *mathrand.Rand
+	log     *slog.Logger
+	now     func() time.Time
 }
 
-func New(st *store.Store, grace time.Duration, log *slog.Logger) *Hub {
+func New(st *store.Store, grace time.Duration, log *slog.Logger, cat *game.Catalog) *Hub {
 	var seed [32]byte
 	rand.Read(seed[:])
-	return &Hub{
+	h := &Hub{
 		rooms: map[string]*room{},
 		store: st,
-		words: game.LoadWords(),
 		grace: grace,
 		rng:   mathrand.New(mathrand.NewChaCha8(seed)),
 		log:   log,
 		now:   time.Now,
+	}
+	h.SetCatalog(cat)
+	return h
+}
+
+// SetCatalog publishes a new word pool. Views are not rebroadcast: the
+// pool counts a lobby shows refresh on its next change.
+func (h *Hub) SetCatalog(c *game.Catalog) {
+	if c != nil {
+		h.catalog.Store(c)
 	}
 }
 
@@ -249,9 +261,13 @@ func (h *Hub) Apply(c *Client, fn func(l *game.Lobby, player string) error) erro
 	return nil
 }
 
-func (h *Hub) Start(c *Client, useChampions, useItems bool) error {
+func (h *Hub) Settings(c *Client, f game.Filter) error {
+	return h.Apply(c, func(l *game.Lobby, p string) error { return l.SetSettings(p, f) })
+}
+
+func (h *Hub) Start(c *Client) error {
 	return h.Apply(c, func(l *game.Lobby, p string) error {
-		return l.Start(p, useChampions, useItems, h.rng, h.words)
+		return l.Start(p, h.rng, h.catalog.Load())
 	})
 }
 
@@ -381,7 +397,7 @@ func (h *Hub) broadcast(r *room) {
 		}
 		dropped := false
 		for player, c := range r.conns {
-			view := r.state.ViewFor(player, connected)
+			view := r.state.ViewFor(player, connected, h.catalog.Load())
 			if !c.sender.Send(Event{Type: "lobby", Lobby: &view}) {
 				// Slow consumer: drop it, it will resume and get a fresh view.
 				delete(r.conns, player)

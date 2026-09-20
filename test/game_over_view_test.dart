@@ -22,7 +22,7 @@ Lobby _gameOver({required String myRole, String winner = 'Civilians'}) {
     selectedIsChampion: true,
     myRole: myRole,
     myWord: 'Ahri',
-    myIcon: 'assets/champions/ahri.jpg',
+    myIcon: 'assets/default_icon.jpg',
     roles: const {'Ashe': 'Civilian', 'Braum': 'Undercover', 'Caitlyn': 'Civilian'},
     selectedWord: 'Ahri',
     connected: const {'Ashe': true, 'Braum': true, 'Caitlyn': true},

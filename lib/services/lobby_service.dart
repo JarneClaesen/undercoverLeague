@@ -1,3 +1,4 @@
+import 'package:undercoverleague/models/game_settings.dart';
 import 'package:undercoverleague/models/lobby.dart';
 import 'package:undercoverleague/services/game_connection.dart';
 
@@ -78,12 +79,17 @@ class LobbyService {
   // Game flow (server validates; rejections surface on GameConnection.errors)
   // ---------------------------------------------------------------------------
 
-  void startGame({required bool useChampions, required bool useItems}) {
-    if (!useChampions && !useItems) {
-      throw ArgumentError('At least one of useChampions or useItems must be true');
+  /// Host only. The server stores the settings on the lobby and broadcasts
+  /// them (with the resulting pool size) to everyone.
+  void updateSettings(GameSettings settings) {
+    if (!settings.useChampions && !settings.useItems) {
+      throw ArgumentError('At least one of champions or items must be enabled');
     }
-    _connection.send({'type': 'start', 'useChampions': useChampions, 'useItems': useItems});
+    _connection.send({'type': 'settings', 'settings': settings.toJson()});
   }
+
+  /// Host only; draws from the settings last sent with [updateSettings].
+  void startGame() => _connection.send({'type': 'start'});
 
   void acknowledgeRole() => _connection.send({'type': 'ack'});
 

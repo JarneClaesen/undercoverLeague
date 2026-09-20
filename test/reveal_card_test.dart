@@ -14,7 +14,7 @@ void main() {
       const RevealCard(
         role: 'Civilian',
         word: 'Ahri',
-        icon: 'assets/champions/ahri.jpg',
+        icon: 'assets/default_icon.jpg',
         isChampion: true,
       ),
     ));
@@ -34,7 +34,7 @@ void main() {
       RevealCard(
         role: 'Civilian',
         word: 'Ahri',
-        icon: 'assets/champions/ahri.jpg',
+        icon: 'assets/default_icon.jpg',
         isChampion: true,
         onRevealed: () => revealed++,
       ),
@@ -65,7 +65,7 @@ void main() {
       const RevealCard(
         role: 'Civilian',
         word: 'Ahri',
-        icon: 'assets/champions/ahri.jpg',
+        icon: 'assets/default_icon.jpg',
         isChampion: true,
         peekable: false,
         initiallyRevealed: true,

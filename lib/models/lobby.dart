@@ -1,3 +1,5 @@
+import 'package:undercoverleague/models/game_settings.dart';
+
 /// One player's view of a lobby, as sent by the server. Secrets are already
 /// filtered server-side: only this player's role is included, the word is
 /// absent for the Undercover, and [roles] / [selectedWord] are only present
@@ -31,6 +33,14 @@ class Lobby {
   final Map<String, String> roles; // empty until game over
   final String? selectedWord; // null until game over
 
+  /// The host's word-pool filter, normalized by the server.
+  final GameSettings settings;
+
+  /// Only present in the lobby phase: what [settings] can draw from and
+  /// which seasons the sliders may span.
+  final PoolSize? poolSize;
+  final SeasonRange? seasonRange;
+
   final Map<String, bool> connected;
   final int version;
 
@@ -55,6 +65,9 @@ class Lobby {
     required this.myIcon,
     required this.roles,
     required this.selectedWord,
+    this.settings = const GameSettings(),
+    this.poolSize,
+    this.seasonRange,
     required this.connected,
     required this.version,
   });
@@ -81,6 +94,9 @@ class Lobby {
       myIcon: json['myIcon'] as String? ?? 'assets/default_icon.jpg',
       roles: _map<String>(json['roles']),
       selectedWord: json['selectedWord'] as String?,
+      settings: json['settings'] is Map ? GameSettings.fromJson((json['settings'] as Map).cast()) : const GameSettings(),
+      poolSize: json['poolSize'] is Map ? PoolSize.fromJson((json['poolSize'] as Map).cast()) : null,
+      seasonRange: json['seasonRange'] is Map ? SeasonRange.fromJson((json['seasonRange'] as Map).cast()) : null,
       connected: _map<bool>(json['connected']),
       version: json['version'] as int? ?? 0,
     );

@@ -9,8 +9,14 @@ services:
       context: ..
       dockerfile: Dockerfile
     restart: unless-stopped
+    environment:
+      # Curation layer over the Data Dragon import; versioned in the repo and
+      # shipped by deploy.sh. Re-read on every catalog refresh (12h) and on
+      # start, so `up -d --build` is enough after editing it.
+      UNDERCOVER_CATALOG_OVERRIDES: /config/catalog_overrides.json
     volumes:
       - undercover_data:/data
+      - ./catalog_overrides.json:/config/catalog_overrides.json:ro
     networks:
       phonetracker_default:
         aliases: [undercover]

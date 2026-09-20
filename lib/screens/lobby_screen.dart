@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:undercoverleague/models/game_settings.dart';
 import 'package:undercoverleague/models/lobby.dart';
 import 'package:undercoverleague/screens/game_screen.dart';
 import 'package:undercoverleague/screens/home_screen.dart';
+import 'package:undercoverleague/services/game_connection.dart';
 import 'package:undercoverleague/services/lobby_service.dart';
+import 'package:undercoverleague/services/settings_prefs.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
 import 'package:undercoverleague/theme/motion.dart';
 import 'package:undercoverleague/widgets/hextech_button.dart';
@@ -14,7 +19,7 @@ import 'package:undercoverleague/widgets/hextech_scaffold.dart';
 import 'package:undercoverleague/widgets/hextech_snack.dart';
 import 'package:undercoverleague/widgets/lobby_code_panel.dart';
 import 'package:undercoverleague/widgets/lobby_open_seat.dart';
-import 'package:undercoverleague/widgets/lobby_pool_toggles.dart';
+import 'package:undercoverleague/widgets/lobby_filters.dart';
 import 'package:undercoverleague/widgets/player_tile.dart';
 import 'package:undercoverleague/widgets/status_notice.dart';
 
@@ -42,8 +47,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
   bool _isLeaving = false;
   bool _isStarting = false;
   bool _inGame = false;
-  bool useChampions = true;
-  bool useItems = true;
+  StreamSubscription<GameError>? _errors;
+
+  /// Whether the device's remembered settings have been pushed to the
+  /// server yet; done once, after the first view tells us the catalog's
+  /// season range to clamp them into.
+  bool _defaultsApplied = false;
 
   /// Roster size at the previous build, so the moment the lobby becomes
   /// startable can be caught and pointed at exactly once.
@@ -51,7 +60,20 @@ class _LobbyScreenState extends State<LobbyScreen> {
   int _startShimmer = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // Rejected settings or a start with an empty pool come back as plain
+    // errors; the host needs to see why nothing happened.
+    _errors = GameConnection.instance.errors.listen((e) {
+      if (!mounted) return;
+      setState(() => _isStarting = false);
+      showHextechSnack(context, e.message, tone: SnackTone.error);
+    });
+  }
+
+  @override
   void dispose() {
+    _errors?.cancel();
     // Leaving through any path other than the dialog (e.g. the lobby was
     // deleted under us) still needs to remove this player server-side.
     if (!_isLeaving) {
@@ -97,7 +119,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     if (_isStarting) return;
     setState(() => _isStarting = true);
     try {
-      _lobbyService.startGame(useChampions: useChampions, useItems: useItems);
+      _lobbyService.startGame();
       // The server answers with a new lobby view; keep the button disabled
       // briefly so a double tap cannot fire twice before it arrives.
       await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -109,6 +131,28 @@ class _LobbyScreenState extends State<LobbyScreen> {
     } finally {
       if (mounted) setState(() => _isStarting = false);
     }
+  }
+
+  void _updateSettings(GameSettings settings) {
+    try {
+      _lobbyService.updateSettings(settings);
+      SettingsPrefs.saveHostDefaults(settings);
+    } catch (e) {
+      debugPrint('Error updating settings: $e');
+    }
+  }
+
+  /// Pushes the settings remembered on this device the first time the
+  /// lobby view (and with it the catalog's season range) arrives.
+  void _applySavedDefaults(Lobby lobby) {
+    if (_defaultsApplied || !widget.isHost || lobby.seasonRange == null) return;
+    _defaultsApplied = true;
+    final range = lobby.seasonRange!;
+    SettingsPrefs.loadHostDefaults().then((saved) {
+      if (!mounted || saved == null) return;
+      final clamped = saved.clampedTo(range);
+      if (clamped != lobby.settings) _updateSettings(clamped);
+    });
   }
 
   void _openGame(String hostName) {
@@ -214,6 +258,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             }
 
             _trackPlayerCount(players.length);
+            _applySavedDefaults(lobby);
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -227,13 +272,27 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       _rosterHeader(players.length),
                       const SizedBox(height: 12),
                       ..._roster(lobby, players, hostName),
+                      const SizedBox(height: 24),
+                      // The pool settings scroll with the roster: on a phone
+                      // they are taller than the space left under the code.
+                      HextechPanel(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                        child: widget.isHost
+                            ? LobbyFilters(
+                                settings: lobby.settings,
+                                seasonRange: lobby.seasonRange,
+                                poolSize: lobby.poolSize,
+                                onChanged: _updateSettings,
+                              )
+                            : LobbyFiltersSummary(settings: lobby.settings, poolSize: lobby.poolSize),
+                      ),
                     ],
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   child: widget.isHost
-                      ? _hostControls(players.length)
+                      ? _startButton(lobby, players.length)
                       : StatusNotice(
                           message: 'Waiting for $hostName to start the game',
                           tone: NoticeTone.info,
@@ -295,16 +354,21 @@ class _LobbyScreenState extends State<LobbyScreen> {
     return rows;
   }
 
-  Widget _hostControls(int playerCount) {
+  Widget _startButton(Lobby lobby, int playerCount) {
     final missing = _minimumPlayers - playerCount;
+    // poolSize is null until the server has a catalog; only a known-empty
+    // pool blocks the button, the server rejects the rest.
+    final emptyPool = lobby.poolSize != null && lobby.poolSize!.total == 0;
 
     Widget start = HextechButton(
       label: 'Start game',
       busy: _isStarting,
-      onPressed: playerCount >= _minimumPlayers && !_isStarting ? _startGame : null,
+      onPressed: playerCount >= _minimumPlayers && !_isStarting && !emptyPool ? _startGame : null,
       disabledReason: missing > 0
           ? 'Need $missing more summoner${missing == 1 ? '' : 's'}'
-          : null,
+          : emptyPool
+              ? 'No words match the filters'
+              : null,
     );
 
     if (_startShimmer > 0 && !Motion.reduced(context)) {
@@ -312,25 +376,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
           .animate(key: ValueKey('start-shimmer-$_startShimmer'))
           .shimmer(duration: 1200.ms, color: HextechColors.goldBright);
     }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        HextechPanel(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-          child: LobbyPoolToggles(
-            useChampions: useChampions,
-            useItems: useItems,
-            onChanged: (champions, items) => setState(() {
-              useChampions = champions;
-              useItems = items;
-            }),
-          ),
-        ),
-        const SizedBox(height: 16),
-        start,
-      ],
-    );
+    return start;
   }
 }

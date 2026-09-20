@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
 import 'package:undercoverleague/theme/motion.dart';
 import 'package:undercoverleague/widgets/hextech_panel.dart';
+import 'package:undercoverleague/widgets/word_image.dart';
 
 /// How much room the card is given: [large] is the centrepiece of the reveal
 /// phase, [compact] is the peek card docked at the bottom of the game shell.
@@ -104,7 +105,7 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
   /// Warms the portrait so the first flip is not a blank frame.
   void _precache() {
     if (!_isCivilian) return;
-    precacheImage(AssetImage(widget.icon), context, onError: (error, _) {
+    precacheImage(wordImageProvider(widget.icon), context, onError: (error, _) {
       debugPrint('RevealCard could not precache ${widget.icon}: $error');
     });
   }
@@ -301,20 +302,13 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
         width: width,
         height: height,
         child: Center(
-          child: Image.asset(
+          child: wordImage(
+            context,
             widget.icon,
             width: widget.isChampion ? width : itemSide,
             height: widget.isChampion ? height : itemSide,
             fit: widget.isChampion ? BoxFit.cover : BoxFit.contain,
-            filterQuality: FilterQuality.medium,
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('RevealCard could not load ${widget.icon}: $error');
-              return Icon(
-                Icons.image_not_supported_outlined,
-                size: side * 0.5,
-                color: context.hextech.textDisabled,
-              );
-            },
+            fallbackSize: side * 0.5,
           ),
         ),
       ),

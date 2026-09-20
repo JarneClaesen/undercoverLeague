@@ -49,6 +49,18 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
 ## Server contract notes
 
 - All game rules run in `server/internal/game`; the client only renders `View`.
+- The word pool is a `game.Catalog` built by `server/internal/catalog` from
+  Data Dragon (see README "Word pool"); `internal/game` never does I/O, the
+  hub holds the catalog in an `atomic.Pointer` and `catalog.Service.Run`
+  swaps it. Icons are https URLs; only `assets/default_icon.jpg` is bundled.
+- `{"type":"settings","settings":{…Filter…}}` is a host-only lobby mutation;
+  `start` has no payload. The view carries `settings` (normalized), and in
+  the lobby phase `poolSize` and `seasonRange`. Zero season bounds mean
+  "all"; `itemTiers` null = all, `[]` = none. `lib/models/game_settings.dart`
+  mirrors this.
+- Item names are the identity across seasons (case-insensitive); Data
+  Dragon champion ids key `champion_seasons.json` and
+  `champions.seasons` in the overrides, display names key the excludes.
 - `create` with an empty `lobbyId` returns a generated 5-letter code in the
   `joined` event; the client reads it from `GameConnection.session.lobbyId`.
 - `lastVotes` is the tallied ballot of the previous vote; `lastEliminated` is

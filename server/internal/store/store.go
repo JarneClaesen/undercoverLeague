@@ -28,13 +28,30 @@ func Open(path string) (*Store, error) {
 	// One connection: the hub serialises writes per lobby anyway, and a
 	// single writer never sees SQLITE_BUSY.
 	db.SetMaxOpenConns(1)
-	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS lobbies (
-		id TEXT PRIMARY KEY,
-		state TEXT NOT NULL,
-		updated_at INTEGER NOT NULL
-	)`); err != nil {
-		db.Close()
-		return nil, err
+	for _, ddl := range []string{
+		`CREATE TABLE IF NOT EXISTS lobbies (
+			id TEXT PRIMARY KEY,
+			state TEXT NOT NULL,
+			updated_at INTEGER NOT NULL
+		)`,
+		// Opaque JSON blobs for the catalog package: the built catalog and
+		// the per-patch item snapshots it was built from.
+		`CREATE TABLE IF NOT EXISTS catalog (
+			key TEXT PRIMARY KEY,
+			json TEXT NOT NULL,
+			updated_at INTEGER NOT NULL
+		)`,
+		// Release season of champions first seen after the static table
+		// was generated, so they keep the same season across restarts.
+		`CREATE TABLE IF NOT EXISTS champion_seasons (
+			id TEXT PRIMARY KEY,
+			season INTEGER NOT NULL
+		)`,
+	} {
+		if _, err := db.Exec(ddl); err != nil {
+			db.Close()
+			return nil, err
+		}
 	}
 	return &Store{db: db}, nil
 }
@@ -118,4 +135,53 @@ func (s *Store) Purge(olderThan time.Time, keep []string) (int64, error) {
 		n++
 	}
 	return n, tx.Commit()
+}
+
+// ---------------------------------------------------------------------------
+// Catalog blobs and champion seasons (used by internal/catalog)
+// ---------------------------------------------------------------------------
+
+func (s *Store) SaveBlob(key string, b []byte) error {
+	_, err := s.db.Exec(`INSERT INTO catalog (key, json, updated_at) VALUES (?, ?, ?)
+		ON CONFLICT(key) DO UPDATE SET json = excluded.json, updated_at = excluded.updated_at`,
+		key, string(b), time.Now().UnixMilli())
+	return err
+}
+
+// LoadBlob returns (nil, zero, nil) when the key does not exist.
+func (s *Store) LoadBlob(key string) ([]byte, time.Time, error) {
+	var b string
+	var at int64
+	err := s.db.QueryRow(`SELECT json, updated_at FROM catalog WHERE key = ?`, key).Scan(&b, &at)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, time.Time{}, nil
+	}
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	return []byte(b), time.UnixMilli(at), nil
+}
+
+func (s *Store) ChampionSeasons() (map[string]int, error) {
+	rows, err := s.db.Query(`SELECT id, season FROM champion_seasons`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]int{}
+	for rows.Next() {
+		var id string
+		var season int
+		if err := rows.Scan(&id, &season); err != nil {
+			return nil, err
+		}
+		out[id] = season
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) SetChampionSeason(id string, season int) error {
+	_, err := s.db.Exec(`INSERT INTO champion_seasons (id, season) VALUES (?, ?)
+		ON CONFLICT(id) DO UPDATE SET season = excluded.season`, id, season)
+	return err
 }

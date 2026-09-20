@@ -1,0 +1,3026 @@
+{
+  "patch": "16.18.1",
+  "champions": [
+    {
+      "name": "Aatrox",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Aatrox_0.jpg",
+      "season": 3
+    },
+    {
+      "name": "Ahri",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Ahri_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Akali",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Akali_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Akshan",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Akshan_0.jpg",
+      "season": 11
+    },
+    {
+      "name": "Alistar",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Alistar_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Ambessa",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Ambessa_0.jpg",
+      "season": 14
+    },
+    {
+      "name": "Amumu",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Amumu_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Anivia",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Anivia_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Annie",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Annie_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Aphelios",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Aphelios_0.jpg",
+      "season": 9
+    },
+    {
+      "name": "Ashe",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Ashe_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Aurelion Sol",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/AurelionSol_0.jpg",
+      "season": 6
+    },
+    {
+      "name": "Aurora",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Aurora_0.jpg",
+      "season": 14
+    },
+    {
+      "name": "Azir",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Azir_0.jpg",
+      "season": 4
+    },
+    {
+      "name": "Bard",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Bard_0.jpg",
+      "season": 5
+    },
+    {
+      "name": "Bel'Veth",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Belveth_0.jpg",
+      "season": 12
+    },
+    {
+      "name": "Blitzcrank",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Blitzcrank_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Brand",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Brand_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Braum",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Braum_0.jpg",
+      "season": 4
+    },
+    {
+      "name": "Briar",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Briar_0.jpg",
+      "season": 13
+    },
+    {
+      "name": "Caitlyn",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Caitlyn_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Camille",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Camille_0.jpg",
+      "season": 6
+    },
+    {
+      "name": "Cassiopeia",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Cassiopeia_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Cho'Gath",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Chogath_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Corki",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Corki_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Darius",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Darius_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Diana",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Diana_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Dr. Mundo",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/DrMundo_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Draven",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Draven_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Ekko",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Ekko_0.jpg",
+      "season": 5
+    },
+    {
+      "name": "Elise",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Elise_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Evelynn",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Evelynn_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Ezreal",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Ezreal_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Fiddlesticks",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Fiddlesticks_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Fiora",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Fiora_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Fizz",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Fizz_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Galio",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Galio_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Gangplank",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Gangplank_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Garen",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Garen_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Gnar",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Gnar_0.jpg",
+      "season": 4
+    },
+    {
+      "name": "Gragas",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Gragas_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Graves",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Graves_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Gwen",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Gwen_0.jpg",
+      "season": 11
+    },
+    {
+      "name": "Hecarim",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Hecarim_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Heimerdinger",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Heimerdinger_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Hwei",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Hwei_0.jpg",
+      "season": 13
+    },
+    {
+      "name": "Illaoi",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Illaoi_0.jpg",
+      "season": 5
+    },
+    {
+      "name": "Irelia",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Irelia_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Ivern",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Ivern_0.jpg",
+      "season": 6
+    },
+    {
+      "name": "Janna",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Janna_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Jarvan IV",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/JarvanIV_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Jax",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Jax_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Jayce",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Jayce_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Jhin",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Jhin_0.jpg",
+      "season": 6
+    },
+    {
+      "name": "Jinx",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Jinx_0.jpg",
+      "season": 3
+    },
+    {
+      "name": "K'Sante",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/KSante_0.jpg",
+      "season": 12
+    },
+    {
+      "name": "Kai'Sa",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Kaisa_0.jpg",
+      "season": 8
+    },
+    {
+      "name": "Kalista",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Kalista_0.jpg",
+      "season": 4
+    },
+    {
+      "name": "Karma",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Karma_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Karthus",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Karthus_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Kassadin",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Kassadin_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Katarina",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Katarina_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Kayle",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Kayle_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Kayn",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Kayn_0.jpg",
+      "season": 7
+    },
+    {
+      "name": "Kennen",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Kennen_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Kha'Zix",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Khazix_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Kindred",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Kindred_0.jpg",
+      "season": 5
+    },
+    {
+      "name": "Kled",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Kled_0.jpg",
+      "season": 6
+    },
+    {
+      "name": "Kog'Maw",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/KogMaw_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "LeBlanc",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Leblanc_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Lee Sin",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/LeeSin_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Leona",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Leona_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Lillia",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Lillia_0.jpg",
+      "season": 10
+    },
+    {
+      "name": "Lissandra",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Lissandra_0.jpg",
+      "season": 3
+    },
+    {
+      "name": "Locke",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Locke_0.jpg",
+      "season": 16
+    },
+    {
+      "name": "Lucian",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Lucian_0.jpg",
+      "season": 3
+    },
+    {
+      "name": "Lulu",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Lulu_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Lux",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Lux_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Malphite",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Malphite_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Malzahar",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Malzahar_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Maokai",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Maokai_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Master Yi",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/MasterYi_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Mel",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Mel_0.jpg",
+      "season": 15
+    },
+    {
+      "name": "Milio",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Milio_0.jpg",
+      "season": 13
+    },
+    {
+      "name": "Miss Fortune",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/MissFortune_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Mordekaiser",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Mordekaiser_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Morgana",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Morgana_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Naafiri",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Naafiri_0.jpg",
+      "season": 13
+    },
+    {
+      "name": "Nami",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Nami_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Nasus",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Nasus_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Nautilus",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Nautilus_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Neeko",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Neeko_0.jpg",
+      "season": 8
+    },
+    {
+      "name": "Nidalee",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Nidalee_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Nilah",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Nilah_0.jpg",
+      "season": 12
+    },
+    {
+      "name": "Nocturne",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Nocturne_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Nunu \u0026 Willump",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Nunu_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Olaf",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Olaf_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Orianna",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Orianna_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Ornn",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Ornn_0.jpg",
+      "season": 7
+    },
+    {
+      "name": "Pantheon",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Pantheon_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Poppy",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Poppy_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Pyke",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Pyke_0.jpg",
+      "season": 8
+    },
+    {
+      "name": "Qiyana",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Qiyana_0.jpg",
+      "season": 9
+    },
+    {
+      "name": "Quinn",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Quinn_0.jpg",
+      "season": 3
+    },
+    {
+      "name": "Rakan",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Rakan_0.jpg",
+      "season": 7
+    },
+    {
+      "name": "Rammus",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Rammus_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Rek'Sai",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/RekSai_0.jpg",
+      "season": 4
+    },
+    {
+      "name": "Rell",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Rell_0.jpg",
+      "season": 10
+    },
+    {
+      "name": "Renata Glasc",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Renata_0.jpg",
+      "season": 12
+    },
+    {
+      "name": "Renekton",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Renekton_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Rengar",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Rengar_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Riven",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Riven_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Rumble",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Rumble_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Ryze",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Ryze_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Samira",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Samira_0.jpg",
+      "season": 10
+    },
+    {
+      "name": "Sejuani",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Sejuani_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Senna",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Senna_0.jpg",
+      "season": 9
+    },
+    {
+      "name": "Seraphine",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Seraphine_0.jpg",
+      "season": 10
+    },
+    {
+      "name": "Sett",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Sett_0.jpg",
+      "season": 10
+    },
+    {
+      "name": "Shaco",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Shaco_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Shen",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Shen_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Shyvana",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Shyvana_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Singed",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Singed_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Sion",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Sion_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Sivir",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Sivir_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Skarner",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Skarner_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Smolder",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Smolder_0.jpg",
+      "season": 14
+    },
+    {
+      "name": "Sona",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Sona_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Soraka",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Soraka_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Swain",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Swain_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Sylas",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Sylas_0.jpg",
+      "season": 9
+    },
+    {
+      "name": "Syndra",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Syndra_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Tahm Kench",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/TahmKench_0.jpg",
+      "season": 5
+    },
+    {
+      "name": "Taliyah",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Taliyah_0.jpg",
+      "season": 6
+    },
+    {
+      "name": "Talon",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Talon_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Taric",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Taric_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Teemo",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Teemo_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Thresh",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Thresh_0.jpg",
+      "season": 3
+    },
+    {
+      "name": "Tristana",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Tristana_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Trundle",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Trundle_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Tryndamere",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Tryndamere_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Twisted Fate",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/TwistedFate_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Twitch",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Twitch_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Udyr",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Udyr_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Urgot",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Urgot_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Varus",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Varus_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Vayne",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Vayne_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Veigar",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Veigar_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Vel'Koz",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Velkoz_0.jpg",
+      "season": 4
+    },
+    {
+      "name": "Vex",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Vex_0.jpg",
+      "season": 11
+    },
+    {
+      "name": "Vi",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Vi_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Viego",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Viego_0.jpg",
+      "season": 11
+    },
+    {
+      "name": "Viktor",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Viktor_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Vladimir",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Vladimir_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Volibear",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Volibear_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Warwick",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Warwick_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Wukong",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/MonkeyKing_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Xayah",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Xayah_0.jpg",
+      "season": 7
+    },
+    {
+      "name": "Xerath",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Xerath_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Xin Zhao",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/XinZhao_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Yasuo",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Yasuo_0.jpg",
+      "season": 3
+    },
+    {
+      "name": "Yone",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Yone_0.jpg",
+      "season": 10
+    },
+    {
+      "name": "Yorick",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Yorick_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Yunara",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Yunara_0.jpg",
+      "season": 15
+    },
+    {
+      "name": "Yuumi",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Yuumi_0.jpg",
+      "season": 9
+    },
+    {
+      "name": "Zaahen",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Zaahen_0.jpg",
+      "season": 15
+    },
+    {
+      "name": "Zac",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Zac_0.jpg",
+      "season": 3
+    },
+    {
+      "name": "Zed",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Zed_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Zeri",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Zeri_0.jpg",
+      "season": 12
+    },
+    {
+      "name": "Ziggs",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Ziggs_0.jpg",
+      "season": 2
+    },
+    {
+      "name": "Zilean",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Zilean_0.jpg",
+      "season": 1
+    },
+    {
+      "name": "Zoe",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Zoe_0.jpg",
+      "season": 7
+    },
+    {
+      "name": "Zyra",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Zyra_0.jpg",
+      "season": 2
+    }
+  ],
+  "items": [
+    {
+      "name": "Abyssal Mask",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/8020.png",
+      "seasons": 130944,
+      "tier": "legendary"
+    },
+    {
+      "name": "Abyssal Scepter",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/6.24.1/img/item/3001.png",
+      "seasons": 120,
+      "tier": "legendary"
+    },
+    {
+      "name": "Actualizer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2522.png",
+      "seasons": 65536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Adaptive Helm",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3194.png",
+      "seasons": 896,
+      "tier": "legendary"
+    },
+    {
+      "name": "Aegis of the Legion",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/15.24.1/img/item/3105.png",
+      "seasons": 49144,
+      "tier": "component"
+    },
+    {
+      "name": "Aether Wisp",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3113.png",
+      "seasons": 131056,
+      "tier": "component"
+    },
+    {
+      "name": "Amplifying Tome",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1052.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Anathema's Chains",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/8001.png",
+      "seasons": 14336,
+      "tier": "legendary"
+    },
+    {
+      "name": "Ancient Coin",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3301.png",
+      "seasons": 504,
+      "tier": "starter"
+    },
+    {
+      "name": "Archangel's Staff",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3003.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Archangel's Staff (Quick Charge)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3007.png",
+      "seasons": 960,
+      "tier": "legendary"
+    },
+    {
+      "name": "Ardent Censer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3504.png",
+      "seasons": 131056,
+      "tier": "legendary"
+    },
+    {
+      "name": "Armored Advance",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3174.png",
+      "seasons": 98304,
+      "tier": "boots"
+    },
+    {
+      "name": "Athene's Unholy Grail",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3174.png",
+      "seasons": 1016,
+      "tier": "legendary"
+    },
+    {
+      "name": "Atma's Impaler",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/3.15.5/img/item/3005.png",
+      "seasons": 8,
+      "tier": "legendary"
+    },
+    {
+      "name": "Avarice Blade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3093.png",
+      "seasons": 24,
+      "tier": "component"
+    },
+    {
+      "name": "Axiom Arc",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6696.png",
+      "seasons": 129024,
+      "tier": "legendary"
+    },
+    {
+      "name": "B. F. Sword",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1038.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Bami's Cinder",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6660.png",
+      "seasons": 131040,
+      "tier": "component"
+    },
+    {
+      "name": "Bandleglass Mirror",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4642.png",
+      "seasons": 130048,
+      "tier": "component"
+    },
+    {
+      "name": "Bandlepipes",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2524.png",
+      "seasons": 65536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Banner of Command",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/3060.png",
+      "seasons": 248,
+      "tier": "legendary"
+    },
+    {
+      "name": "Banshee's Veil",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3102.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Bastionbreaker",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2520.png",
+      "seasons": 65536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Berserker's Greaves",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3006.png",
+      "seasons": 131064,
+      "tier": "boots"
+    },
+    {
+      "name": "Bilgewater Cutlass",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3144.png",
+      "seasons": 1016,
+      "tier": "legendary"
+    },
+    {
+      "name": "Black Cleaver",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3071.png",
+      "seasons": 130560,
+      "tier": "legendary"
+    },
+    {
+      "name": "Blackfire Torch",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2503.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Blade of The Ruined King",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3153.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Blasting Wand",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1026.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Blighting Jewel",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4630.png",
+      "seasons": 130048,
+      "tier": "component"
+    },
+    {
+      "name": "Bloodletter's Curse",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/8010.png",
+      "seasons": 98304,
+      "tier": "legendary"
+    },
+    {
+      "name": "Bloodsong",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3877.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Bloodthirster",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3072.png",
+      "seasons": 130560,
+      "tier": "legendary"
+    },
+    {
+      "name": "Boots",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1001.png",
+      "seasons": 130048,
+      "tier": "boots"
+    },
+    {
+      "name": "Boots of Mobility",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3117.png",
+      "seasons": 1016,
+      "tier": "boots"
+    },
+    {
+      "name": "Boots of Speed",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/1001.png",
+      "seasons": 1016,
+      "tier": "boots"
+    },
+    {
+      "name": "Boots of Swiftness",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3009.png",
+      "seasons": 131064,
+      "tier": "boots"
+    },
+    {
+      "name": "Bramble Vest",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3076.png",
+      "seasons": 130944,
+      "tier": "component"
+    },
+    {
+      "name": "Brawler's Gloves",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/1051.png",
+      "seasons": 504,
+      "tier": "component"
+    },
+    {
+      "name": "Catalyst of Aeons",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3803.png",
+      "seasons": 127936,
+      "tier": "component"
+    },
+    {
+      "name": "Catalyst the Protector",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/5.24.2/img/item/3010.png",
+      "seasons": 56,
+      "tier": "component"
+    },
+    {
+      "name": "Caulfield's Warhammer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3133.png",
+      "seasons": 131040,
+      "tier": "component"
+    },
+    {
+      "name": "Celestial Opposition",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3869.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Chain Vest",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1031.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Chainlaced Crushers",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3173.png",
+      "seasons": 98304,
+      "tier": "boots"
+    },
+    {
+      "name": "Chalice of Blessing",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3012.png",
+      "seasons": 8192,
+      "tier": "component"
+    },
+    {
+      "name": "Chalice of Harmony",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3028.png",
+      "seasons": 1016,
+      "tier": "component"
+    },
+    {
+      "name": "Chempunk Chainsword",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6609.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Chemtech Putrifier",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3011.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Cloak of Agility",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1018.png",
+      "seasons": 130808,
+      "tier": "component"
+    },
+    {
+      "name": "Cloth Armor",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1029.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Control Ward",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2055.png",
+      "seasons": 131008,
+      "tier": "consumable"
+    },
+    {
+      "name": "Corrupting Potion",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/2033.png",
+      "seasons": 16352,
+      "tier": "consumable"
+    },
+    {
+      "name": "Cosmic Drive",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4629.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Crimson Lucidity",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3171.png",
+      "seasons": 98304,
+      "tier": "boots"
+    },
+    {
+      "name": "Crown of the Shattered Queen",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/4644.png",
+      "seasons": 14336,
+      "tier": "legendary"
+    },
+    {
+      "name": "Cryptbloom",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3137.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Crystalline Bracer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3801.png",
+      "seasons": 131056,
+      "tier": "component"
+    },
+    {
+      "name": "Crystalline Flask",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/2041.png",
+      "seasons": 24,
+      "tier": "consumable"
+    },
+    {
+      "name": "Cull",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1083.png",
+      "seasons": 131040,
+      "tier": "starter"
+    },
+    {
+      "name": "Dagger",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1042.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Dark Seal",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1082.png",
+      "seasons": 130560,
+      "tier": "starter"
+    },
+    {
+      "name": "Dawncore",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6621.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Dead Man's Plate",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3742.png",
+      "seasons": 131040,
+      "tier": "legendary"
+    },
+    {
+      "name": "Death's Dance",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6333.png",
+      "seasons": 131040,
+      "tier": "legendary"
+    },
+    {
+      "name": "Deathfire Grasp",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3128.png",
+      "seasons": 24,
+      "tier": "legendary"
+    },
+    {
+      "name": "Demonic Embrace",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/4637.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Divine Sunderer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6632.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Doran's Blade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1055.png",
+      "seasons": 131064,
+      "tier": "starter"
+    },
+    {
+      "name": "Doran's Bow",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1086.png",
+      "seasons": 65536,
+      "tier": "starter"
+    },
+    {
+      "name": "Doran's Helm",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1120.png",
+      "seasons": 65536,
+      "tier": "starter"
+    },
+    {
+      "name": "Doran's Ring",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1056.png",
+      "seasons": 131064,
+      "tier": "starter"
+    },
+    {
+      "name": "Doran's Shield",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1054.png",
+      "seasons": 131064,
+      "tier": "starter"
+    },
+    {
+      "name": "Dream Maker",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3870.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Dusk and Dawn",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2510.png",
+      "seasons": 65536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Duskblade of Draktharr",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6691.png",
+      "seasons": 16320,
+      "tier": "legendary"
+    },
+    {
+      "name": "Echoes of Helia",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6620.png",
+      "seasons": 122880,
+      "tier": "legendary"
+    },
+    {
+      "name": "Eclipse",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6692.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Edge of Night",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3814.png",
+      "seasons": 131008,
+      "tier": "legendary"
+    },
+    {
+      "name": "Elixir of Brilliance",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/3.15.5/img/item/2039.png",
+      "seasons": 8,
+      "tier": "consumable"
+    },
+    {
+      "name": "Elixir of Fortitude",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/3.15.5/img/item/2037.png",
+      "seasons": 8,
+      "tier": "consumable"
+    },
+    {
+      "name": "Elixir of Iron",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2138.png",
+      "seasons": 131056,
+      "tier": "consumable"
+    },
+    {
+      "name": "Elixir of Ruin",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/2137.png",
+      "seasons": 16,
+      "tier": "consumable"
+    },
+    {
+      "name": "Elixir of Sorcery",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2139.png",
+      "seasons": 131056,
+      "tier": "consumable"
+    },
+    {
+      "name": "Elixir of Wrath",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2140.png",
+      "seasons": 131056,
+      "tier": "consumable"
+    },
+    {
+      "name": "Emberknife",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/11.24.1/img/item/1035.png",
+      "seasons": 3072,
+      "tier": "starter"
+    },
+    {
+      "name": "Endless Hunger",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2517.png",
+      "seasons": 65536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Entropy Field",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3643.png",
+      "seasons": 448,
+      "tier": "starter"
+    },
+    {
+      "name": "Essence Reaver",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3508.png",
+      "seasons": 131056,
+      "tier": "legendary"
+    },
+    {
+      "name": "Evenshroud",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3001.png",
+      "seasons": 14336,
+      "tier": "legendary"
+    },
+    {
+      "name": "Everfrost",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6656.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Executioner's Calling",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3123.png",
+      "seasons": 131048,
+      "tier": "component"
+    },
+    {
+      "name": "Experimental Hexplate",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3073.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Eye of the Equinox",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/2303.png",
+      "seasons": 224,
+      "tier": "legendary"
+    },
+    {
+      "name": "Eye of the Oasis",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/2302.png",
+      "seasons": 224,
+      "tier": "legendary"
+    },
+    {
+      "name": "Eye of the Watchers",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/2301.png",
+      "seasons": 224,
+      "tier": "legendary"
+    },
+    {
+      "name": "Face of the Mountain",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/3401.png",
+      "seasons": 248,
+      "tier": "legendary"
+    },
+    {
+      "name": "Faerie Charm",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1004.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Farsight Alteration",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3363.png",
+      "seasons": 131040,
+      "tier": "consumable"
+    },
+    {
+      "name": "Farsight Orb (Trinket)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3363.png",
+      "seasons": 24,
+      "tier": "consumable"
+    },
+    {
+      "name": "Fated Ashes",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2508.png",
+      "seasons": 114688,
+      "tier": "component"
+    },
+    {
+      "name": "Fiendhunter Bolts",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2512.png",
+      "seasons": 65536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Fiendish Codex",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3108.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Fimbulwinter",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3121.png",
+      "seasons": 129024,
+      "tier": "legendary"
+    },
+    {
+      "name": "Flash Zone",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3640.png",
+      "seasons": 448,
+      "tier": "starter"
+    },
+    {
+      "name": "Forbidden Idol",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3114.png",
+      "seasons": 131056,
+      "tier": "component"
+    },
+    {
+      "name": "Force of Nature",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4401.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Forever Forward",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/15.24.1/img/item/3176.png",
+      "seasons": 32768,
+      "tier": "boots"
+    },
+    {
+      "name": "Frost Queen's Claim",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/3092.png",
+      "seasons": 248,
+      "tier": "legendary"
+    },
+    {
+      "name": "Frostfang",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3098.png",
+      "seasons": 504,
+      "tier": "component"
+    },
+    {
+      "name": "Frostfire Gauntlet",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/11.24.1/img/item/6662.png",
+      "seasons": 3072,
+      "tier": "legendary"
+    },
+    {
+      "name": "Frozen Heart",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3110.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Frozen Mallet",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3022.png",
+      "seasons": 1016,
+      "tier": "legendary"
+    },
+    {
+      "name": "Galeforce",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6671.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Gargoyle Stoneplate",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3193.png",
+      "seasons": 16256,
+      "tier": "legendary"
+    },
+    {
+      "name": "Giant Slayer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/3034.png",
+      "seasons": 224,
+      "tier": "component"
+    },
+    {
+      "name": "Giant's Belt",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1011.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Glacial Buckler",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3024.png",
+      "seasons": 130048,
+      "tier": "component"
+    },
+    {
+      "name": "Glacial Shroud",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3024.png",
+      "seasons": 1016,
+      "tier": "component"
+    },
+    {
+      "name": "Glowing Mote",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2022.png",
+      "seasons": 114688,
+      "tier": "component"
+    },
+    {
+      "name": "Gluttonous Greaves",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3008.png",
+      "seasons": 65536,
+      "tier": "boots"
+    },
+    {
+      "name": "Goredrinker",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6630.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Greater Stealth Totem (Trinket)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3361.png",
+      "seasons": 24,
+      "tier": "consumable"
+    },
+    {
+      "name": "Greater Vision Totem (Trinket)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3362.png",
+      "seasons": 24,
+      "tier": "consumable"
+    },
+    {
+      "name": "Guardian Angel",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3026.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Guardian's Blade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3177.png",
+      "seasons": 65536,
+      "tier": "starter"
+    },
+    {
+      "name": "Guardian's Hammer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3184.png",
+      "seasons": 65536,
+      "tier": "starter"
+    },
+    {
+      "name": "Guardian's Horn",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2051.png",
+      "seasons": 65536,
+      "tier": "starter"
+    },
+    {
+      "name": "Guardian's Orb",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3112.png",
+      "seasons": 65536,
+      "tier": "starter"
+    },
+    {
+      "name": "Guinsoo's Rageblade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3124.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Gunmetal Greaves",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3172.png",
+      "seasons": 98304,
+      "tier": "legendary"
+    },
+    {
+      "name": "Gustwalker Hatchling",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1102.png",
+      "seasons": 126976,
+      "tier": "starter"
+    },
+    {
+      "name": "Hailblade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/11.24.1/img/item/1039.png",
+      "seasons": 3072,
+      "tier": "starter"
+    },
+    {
+      "name": "Haunting Guise",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3147.png",
+      "seasons": 115704,
+      "tier": "component"
+    },
+    {
+      "name": "Health Potion",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2003.png",
+      "seasons": 131064,
+      "tier": "consumable"
+    },
+    {
+      "name": "Hearthbound Axe",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3051.png",
+      "seasons": 130048,
+      "tier": "component"
+    },
+    {
+      "name": "Heartsteel",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3084.png",
+      "seasons": 126976,
+      "tier": "legendary"
+    },
+    {
+      "name": "Hexdrinker",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3155.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Hexoptics C44",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2523.png",
+      "seasons": 65536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Hextech Alternator",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3145.png",
+      "seasons": 130048,
+      "tier": "component"
+    },
+    {
+      "name": "Hextech GLP-800",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3030.png",
+      "seasons": 960,
+      "tier": "legendary"
+    },
+    {
+      "name": "Hextech Gunblade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3146.png",
+      "seasons": 66552,
+      "tier": "legendary"
+    },
+    {
+      "name": "Hextech Protobelt-01",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3152.png",
+      "seasons": 960,
+      "tier": "legendary"
+    },
+    {
+      "name": "Hextech Revolver",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3145.png",
+      "seasons": 1016,
+      "tier": "component"
+    },
+    {
+      "name": "Hextech Rocketbelt",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3152.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Hollow Radiance",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6664.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Horizon Focus",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4628.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Hubris",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6697.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Hullbreaker",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3181.png",
+      "seasons": 129024,
+      "tier": "legendary"
+    },
+    {
+      "name": "Hunter's Machete",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/1041.png",
+      "seasons": 1016,
+      "tier": "component"
+    },
+    {
+      "name": "Hunter's Potion",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/2032.png",
+      "seasons": 480,
+      "tier": "consumable"
+    },
+    {
+      "name": "Hunter's Talisman",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/1039.png",
+      "seasons": 992,
+      "tier": "component"
+    },
+    {
+      "name": "Iceborn Gauntlet",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6662.png",
+      "seasons": 127992,
+      "tier": "legendary"
+    },
+    {
+      "name": "Immortal Path",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3168.png",
+      "seasons": 65536,
+      "tier": "boots"
+    },
+    {
+      "name": "Immortal Shieldbow",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6673.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Imperial Mandate",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4005.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Infinity Edge",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3031.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Ionian Boots of Lucidity",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3158.png",
+      "seasons": 131064,
+      "tier": "boots"
+    },
+    {
+      "name": "Ironspike Whip",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6029.png",
+      "seasons": 15360,
+      "tier": "component"
+    },
+    {
+      "name": "Jak'Sho, The Protean",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6665.png",
+      "seasons": 126976,
+      "tier": "legendary"
+    },
+    {
+      "name": "Jaurim's Fist",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3052.png",
+      "seasons": 992,
+      "tier": "component"
+    },
+    {
+      "name": "Kaenic Rookern",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2504.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Kindlegem",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3067.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Kircheis Shard",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/2015.png",
+      "seasons": 16352,
+      "tier": "component"
+    },
+    {
+      "name": "Knight's Vow",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3109.png",
+      "seasons": 131008,
+      "tier": "legendary"
+    },
+    {
+      "name": "Kraken Slayer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6672.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Last Whisper",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3035.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Leeching Leer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/4635.png",
+      "seasons": 15360,
+      "tier": "component"
+    },
+    {
+      "name": "Liandry's Anguish",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6653.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Liandry's Torment",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6653.png",
+      "seasons": 115704,
+      "tier": "legendary"
+    },
+    {
+      "name": "Lich Bane",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3100.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Lifewell Pendant",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3023.png",
+      "seasons": 8192,
+      "tier": "component"
+    },
+    {
+      "name": "Locket of the Iron Solari",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3190.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Long Sword",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1036.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Lord Dominik's Regards",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3036.png",
+      "seasons": 131040,
+      "tier": "legendary"
+    },
+    {
+      "name": "Lost Chapter",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3802.png",
+      "seasons": 131008,
+      "tier": "component"
+    },
+    {
+      "name": "Luden's Companion",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/15.24.1/img/item/6655.png",
+      "seasons": 49152,
+      "tier": "legendary"
+    },
+    {
+      "name": "Luden's Echo",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6655.png",
+      "seasons": 66528,
+      "tier": "legendary"
+    },
+    {
+      "name": "Luden's Tempest",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6655.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Madred's Razors",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3106.png",
+      "seasons": 24,
+      "tier": "component"
+    },
+    {
+      "name": "Malignance",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3118.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Mana Potion",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/2004.png",
+      "seasons": 24,
+      "tier": "consumable"
+    },
+    {
+      "name": "Manamune",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3004.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Manamune (Quick Charge)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3008.png",
+      "seasons": 960,
+      "tier": "legendary"
+    },
+    {
+      "name": "Maw of Malmortius",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3156.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Mejai's Soulstealer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3041.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Mercurial Scimitar",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3139.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Mercury's Treads",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3111.png",
+      "seasons": 131064,
+      "tier": "boots"
+    },
+    {
+      "name": "Mikael's Blessing",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3222.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Mikael's Crucible",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3222.png",
+      "seasons": 1016,
+      "tier": "legendary"
+    },
+    {
+      "name": "Mobility Boots",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3117.png",
+      "seasons": 15360,
+      "tier": "boots"
+    },
+    {
+      "name": "Moonstone Renewer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6617.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Morellonomicon",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3165.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Mortal Reminder",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3033.png",
+      "seasons": 131040,
+      "tier": "legendary"
+    },
+    {
+      "name": "Mosstomper Seedling",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1103.png",
+      "seasons": 126976,
+      "tier": "starter"
+    },
+    {
+      "name": "Muramana",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3042.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Nashor's Tooth",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3115.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Navori Flickerblade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6675.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Navori Quickblades",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6675.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Needlessly Large Rod",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1058.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Negatron Cloak",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1057.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Night Harvester",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/4636.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Ninja Tabi",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3047.png",
+      "seasons": 1016,
+      "tier": "boots"
+    },
+    {
+      "name": "Nomad's Medallion",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3096.png",
+      "seasons": 504,
+      "tier": "component"
+    },
+    {
+      "name": "Noonquiver",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6670.png",
+      "seasons": 130048,
+      "tier": "component"
+    },
+    {
+      "name": "Null-Magic Mantle",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1033.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Oblivion Orb",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3916.png",
+      "seasons": 130816,
+      "tier": "component"
+    },
+    {
+      "name": "Obsidian Edge",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/1040.png",
+      "seasons": 14336,
+      "tier": "starter"
+    },
+    {
+      "name": "Ohmwrecker",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3056.png",
+      "seasons": 504,
+      "tier": "legendary"
+    },
+    {
+      "name": "Opportunity",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/15.24.1/img/item/6701.png",
+      "seasons": 49152,
+      "tier": "legendary"
+    },
+    {
+      "name": "Oracle Alteration",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/3364.png",
+      "seasons": 224,
+      "tier": "consumable"
+    },
+    {
+      "name": "Oracle Lens",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3364.png",
+      "seasons": 130816,
+      "tier": "consumable"
+    },
+    {
+      "name": "Oracle's Lens (Trinket)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3364.png",
+      "seasons": 24,
+      "tier": "consumable"
+    },
+    {
+      "name": "Overlord's Bloodmail",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2501.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Phage",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3044.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Phantom Dancer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3046.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Pickaxe",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1037.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Plated Steelcaps",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3047.png",
+      "seasons": 130048,
+      "tier": "boots"
+    },
+    {
+      "name": "Poacher's Dirk",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/3252.png",
+      "seasons": 192,
+      "tier": "legendary"
+    },
+    {
+      "name": "Poacher's Knife",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3711.png",
+      "seasons": 16,
+      "tier": "component"
+    },
+    {
+      "name": "Port Pad",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3635.png",
+      "seasons": 448,
+      "tier": "starter"
+    },
+    {
+      "name": "Profane Hydra",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6698.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Protoplasm Harness",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2525.png",
+      "seasons": 65536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Prowler's Claw",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6693.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Quicksilver Sash",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3140.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Rabadon's Deathcap",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3089.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Radiant Virtue",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6667.png",
+      "seasons": 12288,
+      "tier": "legendary"
+    },
+    {
+      "name": "Rageknife",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6677.png",
+      "seasons": 15360,
+      "tier": "component"
+    },
+    {
+      "name": "Randuin's Omen",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3143.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Ranger's Trailblazer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3713.png",
+      "seasons": 16,
+      "tier": "component"
+    },
+    {
+      "name": "Rapid Firecannon",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3094.png",
+      "seasons": 131040,
+      "tier": "legendary"
+    },
+    {
+      "name": "Raptor Cloak",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/2053.png",
+      "seasons": 496,
+      "tier": "component"
+    },
+    {
+      "name": "Ravenous Hydra",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3074.png",
+      "seasons": 131040,
+      "tier": "legendary"
+    },
+    {
+      "name": "Ravenous Hydra (Melee Only)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3074.png",
+      "seasons": 24,
+      "tier": "legendary"
+    },
+    {
+      "name": "Rectrix",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6690.png",
+      "seasons": 114688,
+      "tier": "component"
+    },
+    {
+      "name": "Recurve Bow",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1043.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Redemption",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3107.png",
+      "seasons": 131008,
+      "tier": "legendary"
+    },
+    {
+      "name": "Refillable Potion",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2031.png",
+      "seasons": 131040,
+      "tier": "consumable"
+    },
+    {
+      "name": "Rejuvenation Bead",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1006.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Relic Shield",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3858.png",
+      "seasons": 16376,
+      "tier": "starter"
+    },
+    {
+      "name": "Remnant of the Ascended",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3069.png",
+      "seasons": 256,
+      "tier": "legendary"
+    },
+    {
+      "name": "Remnant of the Aspect",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3401.png",
+      "seasons": 256,
+      "tier": "legendary"
+    },
+    {
+      "name": "Remnant of the Watchers",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3092.png",
+      "seasons": 256,
+      "tier": "legendary"
+    },
+    {
+      "name": "Riftmaker",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4633.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Righteous Glory",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3800.png",
+      "seasons": 1008,
+      "tier": "legendary"
+    },
+    {
+      "name": "Rod of Ages",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6657.png",
+      "seasons": 127992,
+      "tier": "legendary"
+    },
+    {
+      "name": "Rod of Ages (Quick Charge)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3029.png",
+      "seasons": 960,
+      "tier": "legendary"
+    },
+    {
+      "name": "Ruby Crystal",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1028.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Ruby Sightstone",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/2045.png",
+      "seasons": 248,
+      "tier": "legendary"
+    },
+    {
+      "name": "Runaan's Hurricane",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3085.png",
+      "seasons": 131040,
+      "tier": "legendary"
+    },
+    {
+      "name": "Runaan's Hurricane (Ranged Only)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3085.png",
+      "seasons": 24,
+      "tier": "legendary"
+    },
+    {
+      "name": "Rylai's Crystal Scepter",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3116.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Sanguine Blade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/10.25.1/img/item/3181.png",
+      "seasons": 1536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Sapphire Crystal",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1027.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Scorchclaw Pup",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1101.png",
+      "seasons": 126976,
+      "tier": "starter"
+    },
+    {
+      "name": "Scout's Slingshot",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3144.png",
+      "seasons": 114688,
+      "tier": "component"
+    },
+    {
+      "name": "Scrying Orb (Trinket)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3342.png",
+      "seasons": 24,
+      "tier": "consumable"
+    },
+    {
+      "name": "Seeker's Armguard",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2420.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Seraph's Embrace",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3040.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Serpent's Fang",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6695.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Serrated Dirk",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3134.png",
+      "seasons": 131040,
+      "tier": "component"
+    },
+    {
+      "name": "Serylda's Grudge",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6694.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Shadowflame",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4645.png",
+      "seasons": 129024,
+      "tier": "legendary"
+    },
+    {
+      "name": "Sheen",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3057.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Shield Totem",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3647.png",
+      "seasons": 448,
+      "tier": "starter"
+    },
+    {
+      "name": "Shurelya's Battlesong",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2065.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Shurelya's Reverie",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/2065.png",
+      "seasons": 768,
+      "tier": "legendary"
+    },
+    {
+      "name": "Siege Ballista",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3631.png",
+      "seasons": 448,
+      "tier": "starter"
+    },
+    {
+      "name": "Siege Refund",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3642.png",
+      "seasons": 448,
+      "tier": "starter"
+    },
+    {
+      "name": "Sightstone",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/2049.png",
+      "seasons": 248,
+      "tier": "component"
+    },
+    {
+      "name": "Silvermere Dawn",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6035.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Skirmisher's Sabre",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3715.png",
+      "seasons": 1008,
+      "tier": "component"
+    },
+    {
+      "name": "Solstice Sleigh",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3876.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Sorcerer's Shoes",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3020.png",
+      "seasons": 131064,
+      "tier": "boots"
+    },
+    {
+      "name": "Spear of Shojin",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3161.png",
+      "seasons": 126976,
+      "tier": "legendary"
+    },
+    {
+      "name": "Spectral Sickle",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3862.png",
+      "seasons": 15872,
+      "tier": "starter"
+    },
+    {
+      "name": "Spectre's Cowl",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3211.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Spellbinder",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3907.png",
+      "seasons": 768,
+      "tier": "legendary"
+    },
+    {
+      "name": "Spellslinger's Shoes",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3175.png",
+      "seasons": 98304,
+      "tier": "boots"
+    },
+    {
+      "name": "Spellthief's Edge",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3850.png",
+      "seasons": 16376,
+      "tier": "starter"
+    },
+    {
+      "name": "Spirit Stone",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/3.15.5/img/item/1080.png",
+      "seasons": 8,
+      "tier": "component"
+    },
+    {
+      "name": "Spirit Visage",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3065.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Spirit of the Ancient Golem",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/3.15.5/img/item/3207.png",
+      "seasons": 8,
+      "tier": "legendary"
+    },
+    {
+      "name": "Spirit of the Elder Lizard",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/3.15.5/img/item/3209.png",
+      "seasons": 8,
+      "tier": "legendary"
+    },
+    {
+      "name": "Spirit of the Spectral Wraith",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/3.15.5/img/item/3206.png",
+      "seasons": 8,
+      "tier": "legendary"
+    },
+    {
+      "name": "Staff of Flowing Water",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6616.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Stalker's Blade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3706.png",
+      "seasons": 1008,
+      "tier": "component"
+    },
+    {
+      "name": "Statikk Shiv",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3087.png",
+      "seasons": 123896,
+      "tier": "legendary"
+    },
+    {
+      "name": "Stealth Ward",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3340.png",
+      "seasons": 130072,
+      "tier": "consumable"
+    },
+    {
+      "name": "Steel Shoulderguards",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/3854.png",
+      "seasons": 15872,
+      "tier": "starter"
+    },
+    {
+      "name": "Steel Sigil",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2019.png",
+      "seasons": 114688,
+      "tier": "component"
+    },
+    {
+      "name": "Sterak's Gage",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3053.png",
+      "seasons": 131040,
+      "tier": "legendary"
+    },
+    {
+      "name": "Stinger",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3101.png",
+      "seasons": 1016,
+      "tier": "component"
+    },
+    {
+      "name": "Stirring Wardstone",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/10.25.1/img/item/4641.png",
+      "seasons": 1024,
+      "tier": "component"
+    },
+    {
+      "name": "Stopwatch",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/2420.png",
+      "seasons": 16256,
+      "tier": "component"
+    },
+    {
+      "name": "Stormrazor",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3095.png",
+      "seasons": 81664,
+      "tier": "legendary"
+    },
+    {
+      "name": "Stormsurge",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4646.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Stridebreaker",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6631.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Sundered Sky",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6610.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Sunfire Aegis",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3068.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Sunfire Cape",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3068.png",
+      "seasons": 1016,
+      "tier": "legendary"
+    },
+    {
+      "name": "Sweeping Lens (Trinket)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/3341.png",
+      "seasons": 248,
+      "tier": "consumable"
+    },
+    {
+      "name": "Swiftmarch",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3170.png",
+      "seasons": 98304,
+      "tier": "boots"
+    },
+    {
+      "name": "Sword of the Divine",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/3.15.5/img/item/3131.png",
+      "seasons": 8,
+      "tier": "legendary"
+    },
+    {
+      "name": "Sword of the Occult",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3141.png",
+      "seasons": 24,
+      "tier": "legendary"
+    },
+    {
+      "name": "Symbiotic Soles",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/15.24.1/img/item/3010.png",
+      "seasons": 49152,
+      "tier": "boots"
+    },
+    {
+      "name": "Talisman of Ascension",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/3069.png",
+      "seasons": 248,
+      "tier": "legendary"
+    },
+    {
+      "name": "Targon's Brace",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3097.png",
+      "seasons": 504,
+      "tier": "component"
+    },
+    {
+      "name": "Tear of the Goddess",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3070.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Tear of the Goddess (Quick Charge)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3073.png",
+      "seasons": 960,
+      "tier": "component"
+    },
+    {
+      "name": "Terminus",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3302.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "The Black Cleaver",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3071.png",
+      "seasons": 504,
+      "tier": "legendary"
+    },
+    {
+      "name": "The Bloodthirster",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3072.png",
+      "seasons": 504,
+      "tier": "legendary"
+    },
+    {
+      "name": "The Brutalizer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2020.png",
+      "seasons": 114712,
+      "tier": "component"
+    },
+    {
+      "name": "The Collector",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6676.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "The Dark Seal",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/1082.png",
+      "seasons": 480,
+      "tier": "starter"
+    },
+    {
+      "name": "Thornmail",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3075.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Tiamat",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3077.png",
+      "seasons": 131040,
+      "tier": "component"
+    },
+    {
+      "name": "Tiamat (Melee Only)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3077.png",
+      "seasons": 24,
+      "tier": "legendary"
+    },
+    {
+      "name": "Titanic Hydra",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3748.png",
+      "seasons": 131040,
+      "tier": "legendary"
+    },
+    {
+      "name": "Tower: Beam of Ruination",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3634.png",
+      "seasons": 448,
+      "tier": "starter"
+    },
+    {
+      "name": "Tower: Storm Bulwark",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3636.png",
+      "seasons": 448,
+      "tier": "starter"
+    },
+    {
+      "name": "Tracker's Knife",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/7.24.2/img/item/3711.png",
+      "seasons": 224,
+      "tier": "component"
+    },
+    {
+      "name": "Trailblazer",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/15.24.1/img/item/3002.png",
+      "seasons": 49152,
+      "tier": "legendary"
+    },
+    {
+      "name": "Trinity Force",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3078.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Tunneler",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2021.png",
+      "seasons": 114688,
+      "tier": "component"
+    },
+    {
+      "name": "Turbo Chemtank",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/item/6664.png",
+      "seasons": 15360,
+      "tier": "legendary"
+    },
+    {
+      "name": "Twin Shadows",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3905.png",
+      "seasons": 792,
+      "tier": "legendary"
+    },
+    {
+      "name": "Umbral Glaive",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3179.png",
+      "seasons": 130560,
+      "tier": "legendary"
+    },
+    {
+      "name": "Unending Despair",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2502.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Vampiric Scepter",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/1053.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Vanguard Banner",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3641.png",
+      "seasons": 448,
+      "tier": "starter"
+    },
+    {
+      "name": "Verdant Barrier",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/4632.png",
+      "seasons": 130048,
+      "tier": "legendary"
+    },
+    {
+      "name": "Vigilant Wardstone",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/15.24.1/img/item/4643.png",
+      "seasons": 58368,
+      "tier": "legendary"
+    },
+    {
+      "name": "Vision Ward",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/5.24.2/img/item/2043.png",
+      "seasons": 56,
+      "tier": "consumable"
+    },
+    {
+      "name": "Void Staff",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3135.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Voltaic Cyclosword",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/6699.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Warden's Mail",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3082.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Warding Totem (Trinket)",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/9.24.2/img/item/3340.png",
+      "seasons": 1016,
+      "tier": "consumable"
+    },
+    {
+      "name": "Warmog's Armor",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3083.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Watchful Wardstone",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/15.24.1/img/item/4638.png",
+      "seasons": 63488,
+      "tier": "component"
+    },
+    {
+      "name": "Whispering Circlet",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/2526.png",
+      "seasons": 65536,
+      "tier": "legendary"
+    },
+    {
+      "name": "Will of the Ancients",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/5.24.2/img/item/3152.png",
+      "seasons": 56,
+      "tier": "legendary"
+    },
+    {
+      "name": "Winged Moonplate",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3066.png",
+      "seasons": 130048,
+      "tier": "component"
+    },
+    {
+      "name": "Winter's Approach",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3119.png",
+      "seasons": 129024,
+      "tier": "legendary"
+    },
+    {
+      "name": "Wit's End",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3091.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "World Atlas",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3865.png",
+      "seasons": 114688,
+      "tier": "starter"
+    },
+    {
+      "name": "Wriggle's Lantern",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3154.png",
+      "seasons": 24,
+      "tier": "legendary"
+    },
+    {
+      "name": "Youmuu's Ghostblade",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3142.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Yun Tal Wildarrows",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3032.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Zaz'Zak's Realmspike",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3871.png",
+      "seasons": 114688,
+      "tier": "legendary"
+    },
+    {
+      "name": "Zeal",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3086.png",
+      "seasons": 131064,
+      "tier": "component"
+    },
+    {
+      "name": "Zeke's Convergence",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3050.png",
+      "seasons": 130944,
+      "tier": "legendary"
+    },
+    {
+      "name": "Zeke's Harbinger",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/6.24.1/img/item/3050.png",
+      "seasons": 96,
+      "tier": "legendary"
+    },
+    {
+      "name": "Zeke's Herald",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/4.21.5/img/item/3050.png",
+      "seasons": 24,
+      "tier": "legendary"
+    },
+    {
+      "name": "Zephyr",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/14.24.1/img/item/3172.png",
+      "seasons": 16408,
+      "tier": "legendary"
+    },
+    {
+      "name": "Zhonya's Hourglass",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/item/3157.png",
+      "seasons": 131064,
+      "tier": "legendary"
+    },
+    {
+      "name": "Zz'Rot Portal",
+      "icon": "https://ddragon.leagueoflegends.com/cdn/8.24.1/img/item/3512.png",
+      "seasons": 480,
+      "tier": "legendary"
+    }
+  ]
+}

@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:undercoverleague/theme/hextech_colors.dart';
 import 'package:undercoverleague/theme/motion.dart';
 import 'package:undercoverleague/widgets/hextech_panel.dart';
+import 'package:undercoverleague/widgets/word_image.dart';
 
 /// The drawn champion/item portrait as it is revealed at game over: a gold
 /// frame with corner accents that turns face up.
@@ -17,7 +17,7 @@ import 'package:undercoverleague/widgets/hextech_panel.dart';
 /// Champion art is a tall portrait and fills the frame; item icons are 64 px
 /// sprites and are drawn small enough not to smear.
 class GameOverPortrait extends StatelessWidget {
-  /// Asset path, from `Lobby.myIcon`.
+  /// Image URL (or the bundled placeholder), from `Lobby.myIcon`.
   final String icon;
   final bool isChampion;
   final Duration delay;
@@ -31,24 +31,16 @@ class GameOverPortrait extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hextech = context.hextech;
     final width = isChampion ? 200.0 : 112.0;
     final height = isChampion ? 226.0 : 112.0;
 
-    final image = Image.asset(
+    final image = wordImage(
+      context,
       icon,
       width: width,
       height: height,
       fit: isChampion ? BoxFit.cover : BoxFit.contain,
-      filterQuality: FilterQuality.medium,
-      errorBuilder: (context, error, stackTrace) {
-        debugPrint('Error loading image $icon: $error');
-        return SizedBox(
-          width: width,
-          height: height,
-          child: Icon(Icons.image_not_supported, size: 56, color: hextech.textDisabled),
-        );
-      },
+      fallbackSize: 56,
     );
 
     final framed = HextechPanel(

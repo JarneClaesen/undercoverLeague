@@ -1,10 +1,11 @@
 // Command undercover is the Undercover League game server: a WebSocket
-// endpoint at /ws, a health probe at /healthz and, when a web directory is
-// present, the Flutter web build at /.
+// endpoint at /ws, a health probe at /healthz, the current word pool at
+// /catalog and, when a web directory is present, the Flutter web build at /.
 package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/JarneClaesen/underCoverLeague/server/internal/catalog"
 	"github.com/JarneClaesen/underCoverLeague/server/internal/hub"
 	"github.com/JarneClaesen/underCoverLeague/server/internal/store"
 	"github.com/JarneClaesen/underCoverLeague/server/internal/ws"
@@ -46,6 +48,15 @@ func main() {
 		log.Error("bad UNDERCOVER_GRACE", "err", err)
 		os.Exit(2)
 	}
+	// 0 disables Data Dragon entirely (offline dev): the embedded or cached
+	// catalog is used as is.
+	refresh, err := time.ParseDuration(env("UNDERCOVER_CATALOG_REFRESH", "12h"))
+	if err != nil {
+		log.Error("bad UNDERCOVER_CATALOG_REFRESH", "err", err)
+		os.Exit(2)
+	}
+	overrides := env("UNDERCOVER_CATALOG_OVERRIDES", "/config/catalog_overrides.json")
+	ddragon := env("UNDERCOVER_DDRAGON", catalog.DefaultBase)
 
 	st, err := store.Open(dbPath)
 	if err != nil {
@@ -54,7 +65,11 @@ func main() {
 	}
 	defer st.Close()
 
-	h := hub.New(st, grace, log)
+	// The hub gets a catalog before it serves anything: the last one this
+	// server built, else the embedded fallback. Data Dragon is only ever
+	// consulted in the background.
+	cat := catalog.New(catalog.NewFetcher(ddragon), st, overrides, log)
+	h := hub.New(st, grace, log, cat.Bootstrap())
 
 	mux := http.NewServeMux()
 	mux.Handle("/ws", &ws.Handler{Hub: h, Log: log})
@@ -63,7 +78,15 @@ func main() {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
-		fmt.Fprintln(w, "ok")
+		cs := cat.Status()
+		fmt.Fprintf(w, "ok catalog=%s source=%s\n", cs.Patch, cs.Source)
+	})
+	mux.HandleFunc("GET /catalog", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache")
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		enc.Encode(cat.Export())
 	})
 	if info, err := os.Stat(webDir); err == nil && info.IsDir() {
 		mux.Handle("/", webHandler(webDir))
@@ -80,9 +103,10 @@ func main() {
 	defer stop()
 
 	go purgeLoop(ctx, st, h, log)
+	go cat.Run(ctx, refresh, h.SetCatalog)
 
 	go func() {
-		log.Info("listening", "addr", addr, "db", dbPath, "grace", grace)
+		log.Info("listening", "addr", addr, "db", dbPath, "grace", grace, "catalog", cat.Status().Source, "refresh", refresh)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error("serve", "err", err)
 			stop()

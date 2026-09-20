@@ -21,7 +21,7 @@ func newStarted(t *testing.T, players ...string) *Lobby {
 			t.Fatal(err)
 		}
 	}
-	if err := l.Start(players[0], true, true, testRNG(), LoadWords()); err != nil {
+	if err := l.Start(players[0], testRNG(), testCatalog()); err != nil {
 		t.Fatal(err)
 	}
 	return l
@@ -85,7 +85,7 @@ func TestJoin(t *testing.T) {
 		t.Errorf("join as host: %v", err)
 	}
 	l.Join("C")
-	if err := l.Start("A", true, true, testRNG(), LoadWords()); err != nil {
+	if err := l.Start("A", testRNG(), testCatalog()); err != nil {
 		t.Fatal(err)
 	}
 	if err := l.Join("D"); errCode(err) != "inProgress" {
@@ -96,17 +96,30 @@ func TestJoin(t *testing.T) {
 func TestStart(t *testing.T) {
 	l := New("L", "A", time.Now())
 	l.Join("B")
-	if err := l.Start("B", true, true, testRNG(), LoadWords()); errCode(err) != "notHost" {
+	if err := l.Start("B", testRNG(), testCatalog()); errCode(err) != "notHost" {
 		t.Errorf("non-host start: %v", err)
 	}
-	if err := l.Start("A", true, true, testRNG(), LoadWords()); errCode(err) != "invalid" {
+	if err := l.Start("A", testRNG(), testCatalog()); errCode(err) != "invalid" {
 		t.Errorf("start with 2 players: %v", err)
 	}
 	l.Join("C")
-	if err := l.Start("A", false, false, testRNG(), LoadWords()); errCode(err) != "invalid" {
-		t.Errorf("start with no categories: %v", err)
+	if err := l.SetSettings("B", DefaultFilter()); errCode(err) != "notHost" {
+		t.Errorf("non-host settings: %v", err)
 	}
-	if err := l.Start("A", true, true, testRNG(), LoadWords()); err != nil {
+	if err := l.SetSettings("A", Filter{}); errCode(err) != "invalid" {
+		t.Errorf("settings with no categories: %v", err)
+	}
+	// Filters that match nothing are rejected at Start and leave the lobby untouched.
+	if err := l.SetSettings("A", Filter{UseChampions: true, ChampSeasons: [2]int{2, 2}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.Start("A", testRNG(), testCatalog()); errCode(err) != "invalid" || l.GameStarted {
+		t.Errorf("start with empty pool: %v started=%v", err, l.GameStarted)
+	}
+	if err := l.SetSettings("A", DefaultFilter()); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.Start("A", testRNG(), testCatalog()); err != nil {
 		t.Fatal(err)
 	}
 	if !l.GameStarted || l.GamePhase != PhaseRevealing {
@@ -133,8 +146,64 @@ func TestStart(t *testing.T) {
 
 	word := l.SelectedWord
 	// Double tap: no-op, word unchanged.
-	if err := l.Start("A", true, true, testRNG(), LoadWords()); err != nil || l.SelectedWord != word {
+	if err := l.Start("A", testRNG(), testCatalog()); err != nil || l.SelectedWord != word {
 		t.Errorf("double start changed state: %v", err)
+	}
+	if err := l.SetSettings("A", DefaultFilter()); errCode(err) != "invalid" {
+		t.Errorf("settings mid-game: %v", err)
+	}
+}
+
+func TestSettingsInView(t *testing.T) {
+	c := testCatalog()
+	l := New("L", "A", time.Now())
+	l.Join("B")
+	l.Join("C")
+	f := Filter{UseChampions: true, UseItems: true, ChampSeasons: [2]int{15, 16}, ItemTiers: []Tier{TierLegendary}}
+	if err := l.SetSettings("A", f); err != nil {
+		t.Fatal(err)
+	}
+	v := l.ViewFor("B", nil, c)
+	if v.Settings.ChampSeasons != [2]int{15, 16} || v.Settings.ItemSeasons != [2]int{3, 16} {
+		t.Errorf("view settings not normalized: %+v", v.Settings)
+	}
+	if v.PoolSize == nil || v.PoolSize.Champions != 2 || v.PoolSize.Items != 4 {
+		t.Errorf("pool size %+v", v.PoolSize)
+	}
+	if v.SeasonRange == nil || v.SeasonRange.Champions != [2]int{1, 16} || v.SeasonRange.Items != [2]int{3, 16} {
+		t.Errorf("season range %+v", v.SeasonRange)
+	}
+	// Without a catalog the view still works, just without counts.
+	if v := l.ViewFor("B", nil, nil); v.PoolSize != nil || v.SeasonRange != nil {
+		t.Errorf("nil catalog view %+v %+v", v.PoolSize, v.SeasonRange)
+	}
+
+	if err := l.Start("A", testRNG(), c); err != nil {
+		t.Fatal(err)
+	}
+	if v := l.ViewFor("A", nil, c); v.PoolSize != nil || v.SeasonRange != nil {
+		t.Error("pool size should only be sent in the lobby phase")
+	}
+	if l.SelectedIsChampion && l.SelectedWord != "Mel" && l.SelectedWord != "Yunara" {
+		t.Errorf("drew %s outside the filter", l.SelectedWord)
+	}
+
+	// Settings survive a JSON round trip, and an old row without them
+	// normalizes to "everything".
+	b, _ := json.Marshal(l)
+	var back Lobby
+	if err := json.Unmarshal(b, &back); err != nil {
+		t.Fatal(err)
+	}
+	back.Normalize()
+	if back.Settings.ChampSeasons != [2]int{15, 16} || len(back.Settings.ItemTiers) != 1 {
+		t.Errorf("round trip lost settings: %+v", back.Settings)
+	}
+	var old Lobby
+	json.Unmarshal([]byte(`{"id":"x","host":"A"}`), &old)
+	old.Normalize()
+	if !old.Settings.UseChampions || !old.Settings.UseItems || old.Settings.ItemTiers != nil {
+		t.Errorf("old row settings %+v", old.Settings)
 	}
 }
 
@@ -283,7 +352,7 @@ func TestLastVotesSnapshot(t *testing.T) {
 		t.Errorf("lastVotes aliases votes: %v", l.LastVotes)
 	}
 	// Everyone sees the finished ballot.
-	if v := l.ViewFor("C", nil); !maps.Equal(v.LastVotes, cast) {
+	if v := l.ViewFor("C", nil, nil); !maps.Equal(v.LastVotes, cast) {
 		t.Errorf("view lastVotes = %v, want %v", v.LastVotes, cast)
 	}
 
@@ -304,7 +373,7 @@ func TestEmptyCollectionsSerialiseAsObjects(t *testing.T) {
 	if !strings.Contains(string(b), `"lastVotes":{}`) {
 		t.Errorf("fresh lobby JSON: %s", b)
 	}
-	b, err = json.Marshal(l.ViewFor("A", nil))
+	b, err = json.Marshal(l.ViewFor("A", nil, nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,7 +396,7 @@ func TestNormalizeFillsLastVotes(t *testing.T) {
 	if l.LastVotes == nil {
 		t.Error("Normalize left lastVotes nil")
 	}
-	b, err := json.Marshal(l.ViewFor("A", nil))
+	b, err := json.Marshal(l.ViewFor("A", nil, nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -491,7 +560,7 @@ func TestViewHidesSecrets(t *testing.T) {
 	l := newStarted(t, "A", "B", "C")
 	uc := undercoverOf(l)
 	for _, p := range l.Players {
-		v := l.ViewFor(p, nil)
+		v := l.ViewFor(p, nil, nil)
 		if v.Roles != nil || v.SelectedWord != "" {
 			t.Errorf("%s sees roles/word before game over", p)
 		}
@@ -503,12 +572,12 @@ func TestViewHidesSecrets(t *testing.T) {
 			t.Errorf("civilian view %+v", v)
 		}
 	}
-	if v := l.ViewFor("stranger", nil); v.MyRole != RoleSpectator || v.MyWord != nil {
+	if v := l.ViewFor("stranger", nil, nil); v.MyRole != RoleSpectator || v.MyWord != nil {
 		t.Errorf("spectator view %+v", v)
 	}
 
 	l.GamePhase = PhaseGameOver
-	v := l.ViewFor(uc, nil)
+	v := l.ViewFor(uc, nil, nil)
 	if v.Roles == nil || v.SelectedWord != l.SelectedWord || v.MyWord == nil {
 		t.Errorf("game over view %+v", v)
 	}

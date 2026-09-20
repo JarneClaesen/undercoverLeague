@@ -94,7 +94,26 @@ func newHub(t *testing.T, grace time.Duration) (*Hub, *store.Store) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { st.Close() })
-	return New(st, grace, slog.Default()), st
+	return New(st, grace, slog.Default(), testCatalog()), st
+}
+
+// testCatalog is a minimal pool: two champions from different seasons and
+// two items, enough to exercise settings and empty-pool rejections.
+func testCatalog() *game.Catalog {
+	var all game.SeasonSet
+	all.Add(3)
+	all.Add(16)
+	return &game.Catalog{
+		Patch: "16.18.1",
+		Champions: []game.Champion{
+			{Name: "Ahri", Icon: "https://x/Ahri_0.jpg", Season: 1},
+			{Name: "Mel", Icon: "https://x/Mel_0.jpg", Season: 15},
+		},
+		Items: []game.Item{
+			{Name: "Boots", Icon: "https://x/1001.png", Seasons: all, Tier: game.TierBoots},
+			{Name: "Infinity Edge", Icon: "https://x/3031.png", Seasons: all, Tier: game.TierLegendary},
+		},
+	}
 }
 
 func create(t *testing.T, h *Hub, lobby, name string) *player {
@@ -141,7 +160,7 @@ func threePlayers(t *testing.T, h *Hub) []*player {
 
 func startAndAck(t *testing.T, h *Hub, ps []*player) {
 	t.Helper()
-	if err := h.Start(ps[0].c, true, true); err != nil {
+	if err := h.Start(ps[0].c); err != nil {
 		t.Fatal(err)
 	}
 	for _, p := range ps {
@@ -221,10 +240,10 @@ func TestCreateWithoutIDGeneratesCode(t *testing.T) {
 func TestStartHidesSecretsAndAutoAdvances(t *testing.T) {
 	h, _ := newHub(t, time.Minute)
 	ps := threePlayers(t, h)
-	if err := h.Start(ps[1].c, true, true); code(err) != "notHost" {
+	if err := h.Start(ps[1].c); code(err) != "notHost" {
 		t.Errorf("non-host start: %v", err)
 	}
-	if err := h.Start(ps[0].c, true, true); err != nil {
+	if err := h.Start(ps[0].c); err != nil {
 		t.Fatal(err)
 	}
 	undercovers := 0
@@ -410,7 +429,7 @@ func TestResumeAcrossRestart(t *testing.T) {
 	}
 	defer st.Close()
 
-	h1 := New(st, time.Minute, slog.Default())
+	h1 := New(st, time.Minute, slog.Default(), testCatalog())
 	a := create(t, h1, "L", "A")
 	join(t, h1, "L", "B")
 	h1.Shutdown()
@@ -420,7 +439,7 @@ func TestResumeAcrossRestart(t *testing.T) {
 		t.Fatal("shutdown did not close connections")
 	}
 
-	h2 := New(st, time.Minute, slog.Default())
+	h2 := New(st, time.Minute, slog.Default(), testCatalog())
 	a2 := newFake()
 	if err := h2.Resume(NewClient(a2), 9, "L", a.token); err != nil {
 		t.Fatal(err)
@@ -448,5 +467,74 @@ func TestSlowConsumerIsDropped(t *testing.T) {
 	}
 	if v := a.s.latestLobby(t); v.Connected["B"] {
 		t.Errorf("B should show as disconnected: %+v", v)
+	}
+}
+
+func TestSettingsAndPoolSize(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+	ps := threePlayers(t, h)
+
+	if err := h.Settings(ps[1].c, game.DefaultFilter()); code(err) != "notHost" {
+		t.Errorf("non-host settings: %v", err)
+	}
+	f := game.Filter{UseChampions: true, UseItems: true, ChampSeasons: [2]int{15, 16}, ItemTiers: []game.Tier{game.TierBoots}}
+	if err := h.Settings(ps[0].c, f); err != nil {
+		t.Fatal(err)
+	}
+	// Everyone sees the normalized settings and the server's counts.
+	for _, p := range ps {
+		v := p.s.latestLobby(t)
+		if v.Settings.ChampSeasons != [2]int{15, 15} || v.Settings.ItemSeasons != [2]int{3, 16} || len(v.Settings.ItemTiers) != 1 {
+			t.Errorf("%s settings %+v", p.name, v.Settings)
+		}
+		if v.PoolSize == nil || v.PoolSize.Champions != 1 || v.PoolSize.Items != 1 {
+			t.Errorf("%s pool %+v", p.name, v.PoolSize)
+		}
+		if v.SeasonRange == nil || v.SeasonRange.Champions != [2]int{1, 15} {
+			t.Errorf("%s range %+v", p.name, v.SeasonRange)
+		}
+	}
+
+	// An empty pool is refused at start and nothing changes.
+	if err := h.Settings(ps[0].c, game.Filter{UseChampions: true, ChampSeasons: [2]int{2, 2}}); err != nil {
+		t.Fatal(err)
+	}
+	if v := ps[0].s.latestLobby(t); v.PoolSize.Champions != 0 {
+		t.Errorf("pool %+v", v.PoolSize)
+	}
+	if err := h.Start(ps[0].c); code(err) != "invalid" {
+		t.Errorf("empty pool start: %v", err)
+	}
+	if h.rooms["L"].state.GameStarted {
+		t.Error("game started with an empty pool")
+	}
+
+	// A catalog refresh shows up in the counts on the next change.
+	bigger := testCatalog()
+	bigger.Champions = append(bigger.Champions, game.Champion{Name: "Yunara", Icon: "https://x/Yunara_0.jpg", Season: 16})
+	h.SetCatalog(bigger)
+	h.SetCatalog(nil) // ignored
+	if err := h.Settings(ps[0].c, game.Filter{UseChampions: true, ChampSeasons: [2]int{16, 16}}); err != nil {
+		t.Fatal(err)
+	}
+	if v := ps[2].s.latestLobby(t); v.PoolSize.Champions != 1 || v.SeasonRange.Champions != [2]int{1, 16} {
+		t.Errorf("after refresh %+v %+v", v.PoolSize, v.SeasonRange)
+	}
+
+	// Started games carry the https icon to civilians and no pool info.
+	if err := h.Start(ps[0].c); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range ps {
+		v := p.s.latestLobby(t)
+		if v.PoolSize != nil || v.SeasonRange != nil {
+			t.Errorf("%s got pool info mid-game", p.name)
+		}
+		if v.MyRole == game.RoleCivilian && (v.MyWord == nil || *v.MyWord != "Yunara" || v.MyIcon != "https://x/Yunara_0.jpg") {
+			t.Errorf("%s civilian view %+v", p.name, v)
+		}
+	}
+	if err := h.Settings(ps[0].c, game.DefaultFilter()); code(err) != "invalid" {
+		t.Errorf("settings mid-game: %v", err)
 	}
 }

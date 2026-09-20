@@ -77,3 +77,36 @@ func TestPurge(t *testing.T) {
 		}
 	}
 }
+
+func TestBlobsAndSeasons(t *testing.T) {
+	s, err := Open(filepath.Join(t.TempDir(), "s.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	if b, _, err := s.LoadBlob("missing"); err != nil || b != nil {
+		t.Fatalf("missing blob: %v %v", b, err)
+	}
+	if err := s.SaveBlob("k", []byte(`{"a":1}`)); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SaveBlob("k", []byte(`{"a":2}`)); err != nil {
+		t.Fatal(err)
+	}
+	b, at, err := s.LoadBlob("k")
+	if err != nil || string(b) != `{"a":2}` || at.IsZero() {
+		t.Fatalf("blob round trip: %s %v %v", b, at, err)
+	}
+
+	if m, err := s.ChampionSeasons(); err != nil || len(m) != 0 {
+		t.Fatalf("seasons: %v %v", m, err)
+	}
+	s.SetChampionSeason("Mel", 15)
+	s.SetChampionSeason("Mel", 15)
+	s.SetChampionSeason("Yunara", 16)
+	m, err := s.ChampionSeasons()
+	if err != nil || len(m) != 2 || m["Mel"] != 15 || m["Yunara"] != 16 {
+		t.Fatalf("seasons: %v %v", m, err)
+	}
+}
