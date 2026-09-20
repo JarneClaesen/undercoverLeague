@@ -5,7 +5,7 @@ import 'package:undercoverleague/theme/motion.dart';
 import 'package:undercoverleague/widgets/hextech_panel.dart';
 
 /// What this player is doing right now, from the viewer's perspective.
-enum PlayerState { normal, ready, current, eliminated, voted }
+enum PlayerState { normal, ready, current, eliminated, voted, spectator }
 
 /// One row of the roster: initials medallion, name, status chip.
 ///
@@ -17,6 +17,10 @@ class PlayerTile extends StatelessWidget {
   final bool isYou;
   final bool connected;
   final PlayerState state;
+
+  /// Sitting this game out: dimmed medallion and a "spectating" chip, on top
+  /// of [state] (a spectator can still be reconnecting).
+  final bool isSpectator;
   final Widget? trailing;
 
   /// Position in the list, used to stagger the entrance.
@@ -32,6 +36,7 @@ class PlayerTile extends StatelessWidget {
     this.isYou = false,
     this.connected = true,
     this.state = PlayerState.normal,
+    this.isSpectator = false,
     this.trailing,
     this.index = 0,
     this.roleChip,
@@ -52,6 +57,7 @@ class PlayerTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final hextech = context.hextech;
     final eliminated = state == PlayerState.eliminated;
+    final spectating = isSpectator || state == PlayerState.spectator;
 
     final ringColour = isHost
         ? hextech.accent
@@ -78,7 +84,7 @@ class PlayerTile extends StatelessWidget {
             child: Text(
               _initials,
               style: textTheme.labelMedium?.copyWith(
-                color: eliminated ? hextech.textDisabled : hextech.textPrimary,
+                color: eliminated || spectating ? hextech.textDisabled : hextech.textPrimary,
                 letterSpacing: 0.5,
               ),
             ),
@@ -106,7 +112,7 @@ class PlayerTile extends StatelessWidget {
                   name,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodyLarge?.copyWith(
-                    color: eliminated ? hextech.textSecondary : hextech.textPrimary,
+                    color: eliminated || spectating ? hextech.textSecondary : hextech.textPrimary,
                     decoration: eliminated ? TextDecoration.lineThrough : null,
                     decorationColor: hextech.danger,
                   ),
@@ -154,11 +160,16 @@ class PlayerTile extends StatelessWidget {
       return _Chip(label: 'RECONNECTING…', colour: HextechColors.blue, pulse: true);
     }
 
+    if (isSpectator || state == PlayerState.spectator) {
+      return _Chip(label: 'SPECTATING', colour: hextech.textSecondary);
+    }
+
     return switch (state) {
       PlayerState.ready => _Chip(label: 'READY', colour: hextech.success),
       PlayerState.voted => _Chip(label: 'VOTED', colour: hextech.success),
       PlayerState.current => _Chip(label: 'DESCRIBING', colour: hextech.accentGlow, pulse: true),
       PlayerState.eliminated => _Chip(label: 'ELIMINATED', colour: hextech.danger),
+      PlayerState.spectator => _Chip(label: 'SPECTATING', colour: hextech.textSecondary),
       PlayerState.normal => null,
     };
   }

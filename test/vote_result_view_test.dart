@@ -51,6 +51,30 @@ void main() {
     expect(find.text('Abstain'), findsNothing);
   });
 
+  testWidgets('a last guess that came after the ballot is read out', (tester) async {
+    await tester.pumpWidget(_host(VoteResultView(
+      lastVotes: const {'Ahri': 'Zed', 'Yasuo': 'Zed', 'Zed': 'skip'},
+      candidates: const ['Ahri', 'Yasuo', 'Zed'],
+      eliminated: 'Zed',
+      you: 'Ahri',
+      lastGuess: (player: 'Zed', word: 'Ahri', correct: false),
+      onDone: () {},
+    )));
+
+    expect(find.text("Zed guessed 'Ahri' — wrong"), findsOneWidget);
+
+    await tester.pumpWidget(_host(VoteResultView(
+      lastVotes: const {'Ahri': 'Zed', 'Yasuo': 'Zed', 'Zed': 'skip'},
+      candidates: const ['Ahri', 'Yasuo', 'Zed'],
+      eliminated: 'Zed',
+      you: 'Ahri',
+      lastGuess: (player: 'Zed', word: "Kai'Sa", correct: true),
+      onDone: () {},
+    )));
+
+    expect(find.text("Zed guessed 'Kai'Sa' — correct!"), findsOneWidget);
+  });
+
   testWidgets('tapping skips the interstitial', (tester) async {
     var done = 0;
     await tester.pumpWidget(_host(VoteResultView(

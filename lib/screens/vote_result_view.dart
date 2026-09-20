@@ -32,6 +32,11 @@ class VoteResultView extends StatefulWidget {
   /// The viewer, so their own row is marked.
   final String you;
 
+  /// The eliminated player's last guess at the word, once it has been made:
+  /// shown as one line under the tally, since it decides whether the
+  /// elimination stuck.
+  final ({String player, String word, bool correct})? lastGuess;
+
   /// Called when the interstitial is done, and when the viewer taps to skip it.
   final VoidCallback onDone;
 
@@ -41,8 +46,16 @@ class VoteResultView extends StatefulWidget {
     required this.candidates,
     required this.eliminated,
     required this.you,
+    this.lastGuess,
     required this.onDone,
   });
+
+  /// "Bob guessed 'Ahri' — wrong" / "Bob guessed 'Ahri' — correct!". A blank
+  /// word is the timer running out on them.
+  static String guessLine(({String player, String word, bool correct}) guess) {
+    if (guess.word.isEmpty) return '${guess.player} ran out of time to guess — wrong';
+    return "${guess.player} guessed '${guess.word}' — ${guess.correct ? 'correct!' : 'wrong'}";
+  }
 
   @override
   State<VoteResultView> createState() => _VoteResultViewState();
@@ -198,6 +211,14 @@ class _VoteResultViewState extends State<VoteResultView> with SingleTickerProvid
                 ],
                 if (_rows.isEmpty)
                   const StatusNotice(message: 'Nobody cast a vote.', tone: NoticeTone.info),
+                if (widget.lastGuess != null) ...[
+                  const SizedBox(height: 16),
+                  StatusNotice(
+                    message: VoteResultView.guessLine(widget.lastGuess!),
+                    icon: widget.lastGuess!.correct ? Icons.psychology_alt_outlined : Icons.close,
+                    tone: widget.lastGuess!.correct ? NoticeTone.danger : NoticeTone.success,
+                  ),
+                ],
                 const SizedBox(height: 20),
                 const StatusNotice(
                   message: 'Tap to continue',

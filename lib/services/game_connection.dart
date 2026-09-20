@@ -18,6 +18,17 @@ class GameError implements Exception {
   String toString() => 'GameError($code): $message';
 }
 
+/// An emoji thrown by a spectator or eliminated player; ephemeral, never
+/// part of the [Lobby] view.
+class Reaction {
+  final String playerName;
+  final String emoji;
+  const Reaction({required this.playerName, required this.emoji});
+
+  @override
+  String toString() => 'Reaction($playerName $emoji)';
+}
+
 class Session {
   final String token;
   final String lobbyId;
@@ -41,10 +52,14 @@ class GameConnection {
     const override = String.fromEnvironment('UNDERCOVER_WS_URL');
     if (override.isNotEmpty) return override;
     if (kIsWeb) {
+      // Built from parts: `Uri.replace` keeps the page's query (`?lobby=`).
       final base = Uri.base;
-      return base
-          .replace(scheme: base.scheme == 'https' ? 'wss' : 'ws', path: '/ws', query: null, fragment: null)
-          .toString();
+      return Uri(
+        scheme: base.scheme == 'https' ? 'wss' : 'ws',
+        host: base.host,
+        port: base.hasPort ? base.port : null,
+        path: '/ws',
+      ).toString();
     }
     return 'wss://undercover.jarneclaesen.be/ws';
   }
@@ -61,6 +76,7 @@ class GameConnection {
 
   final _lobbyController = StreamController<Lobby?>.broadcast();
   final _errorController = StreamController<GameError>.broadcast();
+  final _reactionController = StreamController<Reaction>.broadcast();
 
   /// Latest view of the lobby; `null` means it was closed or lost. New
   /// listeners do not get a replay, so pass [current] as `initialData`.
@@ -70,6 +86,9 @@ class GameConnection {
   /// Server errors not tied to a request (e.g. an action that was no longer
   /// allowed by the time it arrived).
   Stream<GameError> get errors => _errorController.stream;
+
+  /// Reactions from everyone in the room, including the viewer's own.
+  Stream<Reaction> get reactions => _reactionController.stream;
 
   final ValueNotifier<ConnectionStatus> status = ValueNotifier(ConnectionStatus.disconnected);
   Session? session;
@@ -175,6 +194,10 @@ class GameConnection {
       case 'lobbyClosed':
         _lastCloseReason = 'closed';
         _end();
+      case 'reaction':
+        final emoji = event['emoji'] as String? ?? '';
+        if (emoji.isEmpty) return;
+        _reactionController.add(Reaction(playerName: event['playerName'] as String? ?? '', emoji: emoji));
     }
   }
 

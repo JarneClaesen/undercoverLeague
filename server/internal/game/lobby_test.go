@@ -13,6 +13,9 @@ import (
 
 func testRNG() *rand.Rand { return rand.New(rand.NewPCG(1, 2)) }
 
+// t0 is "now" for tests that do not care about the clock.
+var t0 = time.Date(2026, 9, 20, 12, 0, 0, 0, time.UTC)
+
 func newStarted(t *testing.T, players ...string) *Lobby {
 	t.Helper()
 	l := New("L", players[0], time.Now())
@@ -35,7 +38,7 @@ func toPlaying(t *testing.T, l *Lobby) {
 			t.Fatal(err)
 		}
 	}
-	if !l.Advance(testRNG()) || l.GamePhase != PhasePlaying {
+	if !l.Advance(t0, testRNG()) || l.GamePhase != PhasePlaying {
 		t.Fatalf("expected playing, got %s", l.GamePhase)
 	}
 }
@@ -103,20 +106,20 @@ func TestStart(t *testing.T) {
 		t.Errorf("start with 2 players: %v", err)
 	}
 	l.Join("C")
-	if err := l.SetSettings("B", DefaultFilter()); errCode(err) != "notHost" {
+	if err := l.SetSettings("B", DefaultSettings()); errCode(err) != "notHost" {
 		t.Errorf("non-host settings: %v", err)
 	}
-	if err := l.SetSettings("A", Filter{}); errCode(err) != "invalid" {
+	if err := l.SetSettings("A", Settings{}); errCode(err) != "invalid" {
 		t.Errorf("settings with no categories: %v", err)
 	}
 	// Filters that match nothing are rejected at Start and leave the lobby untouched.
-	if err := l.SetSettings("A", Filter{UseChampions: true, ChampSeasons: [2]int{2, 2}}); err != nil {
+	if err := l.SetSettings("A", Settings{Filter: Filter{Packs: []Pack{PackChampions}, ChampSeasons: [2]int{2, 2}}, Undercovers: 1}); err != nil {
 		t.Fatal(err)
 	}
 	if err := l.Start("A", testRNG(), testCatalog()); errCode(err) != "invalid" || l.GameStarted {
 		t.Errorf("start with empty pool: %v started=%v", err, l.GameStarted)
 	}
-	if err := l.SetSettings("A", DefaultFilter()); err != nil {
+	if err := l.SetSettings("A", DefaultSettings()); err != nil {
 		t.Fatal(err)
 	}
 	if err := l.Start("A", testRNG(), testCatalog()); err != nil {
@@ -149,7 +152,7 @@ func TestStart(t *testing.T) {
 	if err := l.Start("A", testRNG(), testCatalog()); err != nil || l.SelectedWord != word {
 		t.Errorf("double start changed state: %v", err)
 	}
-	if err := l.SetSettings("A", DefaultFilter()); errCode(err) != "invalid" {
+	if err := l.SetSettings("A", DefaultSettings()); errCode(err) != "invalid" {
 		t.Errorf("settings mid-game: %v", err)
 	}
 }
@@ -159,32 +162,32 @@ func TestSettingsInView(t *testing.T) {
 	l := New("L", "A", time.Now())
 	l.Join("B")
 	l.Join("C")
-	f := Filter{UseChampions: true, UseItems: true, ChampSeasons: [2]int{15, 16}, ItemTiers: []Tier{TierLegendary}}
+	f := Settings{Filter: Filter{Packs: []Pack{PackChampions, PackItems}, ChampSeasons: [2]int{15, 16}, ItemTiers: []Tier{TierLegendary}}, Undercovers: 1, RandomOrder: true}
 	if err := l.SetSettings("A", f); err != nil {
 		t.Fatal(err)
 	}
-	v := l.ViewFor("B", nil, c)
+	v := l.ViewFor("B", nil, c, t0)
 	if v.Settings.ChampSeasons != [2]int{15, 16} || v.Settings.ItemSeasons != [2]int{3, 16} {
 		t.Errorf("view settings not normalized: %+v", v.Settings)
 	}
-	if v.PoolSize == nil || v.PoolSize.Champions != 2 || v.PoolSize.Items != 4 {
+	if v.PoolSize == nil || (*v.PoolSize)[PackChampions] != 2 || (*v.PoolSize)[PackItems] != 4 {
 		t.Errorf("pool size %+v", v.PoolSize)
 	}
 	if v.SeasonRange == nil || v.SeasonRange.Champions != [2]int{1, 16} || v.SeasonRange.Items != [2]int{3, 16} {
 		t.Errorf("season range %+v", v.SeasonRange)
 	}
 	// Without a catalog the view still works, just without counts.
-	if v := l.ViewFor("B", nil, nil); v.PoolSize != nil || v.SeasonRange != nil {
+	if v := l.ViewFor("B", nil, nil, t0); v.PoolSize != nil || v.SeasonRange != nil {
 		t.Errorf("nil catalog view %+v %+v", v.PoolSize, v.SeasonRange)
 	}
 
 	if err := l.Start("A", testRNG(), c); err != nil {
 		t.Fatal(err)
 	}
-	if v := l.ViewFor("A", nil, c); v.PoolSize != nil || v.SeasonRange != nil {
+	if v := l.ViewFor("A", nil, c, t0); v.PoolSize != nil || v.SeasonRange != nil {
 		t.Error("pool size should only be sent in the lobby phase")
 	}
-	if l.SelectedIsChampion && l.SelectedWord != "Mel" && l.SelectedWord != "Yunara" {
+	if l.SelectedPack == PackChampions && l.SelectedWord != "Mel" && l.SelectedWord != "Yunara" {
 		t.Errorf("drew %s outside the filter", l.SelectedWord)
 	}
 
@@ -202,7 +205,7 @@ func TestSettingsInView(t *testing.T) {
 	var old Lobby
 	json.Unmarshal([]byte(`{"id":"x","host":"A"}`), &old)
 	old.Normalize()
-	if !old.Settings.UseChampions || !old.Settings.UseItems || old.Settings.ItemTiers != nil {
+	if !slices.Equal(old.Settings.Packs, DefaultFilter().Packs) || old.Settings.ItemTiers != nil {
 		t.Errorf("old row settings %+v", old.Settings)
 	}
 }
@@ -214,11 +217,11 @@ func TestAcknowledgeAdvances(t *testing.T) {
 	}
 	l.Acknowledge("A")
 	l.Acknowledge("B")
-	if l.Advance(testRNG()) {
+	if l.Advance(t0, testRNG()) {
 		t.Error("advanced before everyone acknowledged")
 	}
 	l.Acknowledge("C")
-	if !l.Advance(testRNG()) || l.GamePhase != PhasePlaying || l.CurrentPlayerIndex != 0 {
+	if !l.Advance(t0, testRNG()) || l.GamePhase != PhasePlaying || l.CurrentPlayerIndex != 0 {
 		t.Errorf("phase %s idx %d", l.GamePhase, l.CurrentPlayerIndex)
 	}
 }
@@ -228,18 +231,18 @@ func TestNextPlayer(t *testing.T) {
 	toPlaying(t, l)
 	first, second, third := l.RoundOrder[0], l.RoundOrder[1], l.RoundOrder[2]
 
-	if err := l.NextPlayer(second, 0); errCode(err) != "invalid" {
+	if err := l.NextPlayer(second, 0, t0); errCode(err) != "invalid" {
 		t.Errorf("wrong caller: %v", err)
 	}
-	if err := l.NextPlayer(first, 0); err != nil || l.CurrentPlayerIndex != 1 {
+	if err := l.NextPlayer(first, 0, t0); err != nil || l.CurrentPlayerIndex != 1 {
 		t.Fatalf("idx %d err %v", l.CurrentPlayerIndex, err)
 	}
 	// Stale double tap is ignored.
-	if err := l.NextPlayer(first, 0); err != nil || l.CurrentPlayerIndex != 1 {
+	if err := l.NextPlayer(first, 0, t0); err != nil || l.CurrentPlayerIndex != 1 {
 		t.Fatalf("stale call changed idx to %d (%v)", l.CurrentPlayerIndex, err)
 	}
-	l.NextPlayer(second, 1)
-	if err := l.NextPlayer(third, 2); err != nil || !l.RoundFinished || l.CurrentPlayerIndex != 2 {
+	l.NextPlayer(second, 1, t0)
+	if err := l.NextPlayer(third, 2, t0); err != nil || !l.RoundFinished || l.CurrentPlayerIndex != 2 {
 		t.Fatalf("round not finished: %+v", l)
 	}
 }
@@ -297,7 +300,7 @@ func TestTally(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if !l.Advance(testRNG()) {
+			if !l.Advance(t0, testRNG()) {
 				t.Fatal("tally did not run")
 			}
 			if l.LastEliminated == nil || *l.LastEliminated != tc.eliminated {
@@ -335,7 +338,7 @@ func TestLastVotesSnapshot(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if !l.Advance(testRNG()) {
+	if !l.Advance(t0, testRNG()) {
 		t.Fatal("tally did not run")
 	}
 
@@ -352,7 +355,7 @@ func TestLastVotesSnapshot(t *testing.T) {
 		t.Errorf("lastVotes aliases votes: %v", l.LastVotes)
 	}
 	// Everyone sees the finished ballot.
-	if v := l.ViewFor("C", nil, nil); !maps.Equal(v.LastVotes, cast) {
+	if v := l.ViewFor("C", nil, nil, t0); !maps.Equal(v.LastVotes, cast) {
 		t.Errorf("view lastVotes = %v, want %v", v.LastVotes, cast)
 	}
 
@@ -373,7 +376,7 @@ func TestEmptyCollectionsSerialiseAsObjects(t *testing.T) {
 	if !strings.Contains(string(b), `"lastVotes":{}`) {
 		t.Errorf("fresh lobby JSON: %s", b)
 	}
-	b, err = json.Marshal(l.ViewFor("A", nil, nil))
+	b, err = json.Marshal(l.ViewFor("A", nil, nil, t0))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -396,7 +399,7 @@ func TestNormalizeFillsLastVotes(t *testing.T) {
 	if l.LastVotes == nil {
 		t.Error("Normalize left lastVotes nil")
 	}
-	b, err := json.Marshal(l.ViewFor("A", nil, nil))
+	b, err := json.Marshal(l.ViewFor("A", nil, nil, t0))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,7 +414,7 @@ func TestTallyWaitsForEveryone(t *testing.T) {
 	l.RoundFinished = true
 	l.Vote("A", "B")
 	l.Vote("B", "A")
-	if l.Advance(testRNG()) {
+	if l.Advance(t0, testRNG()) {
 		t.Error("tallied with a vote missing")
 	}
 }
@@ -429,9 +432,16 @@ func TestWinConditions(t *testing.T) {
 				l.Vote(p, uc)
 			}
 		}
-		l.Advance(testRNG())
-		if l.GamePhase != PhaseGameOver || l.Winner != WinnerCivilians {
-			t.Errorf("phase %s winner %q", l.GamePhase, l.Winner)
+		l.Advance(t0, testRNG())
+		// A wordless Undercover gets a last guess first.
+		if l.GamePhase != PhaseLastGuess || l.Guesser != uc {
+			t.Fatalf("phase %s guesser %q", l.GamePhase, l.Guesser)
+		}
+		if err := l.Guess(uc, "not it", t0, testRNG()); err != nil {
+			t.Fatal(err)
+		}
+		if l.GamePhase != PhaseGameOver || l.Winner != WinnerCivilians || l.WinReason != WinEliminated {
+			t.Errorf("phase %s winner %q reason %q", l.GamePhase, l.Winner, l.WinReason)
 		}
 	})
 	t.Run("undercover wins at two alive", func(t *testing.T) {
@@ -453,7 +463,7 @@ func TestWinConditions(t *testing.T) {
 				l.Vote(p, civ)
 			}
 		}
-		l.Advance(testRNG())
+		l.Advance(t0, testRNG())
 		if l.GamePhase != PhaseGameOver || l.Winner != WinnerUndercover {
 			t.Errorf("phase %s winner %q", l.GamePhase, l.Winner)
 		}
@@ -463,7 +473,7 @@ func TestWinConditions(t *testing.T) {
 func TestLeave(t *testing.T) {
 	t.Run("host closes lobby", func(t *testing.T) {
 		l := New("L", "A", time.Now())
-		if !l.Leave("A") {
+		if !l.Leave("A", t0, testRNG()) {
 			t.Error("host leave should close")
 		}
 	})
@@ -471,7 +481,7 @@ func TestLeave(t *testing.T) {
 		l := New("L", "A", time.Now())
 		l.Join("B")
 		l.Sessions["tok"] = "B"
-		if l.Leave("B") || slices.Contains(l.Players, "B") || len(l.Sessions) != 0 {
+		if l.Leave("B", t0, testRNG()) || slices.Contains(l.Players, "B") || len(l.Sessions) != 0 {
 			t.Errorf("%+v", l)
 		}
 	})
@@ -490,26 +500,26 @@ func TestLeave(t *testing.T) {
 	}
 	t.Run("leaver before current player shifts index", func(t *testing.T) {
 		l := pinned(t)
-		l.NextPlayer("A", 0)
-		l.NextPlayer("B", 1) // C's turn, idx 2
-		l.Leave("B")
+		l.NextPlayer("A", 0, t0)
+		l.NextPlayer("B", 1, t0) // C's turn, idx 2
+		l.Leave("B", t0, testRNG())
 		if l.CurrentPlayerIndex != 1 || l.RoundOrder[l.CurrentPlayerIndex] != "C" || l.RoundFinished {
 			t.Errorf("idx %d order %v", l.CurrentPlayerIndex, l.RoundOrder)
 		}
 	})
 	t.Run("leaver after current player keeps index", func(t *testing.T) {
 		l := pinned(t)
-		l.Leave("D")
+		l.Leave("D", t0, testRNG())
 		if l.CurrentPlayerIndex != 0 || l.RoundFinished || len(l.RoundOrder) != 3 {
 			t.Errorf("idx %d finished %v order %v", l.CurrentPlayerIndex, l.RoundFinished, l.RoundOrder)
 		}
 	})
 	t.Run("last in order leaving finishes the round", func(t *testing.T) {
 		l := pinned(t)
-		l.NextPlayer("A", 0)
-		l.NextPlayer("B", 1)
-		l.NextPlayer("C", 2) // D's turn, idx 3
-		l.Leave("D")
+		l.NextPlayer("A", 0, t0)
+		l.NextPlayer("B", 1, t0)
+		l.NextPlayer("C", 2, t0) // D's turn, idx 3
+		l.Leave("D", t0, testRNG())
 		if !l.RoundFinished || l.CurrentPlayerIndex != 3 {
 			t.Errorf("round should be finished: idx %d finished %v", l.CurrentPlayerIndex, l.RoundFinished)
 		}
@@ -521,7 +531,7 @@ func TestLeave(t *testing.T) {
 		if uc == "A" {
 			t.Skip("host is undercover in this seed")
 		}
-		l.Leave(uc)
+		l.Leave(uc, t0, testRNG())
 		if l.GamePhase != PhaseGameOver || l.Winner != WinnerCivilians {
 			t.Errorf("phase %s winner %q", l.GamePhase, l.Winner)
 		}
@@ -531,7 +541,7 @@ func TestLeave(t *testing.T) {
 		toPlaying(t, l)
 		l.GamePhase = PhaseGameOver
 		l.Winner = WinnerCivilians
-		l.Leave("B")
+		l.Leave("B", t0, testRNG())
 		if l.Winner != WinnerCivilians {
 			t.Error("winner overwritten")
 		}
@@ -560,7 +570,7 @@ func TestViewHidesSecrets(t *testing.T) {
 	l := newStarted(t, "A", "B", "C")
 	uc := undercoverOf(l)
 	for _, p := range l.Players {
-		v := l.ViewFor(p, nil, nil)
+		v := l.ViewFor(p, nil, nil, t0)
 		if v.Roles != nil || v.SelectedWord != "" {
 			t.Errorf("%s sees roles/word before game over", p)
 		}
@@ -572,12 +582,12 @@ func TestViewHidesSecrets(t *testing.T) {
 			t.Errorf("civilian view %+v", v)
 		}
 	}
-	if v := l.ViewFor("stranger", nil, nil); v.MyRole != RoleSpectator || v.MyWord != nil {
+	if v := l.ViewFor("stranger", nil, nil, t0); v.MyRole != RoleSpectator || v.MyWord != nil {
 		t.Errorf("spectator view %+v", v)
 	}
 
 	l.GamePhase = PhaseGameOver
-	v := l.ViewFor(uc, nil, nil)
+	v := l.ViewFor(uc, nil, nil, t0)
 	if v.Roles == nil || v.SelectedWord != l.SelectedWord || v.MyWord == nil {
 		t.Errorf("game over view %+v", v)
 	}

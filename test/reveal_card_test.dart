@@ -74,7 +74,26 @@ void main() {
     await tester.pump();
 
     expect(find.text('Ahri'), findsOneWidget);
+    expect(find.text('YOUR CHAMPION'), findsOneWidget);
     expect(find.text('HOLD TO REVEAL'), findsNothing);
+  });
+
+  testWidgets('the eyebrow names the pack the word came from', (tester) async {
+    await tester.pumpWidget(_host(
+      const RevealCard(
+        role: 'Civilian',
+        word: 'Charm (Ahri)',
+        icon: 'assets/default_icon.jpg',
+        isChampion: false,
+        pack: 'abilities',
+        peekable: false,
+        initiallyRevealed: true,
+      ),
+    ));
+    await tester.pump();
+
+    expect(find.text('YOUR ABILITY'), findsOneWidget);
+    expect(find.text('YOUR ITEM'), findsNothing);
   });
 
   testWidgets('the Undercover face never names a word', (tester) async {
@@ -92,5 +111,40 @@ void main() {
 
     expect(find.text('UNDERCOVER'), findsOneWidget);
     expect(find.text("You don't know the word. Blend in."), findsOneWidget);
+  });
+
+  testWidgets('an Undercover holding a decoy sees it as a card, marked as theirs', (tester) async {
+    await tester.pumpWidget(_host(
+      const RevealCard(
+        role: 'Undercover',
+        word: 'Sona',
+        icon: 'assets/default_icon.jpg',
+        isChampion: true,
+        peekable: false,
+        initiallyRevealed: true,
+      ),
+    ));
+    await tester.pump();
+
+    expect(find.text('Sona'), findsOneWidget);
+    expect(find.text('UNDERCOVER'), findsOneWidget);
+    expect(find.text('CIVILIAN'), findsNothing);
+  });
+
+  testWidgets('Mr. White has a face of his own', (tester) async {
+    await tester.pumpWidget(_host(
+      const RevealCard(
+        role: 'MrWhite',
+        word: '',
+        icon: 'assets/default_icon.jpg',
+        isChampion: true,
+        peekable: false,
+        initiallyRevealed: true,
+      ),
+    ));
+    await tester.pump();
+
+    expect(find.text('MR. WHITE'), findsOneWidget);
+    expect(find.text('SPECTATING'), findsNothing);
   });
 }

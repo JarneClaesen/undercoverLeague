@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:undercoverleague/models/lobby.dart';
 import 'package:undercoverleague/services/lobby_service.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
 import 'package:undercoverleague/theme/motion.dart';
+import 'package:undercoverleague/widgets/clue_log.dart';
 import 'package:undercoverleague/widgets/hextech_button.dart';
 import 'package:undercoverleague/widgets/hextech_panel.dart';
 import 'package:undercoverleague/widgets/hextech_snack.dart';
 import 'package:undercoverleague/widgets/phase_header.dart';
 import 'package:undercoverleague/widgets/ready_meter.dart';
 import 'package:undercoverleague/widgets/status_notice.dart';
+import 'package:undercoverleague/widgets/turn_timer.dart';
 import 'package:undercoverleague/widgets/vote_tile.dart';
 
 /// Body of the voting phase. Rendered inside GameScreen's scaffold, which owns
@@ -24,11 +27,26 @@ class VotingScreen extends StatefulWidget {
   final Map<String, String> votes;
   final String playerName;
 
+  /// 1-based round whose clues are being judged; 0 when unknown.
+  final int round;
+
+  /// Unix ms deadline for the vote; 0 = no timer. Whoever has not voted by
+  /// then abstains.
+  final int deadline;
+
+  /// Shows the public clue log under the ballot when on.
+  final bool clueLog;
+  final List<Clue> clues;
+
   const VotingScreen({
     super.key,
     required this.alivePlayers,
     required this.votes,
     required this.playerName,
+    this.round = 0,
+    this.deadline = 0,
+    this.clueLog = false,
+    this.clues = const [],
   });
 
   @override
@@ -93,9 +111,10 @@ class _VotingScreenState extends State<VotingScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               PhaseHeader(
-                eyebrow: 'ROUND · VOTING',
+                eyebrow: widget.round > 0 ? 'ROUND ${widget.round} · VOTING' : 'ROUND · VOTING',
                 title: 'Who is the Undercover?',
                 subtitle: '$votesCast of $totalAlivePlayers votes in',
+                trailing: TurnTimer(deadline: widget.deadline),
               ),
               const SizedBox(height: 16),
               ReadyMeter(ready: votesCast, total: totalAlivePlayers, label: 'Votes locked'),
@@ -129,16 +148,26 @@ class _VotingScreenState extends State<VotingScreen> {
     );
   }
 
+  /// The clue log, when it is on, or nothing.
+  Widget? _log() => widget.clueLog ? ClueLog(clues: widget.clues, you: widget.playerName) : null;
+
   Widget _ballot(BuildContext context) {
     final candidates = widget.alivePlayers.where((p) => p != widget.playerName).toList();
     final reduced = Motion.reduced(context);
+    final log = _log();
+    // The ballot first, the log after it: what to decide, then what to
+    // decide it on.
+    final rows = candidates.length + 1 + (log == null ? 0 : 1);
 
     return ListView.separated(
       key: const ValueKey('ballot'),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      itemCount: candidates.length + 1,
+      itemCount: rows,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
+        if (log != null && index == rows - 1) {
+          return Padding(padding: const EdgeInsets.only(top: 6), child: log);
+        }
         final isSkipRow = index == candidates.length;
         final name = isSkipRow ? skipVoteValue : candidates[index];
 
@@ -225,21 +254,31 @@ class _VotingScreenState extends State<VotingScreen> {
             tone: NoticeTone.success,
             pulse: true,
           ),
+          if (widget.clueLog) ...[
+            const SizedBox(height: 16),
+            ClueLog(clues: widget.clues, you: widget.playerName),
+          ],
         ],
       ),
     );
   }
 
   Widget _eliminated(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.all(16),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: StatusNotice(
-          message: 'You have been eliminated. Waiting for the vote to end…',
-          tone: NoticeTone.info,
-          pulse: true,
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const StatusNotice(
+            message: 'You have been eliminated. Waiting for the vote to end…',
+            tone: NoticeTone.info,
+            pulse: true,
+          ),
+          if (widget.clueLog) ...[
+            const SizedBox(height: 16),
+            ClueLog(clues: widget.clues, you: widget.playerName),
+          ],
+        ],
       ),
     );
   }

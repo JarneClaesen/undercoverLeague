@@ -18,6 +18,10 @@ class HextechTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
 
+  /// Off for fields that take names the keyboard would "fix" (a guess at a
+  /// champion, a clue).
+  final bool autocorrect;
+
   const HextechTextField({
     super.key,
     required this.controller,
@@ -31,6 +35,7 @@ class HextechTextField extends StatefulWidget {
     this.textInputAction,
     this.keyboardType,
     this.inputFormatters,
+    this.autocorrect = true,
   });
 
   @override
@@ -79,6 +84,8 @@ class _HextechTextFieldState extends State<HextechTextField> {
         textInputAction: widget.textInputAction,
         keyboardType: widget.keyboardType,
         inputFormatters: widget.inputFormatters,
+        autocorrect: widget.autocorrect,
+        enableSuggestions: widget.autocorrect,
         style: Theme.of(context).textTheme.bodyLarge,
         cursorColor: HextechColors.blue,
         decoration: InputDecoration(

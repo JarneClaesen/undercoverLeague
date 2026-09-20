@@ -8,6 +8,7 @@ import 'package:undercoverleague/theme/motion.dart';
 import 'package:undercoverleague/widgets/hextech_button.dart';
 import 'package:undercoverleague/widgets/hextech_panel.dart';
 import 'package:undercoverleague/widgets/hextech_snack.dart';
+import 'package:undercoverleague/widgets/lobby_qr.dart';
 
 /// The lobby's code, large and selectable, with the one-tap ways of passing it
 /// on. The copy buttons confirm themselves for a moment — the icon becomes a
@@ -35,9 +36,13 @@ class _LobbyCodePanelState extends State<LobbyCodePanel> {
   }
 
   /// The page the app is served from, with the code attached, so a friend who
-  /// opens it lands on the home screen with the code already filled in.
-  String get _shareLink =>
-      '${Uri.base.origin}/?lobby=${Uri.encodeQueryComponent(widget.lobbyId)}';
+  /// opens it lands on the home screen with the code already filled in. On
+  /// native builds `Uri.base` is not a web origin (it is a local file/app
+  /// URI), so those fall back to the deployed web origin instead.
+  String get _shareLink {
+    final origin = kIsWeb ? Uri.base.origin : 'https://undercover.jarneclaesen.be';
+    return '$origin/?lobby=${Uri.encodeQueryComponent(widget.lobbyId)}';
+  }
 
   Future<void> _copy(String value, {required bool link}) async {
     await Clipboard.setData(ClipboardData(text: value));
@@ -114,6 +119,13 @@ class _LobbyCodePanelState extends State<LobbyCodePanel> {
                   label: 'Copy link',
                   onPressed: () => _copy(_shareLink, link: true),
                 ),
+              HextechButton(
+                label: 'QR code',
+                icon: Icons.qr_code_2,
+                variant: HextechButtonVariant.secondary,
+                expand: false,
+                onPressed: () => showLobbyQrDialog(context, lobbyId: widget.lobbyId, link: _shareLink),
+              ),
             ],
           ),
         ],

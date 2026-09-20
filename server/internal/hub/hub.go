@@ -23,7 +23,7 @@ import (
 
 // Event is a server -> client message.
 type Event struct {
-	Type  string `json:"type"` // lobby | joined | error | lobbyClosed
+	Type  string `json:"type"` // lobby | joined | error | lobbyClosed | reaction
 	ReqID int    `json:"reqId,omitempty"`
 
 	Lobby *game.View `json:"lobby,omitempty"`
@@ -31,6 +31,7 @@ type Event struct {
 	Token      string `json:"token,omitempty"`
 	LobbyID    string `json:"lobbyId,omitempty"`
 	PlayerName string `json:"playerName,omitempty"`
+	Emoji      string `json:"emoji,omitempty"` // reaction
 	IsHost     bool   `json:"isHost,omitempty"`
 
 	Code    string `json:"code,omitempty"`
@@ -68,12 +69,38 @@ type graceTimer struct {
 	timer *time.Timer
 }
 
+// deadlineTimer fires the game's turn timer. What it was armed for is kept
+// so the callback can tell whether the lobby moved on in the meantime.
+type deadlineTimer struct {
+	deadline int64
+	version  int64
+	timer    *time.Timer
+}
+
 type room struct {
 	state  *game.Lobby
 	conns  map[string]*Client     // player -> attached client
 	timers map[string]*graceTimer // player -> pending removal
 	seq    int64
+	// deadline is the pending turn timer, nil when the game is untimed or
+	// waiting on nothing.
+	deadline *deadlineTimer
+	// lastReaction rate-limits reactions per player.
+	lastReaction map[string]time.Time
 }
+
+func newRoom(state *game.Lobby) *room {
+	return &room{
+		state:        state,
+		conns:        map[string]*Client{},
+		timers:       map[string]*graceTimer{},
+		lastReaction: map[string]time.Time{},
+	}
+}
+
+// reactionInterval is the minimum gap between two reactions of one player;
+// faster ones are dropped silently.
+const reactionInterval = 700 * time.Millisecond
 
 type Hub struct {
 	mu    sync.Mutex
@@ -86,6 +113,8 @@ type Hub struct {
 	rng     *mathrand.Rand
 	log     *slog.Logger
 	now     func() time.Time
+	// after schedules the turn timers; tests replace it to fire them by hand.
+	after func(d time.Duration, f func()) *time.Timer
 }
 
 func New(st *store.Store, grace time.Duration, log *slog.Logger, cat *game.Catalog) *Hub {
@@ -98,6 +127,7 @@ func New(st *store.Store, grace time.Duration, log *slog.Logger, cat *game.Catal
 		rng:   mathrand.New(mathrand.NewChaCha8(seed)),
 		log:   log,
 		now:   time.Now,
+		after: time.AfterFunc,
 	}
 	h.SetCatalog(cat)
 	return h
@@ -146,11 +176,7 @@ func (h *Hub) Create(c *Client, reqID int, id, name string) error {
 	} else if r != nil {
 		return game.ErrExists
 	}
-	r := &room{
-		state:  game.New(id, name, h.now()),
-		conns:  map[string]*Client{},
-		timers: map[string]*graceTimer{},
-	}
+	r := newRoom(game.New(id, name, h.now()))
 	h.rooms[id] = r
 	h.attach(r, c, reqID, name)
 	h.commit(r)
@@ -265,8 +291,12 @@ func (h *Hub) Apply(c *Client, fn func(l *game.Lobby, player string) error) erro
 	return nil
 }
 
-func (h *Hub) Settings(c *Client, f game.Filter) error {
-	return h.Apply(c, func(l *game.Lobby, p string) error { return l.SetSettings(p, f) })
+func (h *Hub) Settings(c *Client, s game.Settings) error {
+	return h.Apply(c, func(l *game.Lobby, p string) error { return l.SetSettings(p, s) })
+}
+
+func (h *Hub) Spectate(c *Client, spectating bool) error {
+	return h.Apply(c, func(l *game.Lobby, p string) error { return l.Spectate(p, spectating) })
 }
 
 func (h *Hub) Start(c *Client) error {
@@ -280,15 +310,52 @@ func (h *Hub) Acknowledge(c *Client) error {
 }
 
 func (h *Hub) NextPlayer(c *Client, expectedIndex int) error {
-	return h.Apply(c, func(l *game.Lobby, p string) error { return l.NextPlayer(p, expectedIndex) })
+	return h.Apply(c, func(l *game.Lobby, p string) error { return l.NextPlayer(p, expectedIndex, h.now()) })
+}
+
+func (h *Hub) Clue(c *Client, text string, expectedIndex int) error {
+	return h.Apply(c, func(l *game.Lobby, p string) error { return l.Clue(p, text, expectedIndex, h.now()) })
 }
 
 func (h *Hub) Vote(c *Client, votedFor string) error {
 	return h.Apply(c, func(l *game.Lobby, p string) error { return l.Vote(p, votedFor) })
 }
 
+func (h *Hub) Guess(c *Client, word string) error {
+	return h.Apply(c, func(l *game.Lobby, p string) error { return l.Guess(p, word, h.now(), h.rng) })
+}
+
 func (h *Hub) Reset(c *Client) error {
 	return h.Apply(c, func(l *game.Lobby, p string) error { return l.Reset(p) })
+}
+
+func (h *Hub) PlayAgain(c *Client) error {
+	return h.Apply(c, func(l *game.Lobby, p string) error { return l.PlayAgain(p) })
+}
+
+// React relays an emoji from a watcher to everyone in the room. Nothing is
+// stored and the lobby version does not move: a reaction that arrives late
+// or not at all is no loss. Too-frequent ones are dropped without a word.
+func (h *Hub) React(c *Client, emoji string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if c.room == nil {
+		return &game.Error{Code: "invalid", Message: "Not in a lobby."}
+	}
+	if !game.ValidReaction(emoji) {
+		return &game.Error{Code: "invalid", Message: "Unknown reaction."}
+	}
+	r, player := c.room, c.player
+	if err := r.state.CanReact(player); err != nil {
+		return err
+	}
+	now := h.now()
+	if last, ok := r.lastReaction[player]; ok && now.Sub(last) < reactionInterval {
+		return nil
+	}
+	r.lastReaction[player] = now
+	h.deliver(r, Event{Type: "reaction", PlayerName: player, Emoji: emoji})
+	return nil
 }
 
 // Leave removes the player immediately (no grace) and unbinds c.
@@ -346,6 +413,7 @@ func (h *Hub) Shutdown() {
 			c.sender.Close("shutdown")
 		}
 		r.conns = map[string]*Client{}
+		h.cancelDeadline(r)
 		for p := range r.timers {
 			h.cancelTimer(r, p)
 		}
@@ -372,22 +440,25 @@ func (h *Hub) getOrLoad(id string) (*room, error) {
 	// Nobody is connected to a lobby that just came off disk. Give everyone
 	// the grace period to come back, after which they are removed exactly
 	// as if they had dropped while the server was up.
-	r := &room{state: l, conns: map[string]*Client{}, timers: map[string]*graceTimer{}}
+	r := newRoom(l)
 	h.rooms[id] = r
 	for _, p := range l.Players {
 		h.startTimer(r, p)
 	}
+	// A turn that was running when the process stopped keeps its deadline.
+	h.armDeadline(r)
 	return r, nil
 }
 
 // commit finishes a mutation: server-driven transitions, version bump,
-// persistence, broadcast.
+// persistence, broadcast, and the turn timer for whatever is now pending.
 func (h *Hub) commit(r *room) {
-	r.state.Advance(h.rng)
+	r.state.Advance(h.now(), h.rng)
 	r.state.Version++
 	if err := h.store.Save(r.state); err != nil {
 		h.log.Error("save lobby", "id", r.state.ID, "err", err)
 	}
+	h.armDeadline(r)
 	h.broadcast(r)
 }
 
@@ -400,14 +471,11 @@ func (h *Hub) broadcast(r *room) {
 			connected[p] = r.conns[p] != nil
 		}
 		dropped := false
+		now := h.now()
 		for player, c := range r.conns {
-			view := r.state.ViewFor(player, connected, h.catalog.Load())
+			view := r.state.ViewFor(player, connected, h.catalog.Load(), now)
 			if !c.sender.Send(Event{Type: "lobby", Lobby: &view}) {
-				// Slow consumer: drop it, it will resume and get a fresh view.
-				delete(r.conns, player)
-				c.room = nil
-				c.sender.Close("slow consumer")
-				h.startTimer(r, player)
+				h.dropSlow(r, player, c)
 				dropped = true
 			}
 		}
@@ -417,10 +485,76 @@ func (h *Hub) broadcast(r *room) {
 	}
 }
 
+// deliver sends the same event to every connection in the room. A consumer
+// that cannot take it is dropped like any slow one, and the others then get
+// a fresh view because that changed who is connected.
+func (h *Hub) deliver(r *room, ev Event) {
+	dropped := false
+	for player, c := range r.conns {
+		if !c.sender.Send(ev) {
+			h.dropSlow(r, player, c)
+			dropped = true
+		}
+	}
+	if dropped {
+		h.broadcast(r)
+	}
+}
+
+// dropSlow unbinds a connection whose queue is full; it will resume and
+// get a fresh view.
+func (h *Hub) dropSlow(r *room, player string, c *Client) {
+	delete(r.conns, player)
+	c.room = nil
+	c.sender.Close("slow consumer")
+	h.startTimer(r, player)
+}
+
+// armDeadline (re)schedules the room's turn timer for the lobby's current
+// Deadline. Caller holds h.mu.
+func (h *Hub) armDeadline(r *room) {
+	h.cancelDeadline(r)
+	deadline := r.state.Deadline
+	if deadline == 0 {
+		return
+	}
+	id, version := r.state.ID, r.state.Version
+	wait := time.Duration(deadline-h.now().UnixMilli()) * time.Millisecond
+	r.deadline = &deadlineTimer{
+		deadline: deadline,
+		version:  version,
+		timer: h.after(max(wait, 0), func() {
+			h.mu.Lock()
+			defer h.mu.Unlock()
+			// Only act if the lobby is exactly where it was when this timer
+			// was armed; any mutation since has re-armed or cleared it.
+			r, ok := h.rooms[id]
+			if !ok || r.deadline == nil || r.deadline.deadline != deadline || r.state.Version != version {
+				return
+			}
+			r.deadline = nil
+			if !r.state.Expire(h.now(), h.rng) {
+				// Fired early (clock adjustment): try again at the right time.
+				h.armDeadline(r)
+				return
+			}
+			h.log.Info("turn expired", "lobby", id, "phase", r.state.GamePhase)
+			h.commit(r)
+		}),
+	}
+}
+
+func (h *Hub) cancelDeadline(r *room) {
+	if r.deadline != nil {
+		r.deadline.timer.Stop()
+		r.deadline = nil
+	}
+}
+
 // removePlayer applies a leave (explicit or grace expiry).
 func (h *Hub) removePlayer(r *room, player string) {
 	h.cancelTimer(r, player)
-	if r.state.Leave(player) {
+	if r.state.Leave(player, h.now(), h.rng) {
 		h.closeRoom(r)
 		return
 	}
@@ -438,6 +572,7 @@ func (h *Hub) closeRoom(r *room) {
 		c.sender.Close("lobby closed")
 	}
 	r.conns = map[string]*Client{}
+	h.cancelDeadline(r)
 	for p := range r.timers {
 		h.cancelTimer(r, p)
 	}
@@ -448,6 +583,7 @@ func (h *Hub) closeRoom(r *room) {
 // stays in the store until purged, so a later join or resume reloads it.
 func (h *Hub) maybeEvict(r *room) {
 	if len(r.conns) == 0 && len(r.timers) == 0 {
+		h.cancelDeadline(r)
 		delete(h.rooms, r.state.ID)
 	}
 }

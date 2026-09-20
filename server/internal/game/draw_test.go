@@ -3,6 +3,8 @@ package game
 import (
 	"math"
 	"math/rand/v2"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -50,18 +52,37 @@ func TestDrawRolesUniform(t *testing.T) {
 	}
 }
 
-func TestDrawWordCategories(t *testing.T) {
+func TestDrawWordPacks(t *testing.T) {
 	c := testCatalog()
 	rng := rand.New(rand.NewPCG(7, 0))
-	both := DefaultFilter().Normalized(c)
 
-	champions := 0
+	// Every enabled pack comes up equally often whatever its size.
+	all := Filter{Packs: AllPacks}.Normalized(c)
+	counts := map[Pack]int{}
 	for range trials {
-		_, isChampion, err := DrawWord(both, rng, c)
+		w, pack, err := DrawWord(all, rng, c)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if isChampion {
+		if w.Name == "" {
+			t.Fatalf("empty word from %s", pack)
+		}
+		counts[pack]++
+	}
+	p := 1.0 / float64(len(AllPacks))
+	for _, pack := range AllPacks {
+		if !within(counts[pack], p) {
+			t.Errorf("%s drawn %d times, expected ~%.0f", pack, counts[pack], trials*p)
+		}
+	}
+	both := DefaultFilter().Normalized(c)
+	champions := 0
+	for range trials {
+		_, pack, err := DrawWord(both, rng, c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if pack == PackChampions {
 			champions++
 		}
 	}
@@ -69,14 +90,21 @@ func TestDrawWordCategories(t *testing.T) {
 		t.Errorf("champions drawn %d of %d, expected ~50%%", champions, trials)
 	}
 
-	onlyChampions := Filter{UseChampions: true}.Normalized(c)
-	onlyItems := Filter{UseItems: true}.Normalized(c)
-	for range 1000 {
-		if w, isChampion, err := DrawWord(onlyChampions, rng, c); err != nil || !isChampion || w.Icon == "" {
-			t.Fatalf("champions-only drew %+v %v", w, err)
-		}
-		if w, isChampion, err := DrawWord(onlyItems, rng, c); err != nil || isChampion || w.Icon == "" {
-			t.Fatalf("items-only drew %+v %v", w, err)
+	// A single pack only ever draws from itself.
+	for _, single := range AllPacks {
+		f := Filter{Packs: []Pack{single}}.Normalized(c)
+		members := c.FilterPack(single, f)
+		for range 200 {
+			w, pack, err := DrawWord(f, rng, c)
+			if err != nil || pack != single {
+				t.Fatalf("%s-only drew %+v from %s: %v", single, w, pack, err)
+			}
+			if !slices.Contains(members, w) {
+				t.Fatalf("%s-only drew %+v which is not a member", single, w)
+			}
+			if single != PackMonsters && w.Icon == "" {
+				t.Fatalf("%s drew %+v without icon", single, w)
+			}
 		}
 	}
 }
@@ -85,40 +113,74 @@ func TestDrawWordRespectsFilter(t *testing.T) {
 	c := testCatalog()
 	rng := rand.New(rand.NewPCG(11, 0))
 
-	f := Filter{UseChampions: true, UseItems: true, ChampSeasons: [2]int{15, 16}, ItemSeasons: [2]int{3, 4}, ItemTiers: []Tier{TierLegendary}}.Normalized(c)
+	f := Filter{Packs: []Pack{PackChampions, PackItems, PackAbilities}, ChampSeasons: [2]int{1, 7}, ChampRegions: []string{"Ionia", "Targon"}, ItemSeasons: [2]int{3, 4}, ItemTiers: []Tier{TierLegendary}}.Normalized(c)
 	seen := map[string]bool{}
-	for range 2000 {
-		w, isChampion, err := DrawWord(f, rng, c)
+	for range 3000 {
+		w, pack, err := DrawWord(f, rng, c)
 		if err != nil {
 			t.Fatal(err)
 		}
 		seen[w.Name] = true
-		if isChampion && w.Name != "Mel" && w.Name != "Yunara" {
-			t.Fatalf("champion outside seasons: %s", w.Name)
+		switch pack {
+		case PackChampions:
+			if w.Name != "Ahri" && w.Name != "Zoe" {
+				t.Fatalf("champion outside filter: %s", w.Name)
+			}
+		case PackItems:
+			if w.Name != "Deathfire Grasp" && w.Name != "Infinity Edge" {
+				t.Fatalf("item outside filter: %s", w.Name)
+			}
+		case PackAbilities:
+			if w.Name != "Charm (Ahri)" && w.Name != "Spirit Rush (Ahri)" && w.Name != "Paddle Star (Zoe)" {
+				t.Fatalf("ability outside filter: %s", w.Name)
+			}
+		default:
+			t.Fatalf("drew from %s", pack)
 		}
-		if !isChampion && w.Name != "Deathfire Grasp" && w.Name != "Infinity Edge" {
-			t.Fatalf("item outside filter: %s", w.Name)
-		}
 	}
-	if len(seen) != 4 {
-		t.Errorf("expected all 4 matching words to show up, saw %v", seen)
-	}
-
-	// An enabled category with nothing in it is refused, not silently skipped.
-	empty := Filter{UseChampions: true, UseItems: true, ChampSeasons: [2]int{2, 2}}.Normalized(c)
-	if _, _, err := DrawWord(empty, rng, c); errCode(err) != "invalid" {
-		t.Errorf("empty champion pool: %v", err)
-	}
-	empty = Filter{UseChampions: true, UseItems: true, ItemTiers: []Tier{}}.Normalized(c)
-	if _, _, err := DrawWord(empty, rng, c); errCode(err) != "invalid" {
-		t.Errorf("empty item pool: %v", err)
+	if len(seen) != 7 {
+		t.Errorf("expected all 7 matching words to show up, saw %v", seen)
 	}
 }
 
-func TestDrawWordUniformWithinCategory(t *testing.T) {
+func TestDrawWordEmptyPack(t *testing.T) {
+	c := testCatalog()
+	rng := rand.New(rand.NewPCG(11, 0))
+	// An enabled pack with nothing in it is refused, not silently skipped,
+	// and the error names the pack.
+	cases := []struct {
+		name string
+		f    Filter
+		pack string
+	}{
+		{"champion seasons", Filter{Packs: AllPacks, ChampSeasons: [2]int{2, 2}}, "champions"},
+		{"item tiers", Filter{Packs: AllPacks, ItemTiers: []Tier{}}, "items"},
+		{"abilities through class", Filter{Packs: []Pack{PackAbilities}, ChampClasses: []string{"Fighter"}}, "abilities"},
+		{"missing pack in an old catalog", Filter{Packs: []Pack{PackChampions, PackSkinLines}}, "skin lines"},
+		{"no packs", Filter{}, "word pack"},
+	}
+	for _, tc := range cases {
+		cat := c
+		if tc.name == "missing pack in an old catalog" {
+			cat = &Catalog{Champions: c.Champions}
+		}
+		f := tc.f
+		if tc.name == "no packs" {
+			f.Packs = []Pack{} // Normalized would fill nil with the default
+		} else {
+			f = f.Normalized(cat)
+		}
+		_, _, err := DrawWord(f, rng, cat)
+		if errCode(err) != "invalid" || !strings.Contains(err.Error(), tc.pack) {
+			t.Errorf("%s: %v", tc.name, err)
+		}
+	}
+}
+
+func TestDrawWordUniformWithinPack(t *testing.T) {
 	c := testCatalog()
 	rng := rand.New(rand.NewPCG(9, 0))
-	f := Filter{UseChampions: true}.Normalized(c)
+	f := Filter{Packs: []Pack{PackChampions}}.Normalized(c)
 	counts := map[string]int{}
 	for range trials {
 		w, _, err := DrawWord(f, rng, c)

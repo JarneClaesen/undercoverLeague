@@ -1,24 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:undercoverleague/models/game_settings.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
 import 'package:undercoverleague/theme/motion.dart';
+import 'package:undercoverleague/widgets/hextech_chip.dart';
+import 'package:undercoverleague/widgets/motion_size.dart';
 
-/// Which word pools the host wants the game drawn from.
+/// Which word packs the host wants the game drawn from, one chip per pack
+/// with the server's count of what the filters leave in it.
 ///
-/// At least one pool has to stay on — with both off there would be nothing to
-/// draw — so instead of quietly disabling the last chip (which reads as a bug)
-/// the tap is refused: the chip shakes and the rule is spelled out underneath.
+/// At least one pack has to stay on — with none there would be nothing to
+/// draw — so instead of quietly disabling the last chip (which reads as a
+/// bug) the tap is refused: the chip shakes and the rule is spelled out
+/// underneath.
 class LobbyPoolToggles extends StatefulWidget {
-  final bool useChampions;
-  final bool useItems;
+  final Set<String> packs;
 
-  /// Called with the new pair whenever a tap is actually allowed.
-  final void Function(bool useChampions, bool useItems) onChanged;
+  /// Per-pack counts under the current filters; null while unknown.
+  final PoolSize? poolSize;
+
+  /// Called with the new set whenever a tap is actually allowed.
+  final ValueChanged<Set<String>> onChanged;
 
   const LobbyPoolToggles({
     super.key,
-    required this.useChampions,
-    required this.useItems,
+    required this.packs,
+    this.poolSize,
     required this.onChanged,
   });
 
@@ -26,21 +33,23 @@ class LobbyPoolToggles extends StatefulWidget {
   State<LobbyPoolToggles> createState() => _LobbyPoolTogglesState();
 }
 
-enum _Pool { champions, items }
-
 class _LobbyPoolTogglesState extends State<LobbyPoolToggles> {
   /// Bumped on every refusal so the shake replays rather than being reused.
   int _refusals = 0;
-  _Pool? _refused;
+  String? _refused;
   bool _showRule = false;
 
-  void _toggle(_Pool pool) {
-    final champions = pool == _Pool.champions ? !widget.useChampions : widget.useChampions;
-    final items = pool == _Pool.items ? !widget.useItems : widget.useItems;
+  void _toggle(String pack) {
+    final next = {...widget.packs};
+    if (next.contains(pack)) {
+      next.remove(pack);
+    } else {
+      next.add(pack);
+    }
 
-    if (!champions && !items) {
+    if (next.isEmpty) {
       setState(() {
-        _refused = pool;
+        _refused = pack;
         _refusals++;
         _showRule = true;
       });
@@ -49,31 +58,25 @@ class _LobbyPoolTogglesState extends State<LobbyPoolToggles> {
 
     setState(() {
       _refused = null;
-      if (champions && items) _showRule = false;
+      if (next.length > 1) _showRule = false;
     });
-    widget.onChanged(champions, items);
+    widget.onChanged(next);
   }
 
-  Widget _chip(_Pool pool, String label, IconData icon, bool selected) {
-    final textTheme = Theme.of(context).textTheme;
-    final hextech = context.hextech;
-    final foreground = selected ? HextechColors.abyss : hextech.accent;
-
-    Widget chip = FilterChip(
-      label: Text(label.toUpperCase()),
-      avatar: Icon(icon, size: 16, color: foreground),
+  Widget _chip(String pack) {
+    final selected = widget.packs.contains(pack);
+    final count = selected ? widget.poolSize?.perPack[pack] : null;
+    Widget chip = HextechChip(
+      label: WordPack.label(pack),
+      icon: WordPack.icon(pack),
       selected: selected,
-      showCheckmark: false,
-      backgroundColor: hextech.panel,
-      selectedColor: hextech.accent,
-      side: BorderSide(color: selected ? hextech.accent : hextech.panelBorder),
-      labelStyle: textTheme.labelMedium?.copyWith(color: foreground),
-      onSelected: (_) => _toggle(pool),
+      badge: count == null ? null : '· $count',
+      onSelected: (_) => _toggle(pack),
     );
 
-    if (_refused == pool && !Motion.reduced(context)) {
+    if (_refused == pack && !Motion.reduced(context)) {
       chip = chip
-          .animate(key: ValueKey('refused-$pool-$_refusals'))
+          .animate(key: ValueKey('refused-$pack-$_refusals'))
           .shakeX(duration: 400.ms, hz: 6, amount: 3);
     }
     return chip;
@@ -88,28 +91,20 @@ class _LobbyPoolTogglesState extends State<LobbyPoolToggles> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          'GAME POOLS',
-          style: textTheme.labelSmall?.copyWith(color: hextech.textSecondary, letterSpacing: 2),
-        ),
+        const HextechSectionLabel('Word packs'),
         const SizedBox(height: 12),
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: [
-            _chip(_Pool.champions, 'Champions', Icons.shield_outlined, widget.useChampions),
-            _chip(_Pool.items, 'Items', Icons.inventory_2_outlined, widget.useItems),
-          ],
+          children: [for (final pack in WordPack.all) _chip(pack)],
         ),
-        AnimatedSize(
-          duration: Motion.of(context, Motion.base),
-          curve: Motion.enter,
+        MotionSize(
           alignment: Alignment.topLeft,
           child: _showRule
               ? Padding(
                   padding: const EdgeInsets.only(top: 10),
                   child: Text(
-                    'At least one pool must stay on',
+                    'At least one pack must stay on',
                     style: textTheme.bodySmall?.copyWith(color: hextech.textSecondary),
                   ),
                 )

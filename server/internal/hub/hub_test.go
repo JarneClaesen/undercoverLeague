@@ -116,6 +116,13 @@ func testCatalog() *game.Catalog {
 	}
 }
 
+// settings wraps a filter in otherwise default rules.
+func settings(f game.Filter) game.Settings {
+	s := game.DefaultSettings()
+	s.Filter = f
+	return s
+}
+
 func create(t *testing.T, h *Hub, lobby, name string) *player {
 	t.Helper()
 	s := newFake()
@@ -503,10 +510,10 @@ func TestSettingsAndPoolSize(t *testing.T) {
 	h, _ := newHub(t, time.Minute)
 	ps := threePlayers(t, h)
 
-	if err := h.Settings(ps[1].c, game.DefaultFilter()); code(err) != "notHost" {
+	if err := h.Settings(ps[1].c, game.DefaultSettings()); code(err) != "notHost" {
 		t.Errorf("non-host settings: %v", err)
 	}
-	f := game.Filter{UseChampions: true, UseItems: true, ChampSeasons: [2]int{15, 16}, ItemTiers: []game.Tier{game.TierBoots}}
+	f := settings(game.Filter{Packs: []game.Pack{game.PackChampions, game.PackItems}, ChampSeasons: [2]int{15, 16}, ItemTiers: []game.Tier{game.TierBoots}})
 	if err := h.Settings(ps[0].c, f); err != nil {
 		t.Fatal(err)
 	}
@@ -516,7 +523,7 @@ func TestSettingsAndPoolSize(t *testing.T) {
 		if v.Settings.ChampSeasons != [2]int{15, 15} || v.Settings.ItemSeasons != [2]int{3, 16} || len(v.Settings.ItemTiers) != 1 {
 			t.Errorf("%s settings %+v", p.name, v.Settings)
 		}
-		if v.PoolSize == nil || v.PoolSize.Champions != 1 || v.PoolSize.Items != 1 {
+		if v.PoolSize == nil || (*v.PoolSize)[game.PackChampions] != 1 || (*v.PoolSize)[game.PackItems] != 1 {
 			t.Errorf("%s pool %+v", p.name, v.PoolSize)
 		}
 		if v.SeasonRange == nil || v.SeasonRange.Champions != [2]int{1, 15} {
@@ -525,10 +532,10 @@ func TestSettingsAndPoolSize(t *testing.T) {
 	}
 
 	// An empty pool is refused at start and nothing changes.
-	if err := h.Settings(ps[0].c, game.Filter{UseChampions: true, ChampSeasons: [2]int{2, 2}}); err != nil {
+	if err := h.Settings(ps[0].c, settings(game.Filter{Packs: []game.Pack{game.PackChampions}, ChampSeasons: [2]int{2, 2}})); err != nil {
 		t.Fatal(err)
 	}
-	if v := ps[0].s.latestLobby(t); v.PoolSize.Champions != 0 {
+	if v := ps[0].s.latestLobby(t); (*v.PoolSize)[game.PackChampions] != 0 {
 		t.Errorf("pool %+v", v.PoolSize)
 	}
 	if err := h.Start(ps[0].c); code(err) != "invalid" {
@@ -543,10 +550,10 @@ func TestSettingsAndPoolSize(t *testing.T) {
 	bigger.Champions = append(bigger.Champions, game.Champion{Name: "Yunara", Icon: "https://x/Yunara_0.jpg", Season: 16})
 	h.SetCatalog(bigger)
 	h.SetCatalog(nil) // ignored
-	if err := h.Settings(ps[0].c, game.Filter{UseChampions: true, ChampSeasons: [2]int{16, 16}}); err != nil {
+	if err := h.Settings(ps[0].c, settings(game.Filter{Packs: []game.Pack{game.PackChampions}, ChampSeasons: [2]int{16, 16}})); err != nil {
 		t.Fatal(err)
 	}
-	if v := ps[2].s.latestLobby(t); v.PoolSize.Champions != 1 || v.SeasonRange.Champions != [2]int{1, 16} {
+	if v := ps[2].s.latestLobby(t); (*v.PoolSize)[game.PackChampions] != 1 || v.SeasonRange.Champions != [2]int{1, 16} {
 		t.Errorf("after refresh %+v %+v", v.PoolSize, v.SeasonRange)
 	}
 
@@ -563,7 +570,7 @@ func TestSettingsAndPoolSize(t *testing.T) {
 			t.Errorf("%s civilian view %+v", p.name, v)
 		}
 	}
-	if err := h.Settings(ps[0].c, game.DefaultFilter()); code(err) != "invalid" {
+	if err := h.Settings(ps[0].c, game.DefaultSettings()); code(err) != "invalid" {
 		t.Errorf("settings mid-game: %v", err)
 	}
 }

@@ -3,6 +3,9 @@
 Flutter app + Go server; see `README.md` for layout, local dev and deploy.
 Checks: `flutter analyze && flutter test` and `cd server && go vet ./... && go test ./...`.
 Deploy: `sh server/deploy/deploy.sh` (add `SKIP_WEB=1` to reuse the last `flutter build web`).
+The web build is `--wasm` (dart2wasm + skwasm, dart2js fallback picked by `flutter.js`).
+No COOP/COEP headers on purpose: skwasm runs single-threaded without cross-origin
+isolation, and `require-corp` would block the Data Dragon icons.
 
 ## Web build cache refresh (keep this working)
 
@@ -34,17 +37,37 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
 ## Design system
 
 - Tokens live in `lib/theme/` (`HextechColors`, `hextechTextTheme`, `Motion`,
-  `hextechTheme()`); shared components in `lib/widgets/` (`Hextech*`, `PlayerTile`,
-  `RevealCard`, `PhaseHeader`, `PhaseSwitcher`, `StatusNotice`, `ReadyMeter`,
-  `TurnOrderStrip`, `VoteTile`). Use them; no hard-coded colours or font sizes in
-  screens, and every animation checks `Motion.reduced(context)`.
+  `hextechTheme()`); shared components in `lib/widgets/` (`Hextech*` incl.
+  `HextechChip`, `HextechExpander`, `PlayerTile`, `RevealCard`, `WordCard`,
+  `PhaseHeader`, `PhaseSwitcher`, `StatusNotice`, `ReadyMeter`, `TurnOrderStrip`,
+  `VoteTile`, `TurnTimer`, `ClueLog`, `ReactionBar`/`ReactionOverlay`,
+  `RevealSequence`, `AchievementBadge`, `ScoreRow`, `LobbyRules`, `LobbyFilters`,
+  `LobbyPoolToggles`, `DailyThemeCard`, `HomeThemeBanner`, `showLobbyQrDialog`,
+  `MotionSize`). Use them; no hard-coded colours or font sizes in screens, and
+  every animation checks `Motion.reduced(context)`.
+- Never use `AnimatedSize` directly: it asserts on `Duration.zero`, which
+  `Motion.of` yields under reduced motion. `MotionSize` (`lib/widgets/motion_size.dart`)
+  wraps it and swaps the child outright when motion is reduced.
 - Fonts are bundled variable TTFs under `assets/fonts/` (Cinzel, Source Sans 3, OFL);
-  weights are chosen with `FontVariation('wght', …)` in `app_text.dart`.
+  weights are chosen with `FontVariation('wght', …)` in `app_text.dart`. Emoji come
+  from the web engine's fallback font, fetched on first use: `ReactionOverlay` lays
+  out the whole `reactionEmoji` set offstage at mount so the first reaction is not
+  a tofu box.
 - `GameScreen` is the shell: it owns the lobby stream and switches phase bodies via
-  `PhaseSwitcher`; the compact peek card is its footer during rounds and voting.
+  `PhaseSwitcher`; the compact peek card is its footer during rounds, voting and
+  while waiting for a last guess; `ReactionOverlay` sits over every phase. Host-ness
+  is derived from the live view (`lobby.host == playerName`), never from a
+  constructor argument, because "play again" can rotate the seat; the device's
+  remembered host settings are only pushed by the player who created the lobby.
+- Word-kind labels ("your champion / item / ability…") come from
+  `WordPack.noun(lobby.selectedPack, 1)`; `isChampion` only decides the art
+  layout (portrait art vs. sprite on a glow).
 - Privacy: the server broadcasts the live `votes` map to everyone during voting.
   Screens may only use `containsKey` and the viewer's own entry until the tally;
   `lastVotes` (sent after the tally) is the one that may be shown in full.
+  Spectators (lobby `spectators`, role `Spectator`) see the word but never the
+  roles until game over. Reactions are ephemeral: they arrive on
+  `GameConnection.reactions`, are never in the view and are never replayed.
 
 ## Server contract notes
 
@@ -53,15 +76,58 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
   Data Dragon (see README "Word pool"); `internal/game` never does I/O, the
   hub holds the catalog in an `atomic.Pointer` and `catalog.Service.Run`
   swaps it. Icons are https URLs; only `assets/default_icon.jpg` is bundled.
-- `{"type":"settings","settings":{…Filter…}}` is a host-only lobby mutation;
-  `start` has no payload. The view carries `settings` (normalized), and in
-  the lobby phase `poolSize` and `seasonRange`. Zero season bounds mean
-  "all"; `itemTiers` null = all, `[]` = none. `lib/models/game_settings.dart`
-  mirrors this.
+- Packs: `champions items spells runes abilities skinlines monsters`
+  (`game.AllPacks`). `Filter{packs, champSeasons, itemSeasons, itemTiers,
+  champClasses, champRegions}`; legacy `useChampions/useItems` JSON is mapped
+  onto `packs` by `Filter.UnmarshalJSON`. Zero season bounds mean "all";
+  `itemTiers` null = all, `[]` = none; classes/regions empty = all.
+- `game.Settings` embeds `Filter` (JSON flattened) plus `undercovers` (>= 1),
+  `mrWhites` (needs `decoyWord`), `decoyWord`, `randomOrder` (absent key =
+  true; `Settings.UnmarshalJSON` exists because the embedded Filter's would
+  otherwise be promoted), `turnSeconds` (0 or 10..300), `clueLog`,
+  `rotateHost`. `{"type":"settings","settings":{…Settings…}}` is host-only in
+  the lobby; `Start` also requires `2*(undercovers+mrWhites) < active players`.
+  `lib/models/game_settings.dart` mirrors this.
+- The view carries `settings` (normalized) and, in the lobby phase only,
+  `poolSize` (`{pack: count}`), `seasonRange`, `classes`, `regions` and
+  `dailyTheme` (`{id,title,description,filter}`, also at `GET /daily`).
+- Roles: `Civilian | Undercover | MrWhite | Spectator`. Undercovers get the
+  decoy (`myWord` + `myDecoy: true`) when `decoyWord`, else nothing; Mr. White
+  never gets a word; lobby spectators (`spectate{spectating}`, `spectators`
+  in the view) see the word, are not in `alivePlayers`/`roundOrder` and are
+  not counted for `MinPlayers`. At game over everyone gets `roles`,
+  `selectedWord` and `decoyWord`. `selectedPack` names the drawn pack.
+- Phases: `lobby → revealingRoles → playing → (lastGuess) → gameOver`.
+  Eliminating a wordless player enters `lastGuess` with `guesser`; only they
+  may `guess{word}` (case/punctuation-insensitive; abilities match "Charm" or
+  "Charm (Ahri)"); `lastGuess {player,word,correct}` records it. Right ends
+  the game (`winner` `MrWhite` or `Undercover`, `winReason` `guess`); wrong or
+  the guesser leaving/timing out resumes. `winReason` is otherwise
+  `eliminated` (no impostor alive) or `outnumbered` (impostors >= civilians).
+- Turns: `nextPlayer{expectedIndex}` ends a turn, or `clue{text,expectedIndex}`
+  (<= 40 runes) when `clueLog` is on (`nextPlayer` is then rejected); `clues
+  [{round,player,text}]` is public. `round` is 1-based. `randomOrder: false`
+  keeps the Start order and rotates the first speaker after each tally.
+- Timer: `deadline` (unix ms, 0 = none) is set per describing turn
+  (`turnSeconds`), voting and last guess (2x). The hub arms one
+  `time.AfterFunc` per room in `commit`, re-validated under the lock by
+  deadline+version, and calls `Lobby.Expire` (turn ends with an empty clue,
+  missing votes become skips, the guess is forfeited).
+- `lastVotes` is the tallied ballot of the previous vote; `ballots` is every
+  tally of this game; `lastEliminated` is `null` before the first vote, `""`
+  for no elimination, else a name.
+- `playAgain` (host, game over only) is `reset` plus, with `rotateHost`, the
+  host seat moving to the next non-spectator in `players` order. `scores`,
+  `gamesPlayed`, `stats {civilianSurvivals,impostorGames,games}` and
+  `achievements {name: [sorted ids]}` are awarded once per game in
+  `Lobby.finish` (`scoring.go`) and live as long as the lobby does.
+- `react{emoji}` (allowlist `game.Reactions`, not from alive players, 700 ms
+  per player) is relayed as `{"type":"reaction","playerName","emoji"}` to
+  the room without persisting or bumping `version`.
 - Item names are the identity across seasons (case-insensitive); Data
-  Dragon champion ids key `champion_seasons.json` and
-  `champions.seasons` in the overrides, display names key the excludes.
+  Dragon champion ids key `champion_seasons.json`, `champion_regions.json`
+  and `champions.seasons`/`champions.regions` in the overrides, display
+  names key the excludes and `skinLines.exclude`.
 - `create` with an empty `lobbyId` returns a generated 5-letter code in the
   `joined` event; the client reads it from `GameConnection.session.lobbyId`.
-- `lastVotes` is the tallied ballot of the previous vote; `lastEliminated` is
-  `null` before the first vote, `""` for no elimination, else a name.
+  `isHost` must be derived from `lobby.host` in the live view (it rotates).

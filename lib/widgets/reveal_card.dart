@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:undercoverleague/models/game_settings.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
@@ -29,6 +30,10 @@ class RevealCard extends StatefulWidget {
   final String word;
   final String icon;
   final bool isChampion;
+
+  /// The pack the word came from (`WordPack`), for the "your champion /
+  /// item / ability…" eyebrow; empty falls back to [isChampion].
+  final String pack;
   final RevealCardSize size;
 
   /// When false the card cannot be flipped by hand — it simply renders the
@@ -46,6 +51,7 @@ class RevealCard extends StatefulWidget {
     required this.word,
     required this.icon,
     required this.isChampion,
+    this.pack = '',
     this.size = RevealCardSize.large,
     this.peekable = true,
     this.initiallyRevealed = false,
@@ -62,7 +68,12 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
 
   bool get _isCivilian => widget.role == 'Civilian';
   bool get _isUndercover => widget.role == 'Undercover';
+  bool get _isMrWhite => widget.role == 'MrWhite';
   bool get _large => widget.size == RevealCardSize.large;
+
+  /// An Undercover dealt a decoy holds a card with a word on it — their own,
+  /// as far as they can tell — so it is shown as one.
+  bool get _hasWord => _isCivilian || (_isUndercover && widget.word.isNotEmpty);
 
   /// Half of [Motion.reveal]: the card only ever travels half a turn.
   static const Duration _flipDuration = Duration(milliseconds: 450);
@@ -105,7 +116,7 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
 
   /// Warms the portrait so the first flip is not a blank frame.
   void _precache() {
-    if (!_isCivilian) return;
+    if (!_hasWord) return;
     precacheImage(wordImageProvider(widget.icon), context, onError: (error, _) {
       debugPrint('RevealCard could not precache ${widget.icon}: $error');
     });
@@ -247,37 +258,50 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
   }
 
   Widget _front(BuildContext context, Size size) {
-    if (_isCivilian) {
-      if (_large) return _civilianCard(size);
-      return _shell(size, accent: true, child: _civilianStrip(context));
+    if (_hasWord) {
+      if (_large) return _wordCard(size);
+      return _shell(
+        size,
+        accent: true,
+        tone: _isUndercover ? PanelTone.danger : PanelTone.neutral,
+        child: _wordStrip(context),
+      );
     }
     if (_isUndercover) {
       return _shell(size, tone: PanelTone.danger, accent: true, child: _undercoverFront(context));
     }
+    if (_isMrWhite) {
+      return _shell(size, tone: PanelTone.danger, accent: true, child: _mrWhiteFront(context));
+    }
     return _shell(size, child: _spectatorFront(context));
   }
 
-  String get _eyebrow => widget.isChampion ? 'YOUR CHAMPION' : 'YOUR ITEM';
+  String get _eyebrow {
+    final kind = widget.pack.isNotEmpty ? WordPack.noun(widget.pack, 1) : (widget.isChampion ? 'champion' : 'item');
+    return 'YOUR ${kind.toUpperCase()}';
+  }
 
-  /// The large civilian face is the trading card itself: art edge to edge,
-  /// name on the plate, nothing cropped.
-  Widget _civilianCard(Size size) {
+  /// The large face with a word is the trading card itself: art edge to
+  /// edge, name on the plate, nothing cropped. The chip is the only thing
+  /// that tells an Undercover's decoy from a civilian's word.
+  Widget _wordCard(Size size) {
     return WordCard(
       icon: widget.icon,
       word: widget.word,
       isChampion: widget.isChampion,
       width: size.width,
       eyebrow: _eyebrow,
-      chip: 'CIVILIAN',
+      chip: _isUndercover ? 'UNDERCOVER' : 'CIVILIAN',
+      chipColour: _isUndercover ? HextechColors.dangerBright : null,
     );
   }
 
   /// The compact face keeps a sliver of the art at its true ratio next to
   /// the name, so the docked card still reads as the same card.
-  Widget _civilianStrip(BuildContext context) {
+  Widget _wordStrip(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final hextech = context.hextech;
-    final eyebrow = _eyebrow;
+    final eyebrow = _isUndercover ? 'UNDERCOVER · $_eyebrow' : _eyebrow;
 
     return Row(
       children: [
@@ -376,6 +400,56 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
         const SizedBox(height: 10),
         Text(
           "You don't know the word. Blend in.",
+          textAlign: TextAlign.center,
+          style: textTheme.bodyMedium?.copyWith(color: hextech.textSecondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _mrWhiteFront(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final hextech = context.hextech;
+
+    if (!_large) {
+      return Row(
+        children: [
+          Icon(Icons.help_outline, size: 44, color: HextechColors.dangerBright),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'MR. WHITE',
+                  style: textTheme.titleMedium?.copyWith(color: HextechColors.dangerBright),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Listen. Guess.',
+                  style: textTheme.bodySmall?.copyWith(color: hextech.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.help_outline, size: 120, color: HextechColors.dangerBright),
+        const SizedBox(height: 18),
+        Text(
+          'MR. WHITE',
+          textAlign: TextAlign.center,
+          style: textTheme.headlineSmall?.copyWith(color: HextechColors.dangerBright),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          "You don't know the word and nobody knows you. Listen, then guess it.",
           textAlign: TextAlign.center,
           style: textTheme.bodyMedium?.copyWith(color: hextech.textSecondary),
         ),

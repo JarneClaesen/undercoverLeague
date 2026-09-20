@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:undercoverleague/models/filter_presets.dart';
 import 'package:undercoverleague/models/game_settings.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
+import 'package:undercoverleague/theme/motion.dart';
+import 'package:undercoverleague/widgets/hextech_chip.dart';
 import 'package:undercoverleague/widgets/lobby_pool_toggles.dart';
+import 'package:undercoverleague/widgets/motion_size.dart';
 
-/// The host's word-pool controls: which categories, which seasons and which
-/// item tiers, plus the server's count of what that leaves to draw from.
+/// The host's word-pool controls: presets, which packs, which seasons,
+/// which item tiers, which champion classes and regions, plus the server's
+/// count of what that leaves to draw from.
 ///
-/// [settings] is whatever the server last broadcast and is the source of
-/// truth; while a slider is being dragged a local draft is shown instead so
-/// the thumbs do not jump back on every incoming view, and [onChanged] fires
-/// once on release. Chips and toggles fire immediately.
+/// [settings] is whatever the server last broadcast (or the screen's
+/// pending draft) and is the source of truth; while a slider is being
+/// dragged a local draft is shown instead so the thumbs do not jump back on
+/// every incoming view, and [onChanged] fires once on release. Chips and
+/// toggles fire immediately.
 class LobbyFilters extends StatefulWidget {
   final GameSettings settings;
   final SeasonRange? seasonRange;
   final PoolSize? poolSize;
+
+  /// Classes and regions present in the catalog (from the lobby view);
+  /// empty hides the matching chips.
+  final List<String> classes;
+  final List<String> regions;
   final ValueChanged<GameSettings> onChanged;
 
   const LobbyFilters({
@@ -21,6 +32,8 @@ class LobbyFilters extends StatefulWidget {
     required this.settings,
     required this.seasonRange,
     required this.poolSize,
+    this.classes = const [],
+    this.regions = const [],
     required this.onChanged,
   });
 
@@ -30,6 +43,7 @@ class LobbyFilters extends StatefulWidget {
 
 class _LobbyFiltersState extends State<LobbyFilters> {
   GameSettings? _draft;
+  bool _championFiltersOpen = false;
 
   GameSettings get _current => _draft ?? widget.settings;
 
@@ -38,71 +52,199 @@ class _LobbyFiltersState extends State<LobbyFilters> {
     widget.onChanged(next);
   }
 
+  Set<String> _toggled(Set<String> set, String value, bool on) {
+    final next = {...set};
+    if (on) {
+      next.add(value);
+    } else {
+      next.remove(value);
+    }
+    return next;
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final hextech = context.hextech;
     final s = _current;
     final range = widget.seasonRange;
+    final champFilters = s.filtersChampions;
+    final hasChampionChips = widget.classes.isNotEmpty || widget.regions.isNotEmpty;
+    final activeChampionFilters = s.champClasses.length + s.champRegions.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        LobbyPresetsRow(
+          onSelected: (preset) => _commit(preset.apply(s, range)),
+        ),
+        const SizedBox(height: 16),
         LobbyPoolToggles(
-          useChampions: s.useChampions,
-          useItems: s.useItems,
-          onChanged: (champions, items) => _commit(s.copyWith(useChampions: champions, useItems: items)),
+          packs: s.packs,
+          poolSize: widget.poolSize,
+          onChanged: (packs) => _commit(s.copyWith(packs: packs)),
         ),
         if (range != null) ...[
-          const SizedBox(height: 16),
-          _SeasonSlider(
-            title: 'CHAMPIONS · RELEASED',
-            bounds: range.champions,
-            value: s.champSeasons,
-            enabled: s.useChampions,
-            onChanged: (v) => setState(() => _draft = s.copyWith(champSeasons: v)),
-            onChangeEnd: (v) => _commit(s.copyWith(champSeasons: v)),
+          if (champFilters) ...[
+            const SizedBox(height: 16),
+            _SeasonSlider(
+              title: s.useChampions ? 'Champions · released' : 'Abilities · champion released',
+              bounds: range.champions,
+              value: s.champSeasons,
+              enabled: true,
+              onChanged: (v) => setState(() => _draft = s.copyWith(champSeasons: v)),
+              onChangeEnd: (v) => _commit(s.copyWith(champSeasons: v)),
+            ),
+          ],
+          if (s.useItems) ...[
+            const SizedBox(height: 12),
+            _SeasonSlider(
+              title: 'Items · in the shop',
+              bounds: range.items,
+              value: s.itemSeasons,
+              enabled: true,
+              onChanged: (v) => setState(() => _draft = s.copyWith(itemSeasons: v)),
+              onChangeEnd: (v) => _commit(s.copyWith(itemSeasons: v)),
+            ),
+          ],
+        ],
+        if (s.useItems) ...[
+          const SizedBox(height: 14),
+          const HextechSectionLabel('Item tiers'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final tier in ItemTier.all)
+                HextechChip(
+                  label: ItemTier.label(tier),
+                  dense: true,
+                  selected: s.itemTiers.contains(tier),
+                  onSelected: (on) => _commit(s.copyWith(itemTiers: _toggled(s.itemTiers, tier, on))),
+                ),
+            ],
           ),
-          const SizedBox(height: 12),
-          _SeasonSlider(
-            title: 'ITEMS · IN THE SHOP',
-            bounds: range.items,
-            value: s.itemSeasons,
-            enabled: s.useItems,
-            onChanged: (v) => setState(() => _draft = s.copyWith(itemSeasons: v)),
-            onChangeEnd: (v) => _commit(s.copyWith(itemSeasons: v)),
+        ],
+        if (champFilters && hasChampionChips) ...[
+          const SizedBox(height: 14),
+          InkWell(
+            onTap: () => setState(() => _championFiltersOpen = !_championFiltersOpen),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  const Expanded(child: HextechSectionLabel('Champion filters')),
+                  Text(
+                    activeChampionFilters == 0 ? 'ALL' : '$activeChampionFilters ACTIVE',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: activeChampionFilters == 0 ? hextech.textDisabled : hextech.accent,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  AnimatedRotation(
+                    turns: _championFiltersOpen ? 0.5 : 0,
+                    duration: Motion.of(context, Motion.base),
+                    curve: Motion.enter,
+                    child: Icon(Icons.expand_more, size: 18, color: hextech.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          MotionSize(
+            alignment: Alignment.topLeft,
+            child: _championFiltersOpen
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.classes.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Classes · none selected means every class',
+                          style: textTheme.bodySmall?.copyWith(color: hextech.textSecondary),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final c in widget.classes)
+                              HextechChip(
+                                label: c,
+                                dense: true,
+                                selected: s.champClasses.contains(c),
+                                onSelected: (on) => _commit(s.copyWith(champClasses: _toggled(s.champClasses, c, on))),
+                              ),
+                          ],
+                        ),
+                      ],
+                      if (widget.regions.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Regions · none selected means every region',
+                          style: textTheme.bodySmall?.copyWith(color: hextech.textSecondary),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final r in widget.regions)
+                              HextechChip(
+                                label: r,
+                                dense: true,
+                                selected: s.champRegions.contains(r),
+                                onSelected: (on) => _commit(s.copyWith(champRegions: _toggled(s.champRegions, r, on))),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
           ),
         ],
         const SizedBox(height: 14),
-        Text(
-          'ITEM TIERS',
-          style: textTheme.labelSmall?.copyWith(color: hextech.textSecondary, letterSpacing: 2),
-        ),
+        PoolSizeLine(settings: s, poolSize: widget.poolSize),
+      ],
+    );
+  }
+}
+
+/// One-tap pools ("Veteran", "Boots only", …) that replace the filter half
+/// of the settings and leave the rules alone.
+class LobbyPresetsRow extends StatelessWidget {
+  final ValueChanged<FilterPreset> onSelected;
+
+  const LobbyPresetsRow({super.key, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const HextechSectionLabel('Presets'),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final tier in ItemTier.all)
-              _TierChip(
-                label: ItemTier.label(tier),
-                selected: s.itemTiers.contains(tier),
-                enabled: s.useItems,
-                onChanged: (on) {
-                  final tiers = {...s.itemTiers};
-                  if (on) {
-                    tiers.add(tier);
-                  } else {
-                    tiers.remove(tier);
-                  }
-                  _commit(s.copyWith(itemTiers: tiers));
-                },
+            for (final preset in FilterPreset.all)
+              Tooltip(
+                message: preset.description,
+                child: HextechChip(
+                  label: preset.label,
+                  dense: true,
+                  selected: false,
+                  onSelected: (_) => onSelected(preset),
+                ),
               ),
           ],
         ),
-        const SizedBox(height: 14),
-        PoolSizeLine(settings: s, poolSize: widget.poolSize),
       ],
     );
   }
@@ -130,7 +272,6 @@ class _SeasonSlider extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final hextech = context.hextech;
     final (min, max) = bounds;
-    final labelColor = enabled ? hextech.textSecondary : hextech.textDisabled;
 
     final lo = value.$1.clamp(min, max).toDouble();
     final hi = value.$2.clamp(min, max).toDouble();
@@ -142,12 +283,7 @@ class _SeasonSlider extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(
-                title,
-                style: textTheme.labelSmall?.copyWith(color: labelColor, letterSpacing: 2),
-              ),
-            ),
+            Expanded(child: HextechSectionLabel(title, enabled: enabled)),
             Text(
               summary,
               style: textTheme.labelMedium?.copyWith(color: enabled ? hextech.accent : hextech.textDisabled),
@@ -192,45 +328,6 @@ class _SeasonSlider extends StatelessWidget {
   }
 }
 
-class _TierChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
-
-  const _TierChip({
-    required this.label,
-    required this.selected,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final hextech = context.hextech;
-    final on = selected && enabled;
-    final foreground = on
-        ? HextechColors.abyss
-        : enabled
-            ? hextech.accent
-            : hextech.textDisabled;
-
-    return FilterChip(
-      label: Text(label.toUpperCase()),
-      selected: on,
-      showCheckmark: false,
-      backgroundColor: hextech.panel,
-      selectedColor: hextech.accent,
-      disabledColor: hextech.panel,
-      side: BorderSide(color: on ? hextech.accent : hextech.panelBorder),
-      labelStyle: textTheme.labelSmall?.copyWith(color: foreground),
-      visualDensity: VisualDensity.compact,
-      onSelected: enabled ? onChanged : null,
-    );
-  }
-}
-
 /// "142 champions · 380 items" for the current settings; a zero is shown in
 /// the danger colour because the game cannot start from an empty pool.
 class PoolSizeLine extends StatelessWidget {
@@ -248,16 +345,16 @@ class PoolSizeLine extends StatelessWidget {
       return Text('Counting the pool…', style: textTheme.bodySmall?.copyWith(color: hextech.textDisabled));
     }
 
-    TextSpan part(int n, String noun) => TextSpan(
-          text: '$n $noun${n == 1 ? '' : 's'}',
-          style: textTheme.bodyMedium?.copyWith(
-            color: n == 0 ? HextechColors.dangerBright : hextech.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        );
     final parts = <TextSpan>[
-      if (settings.useChampions) part(size.champions, 'champion'),
-      if (settings.useItems) part(size.items, 'item'),
+      for (final pack in WordPack.all)
+        if (settings.packs.contains(pack))
+          TextSpan(
+            text: '${size[pack]} ${WordPack.noun(pack, size[pack])}',
+            style: textTheme.bodyMedium?.copyWith(
+              color: size[pack] == 0 ? HextechColors.dangerBright : hextech.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
     ];
 
     return Text.rich(
@@ -284,11 +381,21 @@ class LobbyFiltersSummary extends StatelessWidget {
 
   static String describe(GameSettings s) {
     String range((int, int) r) => r.$1 == r.$2 ? 'S${r.$1}' : 'S${r.$1}–S${r.$2}';
+    final champExtras = <String>[
+      if (s.champClasses.isNotEmpty) (s.champClasses.toList()..sort()).join('/'),
+      if (s.champRegions.isNotEmpty) (s.champRegions.toList()..sort()).join('/'),
+    ];
+    final champSuffix = champExtras.isEmpty ? '' : ' (${champExtras.join(', ')})';
     final parts = <String>[
-      if (s.useChampions) 'Champions ${range(s.champSeasons)}',
-      if (s.useItems)
-        'Items ${range(s.itemSeasons)}'
-            '${s.itemTiers.length == ItemTier.all.length ? '' : ' (${s.itemTiers.length} of ${ItemTier.all.length} tiers)'}',
+      for (final pack in WordPack.all)
+        if (s.packs.contains(pack))
+          switch (pack) {
+            WordPack.champions => 'Champions ${range(s.champSeasons)}$champSuffix',
+            WordPack.items => 'Items ${range(s.itemSeasons)}'
+                '${s.itemTiers.length == ItemTier.all.length ? '' : ' (${s.itemTiers.length} of ${ItemTier.all.length} tiers)'}',
+            WordPack.abilities => 'Abilities${s.useChampions ? '' : ' ${range(s.champSeasons)}$champSuffix'}',
+            _ => WordPack.label(pack),
+          },
     ];
     return parts.join(' · ');
   }
@@ -301,10 +408,7 @@ class LobbyFiltersSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          'GAME POOLS',
-          style: textTheme.labelSmall?.copyWith(color: hextech.textSecondary, letterSpacing: 2),
-        ),
+        const HextechSectionLabel('Word packs'),
         const SizedBox(height: 8),
         Text(describe(settings), style: textTheme.bodyMedium?.copyWith(color: hextech.textPrimary)),
         const SizedBox(height: 6),

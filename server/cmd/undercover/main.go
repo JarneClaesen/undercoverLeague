@@ -1,6 +1,7 @@
 // Command undercover is the Undercover League game server: a WebSocket
 // endpoint at /ws, a health probe at /healthz, the current word pool at
-// /catalog and, when a web directory is present, the Flutter web build at /.
+// /catalog, today's theme at /daily and, when a web directory is present,
+// the Flutter web build at /.
 package main
 
 import (
@@ -21,6 +22,7 @@ import (
 	"time"
 
 	"github.com/JarneClaesen/underCoverLeague/server/internal/catalog"
+	"github.com/JarneClaesen/underCoverLeague/server/internal/game"
 	"github.com/JarneClaesen/underCoverLeague/server/internal/hub"
 	"github.com/JarneClaesen/underCoverLeague/server/internal/store"
 	"github.com/JarneClaesen/underCoverLeague/server/internal/ws"
@@ -88,6 +90,7 @@ func main() {
 		enc.SetIndent("", "  ")
 		enc.Encode(cat.Export())
 	})
+	mux.Handle("GET /daily", dailyHandler(cat.Current, time.Now))
 	if info, err := os.Stat(webDir); err == nil && info.IsDir() {
 		mux.Handle("/", webHandler(webDir))
 		log.Info("serving web build", "dir", webDir)
@@ -123,6 +126,21 @@ func main() {
 	srv.Shutdown(shutdownCtx)
 }
 
+// dailyHandler serves today's theme (game.Theme as JSON) so the lobby
+// screen can offer it before a lobby exists. It changes at UTC midnight,
+// hence no-cache rather than a max-age.
+func dailyHandler(current func() *game.Catalog, now func() time.Time) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := current()
+		if c == nil {
+			c = &game.Catalog{}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache")
+		json.NewEncoder(w).Encode(c.DailyTheme(now()))
+	})
+}
+
 // webHandler serves the Flutter web build. Anything that is not an existing
 // file and looks like a route falls back to index.html. The entry files that
 // decide which build runs are never stored by the browser; everything else
@@ -141,8 +159,25 @@ func webHandler(dir string) http.Handler {
 			}
 		}
 		w.Header().Set("Cache-Control", cacheControl(p))
+		if ct := contentType(p); ct != "" {
+			w.Header().Set("Content-Type", ct)
+		}
 		fs.ServeHTTP(w, r)
 	})
+}
+
+// contentType pins the types the wasm build depends on: the browser rejects
+// main.dart.wasm for WebAssembly.compileStreaming and main.dart.mjs as an ES
+// module unless these are exact, and Go's mime package lets the host's
+// /etc/mime.types or registry override its built-in table.
+func contentType(p string) string {
+	switch path.Ext(p) {
+	case ".wasm":
+		return "application/wasm"
+	case ".js", ".mjs":
+		return "text/javascript; charset=utf-8"
+	}
+	return ""
 }
 
 // cacheControl picks the caching policy for one path of the web build.

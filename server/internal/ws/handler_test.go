@@ -92,7 +92,7 @@ func TestEndToEnd(t *testing.T) {
 
 	// Settings are a host-only lobby mutation; the reply is a broadcast view
 	// with the server's pool counts, and rejections are plain errors.
-	b.send(Command{Type: "settings", Settings: &game.Filter{UseChampions: true, UseItems: true}})
+	b.send(Command{Type: "settings", Settings: &game.Settings{Filter: game.DefaultFilter(), Undercovers: 1}})
 	if ev := b.expect("error"); ev.Code != "notHost" {
 		t.Fatalf("non-host settings %+v", ev)
 	}
@@ -100,11 +100,11 @@ func TestEndToEnd(t *testing.T) {
 	if ev := a.expect("error"); ev.Code != "invalid" {
 		t.Fatalf("missing settings %+v", ev)
 	}
-	a.send(Command{Type: "settings", Settings: &game.Filter{UseChampions: true, ChampSeasons: [2]int{15, 16}}})
+	a.send(Command{Type: "settings", Settings: &game.Settings{Filter: game.Filter{Packs: []game.Pack{game.PackChampions}, ChampSeasons: [2]int{15, 16}}, Undercovers: 1, RandomOrder: true}})
 	for {
 		ev := a.expect("lobby")
 		if ev.Lobby.Settings.ChampSeasons == [2]int{15, 15} {
-			if ev.Lobby.PoolSize == nil || ev.Lobby.PoolSize.Champions != 1 || ev.Lobby.PoolSize.Items != 0 {
+			if ev.Lobby.PoolSize == nil || (*ev.Lobby.PoolSize)[game.PackChampions] != 1 || len(*ev.Lobby.PoolSize) != 1 {
 				t.Fatalf("pool size %+v", ev.Lobby.PoolSize)
 			}
 			break
@@ -170,5 +170,68 @@ func testCatalog() *game.Catalog {
 			{Name: "Mel", Icon: "https://x/Mel_0.jpg", Season: 15},
 		},
 		Items: []game.Item{{Name: "Boots", Icon: "https://x/1001.png", Seasons: all, Tier: game.TierBoots}},
+	}
+}
+
+// The new commands reach the hub with their fields; missing ones are plain
+// errors and a reaction comes back as its own event.
+func TestNewCommandsRoute(t *testing.T) {
+	st, _ := store.Open(filepath.Join(t.TempDir(), "ws.db"))
+	defer st.Close()
+	h := hub.New(st, time.Minute, slog.Default(), testCatalog())
+	srv := httptest.NewServer(&Handler{Hub: h, Log: slog.Default()})
+	defer srv.Close()
+
+	a := dial(t, srv)
+	a.send(Command{Type: "create", ReqID: 1, LobbyID: "r1", Name: "Alice"})
+	a.expect("joined")
+	b := dial(t, srv)
+	b.send(Command{Type: "join", ReqID: 2, LobbyID: "r1", Name: "Bob"})
+	b.expect("joined")
+
+	a.send(Command{Type: "spectate", ReqID: 3})
+	if ev := a.expect("error"); ev.ReqID != 3 || ev.Code != "invalid" {
+		t.Fatalf("spectate without a flag %+v", ev)
+	}
+	yes := true
+	b.send(Command{Type: "spectate", ReqID: 4, Spectating: &yes})
+	for {
+		ev := a.expect("lobby")
+		if len(ev.Lobby.Spectators) == 1 && ev.Lobby.Spectators[0] == "Bob" {
+			break
+		}
+	}
+	a.send(Command{Type: "clue", ReqID: 5, Text: "x"})
+	if ev := a.expect("error"); ev.ReqID != 5 || ev.Code != "invalid" {
+		t.Fatalf("clue without an index %+v", ev)
+	}
+	a.send(Command{Type: "guess", ReqID: 6, Word: "x"})
+	if ev := a.expect("error"); ev.ReqID != 6 || ev.Code != "invalid" {
+		t.Fatalf("guess in the lobby %+v", ev)
+	}
+	a.send(Command{Type: "playAgain", ReqID: 7})
+	if ev := a.expect("error"); ev.ReqID != 7 || ev.Code != "invalid" {
+		t.Fatalf("play again in the lobby %+v", ev)
+	}
+	a.send(Command{Type: "react", ReqID: 8, Emoji: "🍕"})
+	if ev := a.expect("error"); ev.ReqID != 8 || ev.Code != "invalid" {
+		t.Fatalf("unknown emoji %+v", ev)
+	}
+	b.send(Command{Type: "react", Emoji: "🔥"})
+	for _, c := range []*testClient{a, b} {
+		if ev := c.expect("reaction"); ev.PlayerName != "Bob" || ev.Emoji != "🔥" {
+			t.Fatalf("reaction %+v", ev)
+		}
+	}
+	// The settings command carries the rule fields too.
+	s := game.DefaultSettings()
+	s.TurnSeconds = 30
+	s.ClueLog = true
+	a.send(Command{Type: "settings", Settings: &s})
+	for {
+		ev := a.expect("lobby")
+		if ev.Lobby.Settings.TurnSeconds == 30 && ev.Lobby.Settings.ClueLog {
+			break
+		}
 	}
 }

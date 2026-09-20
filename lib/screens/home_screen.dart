@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:undercoverleague/models/daily_theme.dart';
 import 'package:undercoverleague/screens/lobby_screen.dart';
+import 'package:undercoverleague/services/daily_theme_service.dart';
 import 'package:undercoverleague/services/game_connection.dart';
 import 'package:undercoverleague/services/lobby_service.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
@@ -15,11 +17,17 @@ import 'package:undercoverleague/widgets/hextech_route.dart';
 import 'package:undercoverleague/widgets/hextech_scaffold.dart';
 import 'package:undercoverleague/widgets/hextech_snack.dart';
 import 'package:undercoverleague/widgets/hextech_text_field.dart';
+import 'package:undercoverleague/widgets/home_theme_banner.dart';
+import 'package:undercoverleague/widgets/motion_size.dart';
 import 'package:undercoverleague/widgets/status_notice.dart';
 import 'package:undercoverleague/widgets/upper_case_text_formatter.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// Where "Today's theme" comes from; defaults to the server's `/daily`.
+  /// Injectable so tests can hand the screen a theme, or none.
+  final Future<DailyTheme?> Function()? loadDailyTheme;
+
+  const HomeScreen({super.key, this.loadDailyTheme});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -57,11 +65,23 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _playEntrance = false;
   bool _focusNameOnOpen = false;
 
+  /// Today's theme once it has arrived; nothing is shown while it loads and
+  /// nothing at all if the server cannot say.
+  DailyTheme? _dailyTheme;
+
   @override
   void initState() {
     super.initState();
     _playEntrance = !_entrancePlayed;
     _entrancePlayed = true;
+
+    // Fire and forget: the banner is a nicety, the form never waits for it.
+    (widget.loadDailyTheme ?? DailyThemeService.fetch)().then(
+      (theme) {
+        if (mounted && theme != null) setState(() => _dailyTheme = theme);
+      },
+      onError: (Object e) => debugPrint('Daily theme unavailable: $e'),
+    );
 
     // Shared link: `…/?lobby=ABC12` pre-fills the code so the player only has
     // to name themselves.
@@ -329,6 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             hero,
             const SizedBox(height: 28),
+            _dailyThemeSection(),
             panel,
           ],
         ),
@@ -336,14 +357,28 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// "Today's theme" under the wordmark. It takes no room until the server
+  /// has answered, then fades in and pushes the form down gently.
+  Widget _dailyThemeSection() {
+    final theme = _dailyTheme;
+    final reduced = Motion.reduced(context);
+    Widget banner = theme == null
+        ? const SizedBox(width: double.infinity)
+        : Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: HomeThemeBanner(theme: theme),
+          );
+    if (theme != null && !reduced) {
+      banner = banner.animate().fadeIn(duration: Motion.slow, curve: Motion.enter);
+    }
+    return MotionSize(child: banner);
+  }
+
   /// The close-reason notice, with the room it takes up animated away once it
   /// is gone so the fields do not jump.
   Widget _closeNoticeSection() {
     final notice = _closeNotice;
-    return AnimatedSize(
-      duration: Motion.of(context, Motion.base),
-      curve: Motion.enter,
-      alignment: Alignment.topCenter,
+    return MotionSize(
       child: notice == null
           ? const SizedBox(width: double.infinity)
           : Padding(

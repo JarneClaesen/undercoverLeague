@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -39,6 +40,47 @@ type rawChampion struct {
 	Name string `json:"name"` // e.g. Wukong; shown to players
 }
 
+// rawChampionFull is one entry of championFull.json: the champion list
+// plus, per champion, classes, abilities and skins in a single file.
+type rawChampionFull struct {
+	ID      string     `json:"id"`
+	Name    string     `json:"name"`
+	Tags    []string   `json:"tags"` // Fighter, Mage, ... primary first
+	Spells  []rawSpell `json:"spells"`
+	Passive rawSpell   `json:"passive"`
+	Skins   []rawSkin  `json:"skins"`
+}
+
+type rawSpell struct {
+	Name  string   `json:"name"`
+	Image rawImage `json:"image"`
+	Modes []string `json:"modes"` // summoner spells only
+}
+
+type rawImage struct {
+	Full string `json:"full"` // file name, e.g. AhriE.png
+}
+
+type rawSkin struct {
+	Num  int    `json:"num"`  // 0 is the base skin
+	Name string `json:"name"` // "default" for the base skin
+}
+
+// rawRuneTree is one entry of runesReforged.json: a tree with its slots,
+// the first slot holding the keystones.
+type rawRuneTree struct {
+	Key   string `json:"key"` // Precision, Domination, ...
+	Name  string `json:"name"`
+	Slots []struct {
+		Runes []rawRune `json:"runes"`
+	} `json:"slots"`
+}
+
+type rawRune struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"` // path under /cdn/img/, e.g. perk-images/Styles/...
+}
+
 type rawItem struct {
 	Name string `json:"name"`
 	Gold struct {
@@ -65,12 +107,36 @@ func (f *Fetcher) Champions(ctx context.Context, version string) (map[string]raw
 	return body.Data, err
 }
 
+// ChampionsFull fetches championFull.json (about 2 MB), the one file that
+// has tags, spells, passives and skins for every champion.
+func (f *Fetcher) ChampionsFull(ctx context.Context, version string) (map[string]rawChampionFull, error) {
+	var body struct {
+		Data map[string]rawChampionFull `json:"data"`
+	}
+	err := f.getJSON(ctx, "/cdn/"+version+"/data/en_US/championFull.json", &body)
+	return body.Data, err
+}
+
 func (f *Fetcher) Items(ctx context.Context, version string) (map[string]rawItem, error) {
 	var body struct {
 		Data map[string]rawItem `json:"data"`
 	}
 	err := f.getJSON(ctx, "/cdn/"+version+"/data/en_US/item.json", &body)
 	return body.Data, err
+}
+
+func (f *Fetcher) SummonerSpells(ctx context.Context, version string) (map[string]rawSpell, error) {
+	var body struct {
+		Data map[string]rawSpell `json:"data"`
+	}
+	err := f.getJSON(ctx, "/cdn/"+version+"/data/en_US/summoner.json", &body)
+	return body.Data, err
+}
+
+func (f *Fetcher) Runes(ctx context.Context, version string) ([]rawRuneTree, error) {
+	var trees []rawRuneTree
+	err := f.getJSON(ctx, "/cdn/"+version+"/data/en_US/runesReforged.json", &trees)
+	return trees, err
 }
 
 func (f *Fetcher) getJSON(ctx context.Context, path string, v any) error {
@@ -102,4 +168,24 @@ func ChampionArt(base, id string) string {
 // of the last patch they were in.
 func ItemIcon(base, version, id string) string {
 	return base + "/cdn/" + version + "/img/item/" + id + ".png"
+}
+
+// SpellIcon is the versioned icon of a champion ability or summoner spell.
+func SpellIcon(base, version, file string) string {
+	return base + "/cdn/" + version + "/img/spell/" + file
+}
+
+// PassiveIcon is the versioned icon of a champion passive.
+func PassiveIcon(base, version, file string) string {
+	return base + "/cdn/" + version + "/img/passive/" + file
+}
+
+// RuneIcon is unversioned: runesReforged.json gives the path under /cdn/img/.
+func RuneIcon(base, path string) string {
+	return base + "/cdn/img/" + path
+}
+
+// SkinSplash is the unversioned splash art of one skin of a champion.
+func SkinSplash(base, id string, num int) string {
+	return base + "/cdn/img/champion/splash/" + id + "_" + strconv.Itoa(num) + ".jpg"
 }

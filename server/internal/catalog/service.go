@@ -20,9 +20,25 @@ import (
 //go:embed fallback.json
 var fallbackJSON []byte
 
-const currentKey = "catalog:current"
+const (
+	currentKey = "catalog:current"
+	// The three per-patch Data Dragon files the smaller packs come from
+	// are cached under fixed keys with the patch they belong to, so a
+	// refresh on an unchanged patch is a single versions request.
+	championsKey = "raw:championFull"
+	spellsKey    = "raw:summoner"
+	runesKey     = "raw:runes"
+)
 
-func itemsKey(version string) string { return "items:" + version }
+// itemsKey names a season's item snapshot. The v2 suffix retired the
+// snapshots saved before recipes and prices were part of them.
+func itemsKey(version string) string { return "items:v2:" + version }
+
+// versioned wraps a cached per-patch file with the patch it came from.
+type versioned[T any] struct {
+	Version string `json:"version"`
+	Data    T      `json:"data"`
+}
 
 // BlobStore caches fetched data across restarts. Implemented by store.Store.
 type BlobStore interface {
@@ -132,25 +148,60 @@ func (s *Service) Refresh(ctx context.Context) (*game.Catalog, error) {
 		s.saveJSON(itemsKey(version), snap)
 	}
 
-	rawChamps, err := s.fetch.Champions(ctx, latest)
+	rawChamps, err := fetchVersioned(s, ctx, championsKey, latest, s.fetch.ChampionsFull)
 	if err != nil {
 		return nil, fmt.Errorf("champions %s: %w", latest, err)
+	}
+	rawSpells, err := fetchVersioned(s, ctx, spellsKey, latest, s.fetch.SummonerSpells)
+	if err != nil {
+		return nil, fmt.Errorf("summoner spells %s: %w", latest, err)
+	}
+	rawRunes, err := fetchVersioned(s, ctx, runesKey, latest, s.fetch.Runes)
+	if err != nil {
+		return nil, fmt.Errorf("runes %s: %w", latest, err)
 	}
 	var seasonStore SeasonStore
 	if s.store != nil {
 		seasonStore = s.store
 	}
 	resolver := newSeasonResolver(ov.Champions, seasonStore, current, s.log)
-	champs := importChampions(s.fetch.Base, rawChamps, resolver.season)
+	champs := importChampions(s.fetch.Base, rawChamps, resolver.season, ov.Champions.region)
 	if len(champs) == 0 {
 		return nil, fmt.Errorf("champions %s: nothing imported", latest)
 	}
+	packs := Packs{
+		Spells:    importSpells(s.fetch.Base, latest, rawSpells),
+		Runes:     importRunes(s.fetch.Base, rawRunes),
+		Abilities: importAbilities(s.fetch.Base, latest, rawChamps, champs),
+		SkinLines: importSkinLines(s.fetch.Base, rawChamps),
+		Monsters:  Monsters(),
+	}
 
-	c := Build(latest, snaps, champs, ov)
+	c := Build(latest, snaps, champs, packs, ov)
 	s.saveJSON(currentKey, c)
 	s.set(c, "ddragon", time.Now())
-	s.log.Info("catalog: refreshed", "patch", latest, "champions", len(c.Champions), "items", len(c.Items), "seasons", seasons)
+	s.log.Info("catalog: refreshed", "patch", latest, "champions", len(c.Champions), "items", len(c.Items),
+		"spells", len(c.Spells), "runes", len(c.Runes), "abilities", len(c.Abilities), "skinLines", len(c.SkinLines), "seasons", seasons)
 	return c, nil
+}
+
+// fetchVersioned returns the cached copy of a per-patch file when it is
+// from this patch, else fetches it and caches the parsed result.
+func fetchVersioned[T any](s *Service, ctx context.Context, key, version string, fetch func(context.Context, string) (T, error)) (T, error) {
+	if s.store != nil {
+		if b, _, err := s.store.LoadBlob(key); err == nil && b != nil {
+			var v versioned[T]
+			if err := json.Unmarshal(b, &v); err == nil && v.Version == version {
+				return v.Data, nil
+			}
+		}
+	}
+	data, err := fetch(ctx, version)
+	if err != nil {
+		return data, err
+	}
+	s.saveJSON(key, versioned[T]{Version: version, Data: data})
+	return data, nil
 }
 
 // Run refreshes immediately and then every interval until ctx ends, handing

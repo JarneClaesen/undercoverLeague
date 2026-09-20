@@ -14,8 +14,9 @@ import (
 // Overrides is the hand-curated correction layer on top of the automatic
 // import, read from a JSON file (server/deploy/catalog_overrides.json in
 // the repo, mounted into the container). Item names match display names
-// case-insensitively; champion seasons are keyed by Data Dragon id
-// ("MonkeyKing"), champion exclusions by display name ("Wukong").
+// case-insensitively; champion seasons and regions are keyed by Data
+// Dragon id ("MonkeyKing"), champion exclusions by display name ("Wukong").
+// Excluding a champion also drops its abilities.
 //
 //	{
 //	  "items": {
@@ -24,11 +25,13 @@ import (
 //	    "include": [{"name": "Muramana", "icon": "https://…/3042.png", "tier": "legendary", "seasons": [3, 16]}],
 //	    "tiers": {"Long Sword": "component"}
 //	  },
-//	  "champions": {"exclude": [], "seasons": {"Ambessa": 14}}
+//	  "champions": {"exclude": [], "seasons": {"Ambessa": 14}, "regions": {"Zaahen": "Shurima"}},
+//	  "skinLines": {"exclude": ["Count"]}
 //	}
 type Overrides struct {
 	Items     ItemOverrides     `json:"items"`
 	Champions ChampionOverrides `json:"champions"`
+	SkinLines SkinLineOverrides `json:"skinLines"`
 }
 
 type ItemOverrides struct {
@@ -48,8 +51,15 @@ type IncludedItem struct {
 }
 
 type ChampionOverrides struct {
-	Exclude []string       `json:"exclude"`
-	Seasons map[string]int `json:"seasons"`
+	Exclude []string          `json:"exclude"`
+	Seasons map[string]int    `json:"seasons"`
+	Regions map[string]string `json:"regions"` // id -> one of game.AllRegions
+}
+
+// SkinLineOverrides drops lines the name heuristic got wrong ("Count",
+// "King"), matched case-insensitively.
+type SkinLineOverrides struct {
+	Exclude []string `json:"exclude"`
 }
 
 // LoadOverrides reads the file; a missing file means no overrides.
@@ -76,6 +86,11 @@ func LoadOverrides(path string) (Overrides, error) {
 	for name, t := range ov.Items.Tiers {
 		if !game.ValidTier(t) {
 			return Overrides{}, fmt.Errorf("%s: unknown tier %q for %q", path, t, name)
+		}
+	}
+	for id, r := range ov.Champions.Regions {
+		if !game.ValidRegion(r) {
+			return Overrides{}, fmt.Errorf("%s: unknown region %q for %q", path, r, id)
 		}
 	}
 	return ov, nil
@@ -112,6 +127,8 @@ func (o ItemOverrides) tier(name string) (game.Tier, bool) { return lookupFold(o
 func (o ChampionOverrides) excluded(name string) bool { return containsFold(o.Exclude, name) }
 
 func (o ChampionOverrides) season(id string) (int, bool) { return lookupFold(o.Seasons, id) }
+
+func (o SkinLineOverrides) excluded(name string) bool { return containsFold(o.Exclude, name) }
 
 func (inc IncludedItem) item() (game.Item, bool) {
 	name := strings.TrimSpace(inc.Name)

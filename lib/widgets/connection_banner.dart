@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:undercoverleague/services/game_connection.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
 import 'package:undercoverleague/theme/motion.dart';
+import 'package:undercoverleague/widgets/motion_size.dart';
 
 /// Thin bar shown above the screen body while the socket is being resumed.
 /// It grows and shrinks rather than popping, so a brief blip does not make the
@@ -16,10 +17,7 @@ class ConnectionBanner extends StatelessWidget {
       valueListenable: GameConnection.instance.status,
       builder: (context, status, _) {
         final reconnecting = status == ConnectionStatus.reconnecting;
-        return AnimatedSize(
-          duration: Motion.of(context, Motion.base),
-          curve: Motion.enter,
-          alignment: Alignment.topCenter,
+        return MotionSize(
           child: reconnecting ? const _Banner() : const SizedBox(width: double.infinity, height: 0),
         );
       },

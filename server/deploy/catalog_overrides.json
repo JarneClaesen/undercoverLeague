@@ -28,6 +28,10 @@
   },
   "champions": {
     "exclude": [],
-    "seasons": {}
+    "seasons": {},
+    "regions": {}
+  },
+  "skinLines": {
+    "exclude": ["Count", "King", "Lord", "Super"]
   }
 }

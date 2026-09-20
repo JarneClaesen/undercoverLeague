@@ -23,16 +23,22 @@ import (
 // Command is a client -> server message. Only the fields relevant to Type
 // are set; the rest are omitted on the wire.
 type Command struct {
-	Type  string `json:"type"` // create | join | resume | leave | settings | start | ack | nextPlayer | vote | reset
+	// Type is one of create | join | resume | leave | settings | spectate |
+	// start | ack | nextPlayer | clue | vote | guess | reset | playAgain | react.
+	Type  string `json:"type"`
 	ReqID int    `json:"reqId,omitempty"`
 
 	LobbyID string `json:"lobbyId,omitempty"`
 	Name    string `json:"name,omitempty"`
 	Token   string `json:"token,omitempty"`
 
-	Settings      *game.Filter `json:"settings,omitempty"`
-	ExpectedIndex *int         `json:"expectedIndex,omitempty"`
-	VotedFor      string       `json:"votedFor,omitempty"`
+	Settings      *game.Settings `json:"settings,omitempty"`
+	Spectating    *bool          `json:"spectating,omitempty"`    // spectate
+	ExpectedIndex *int           `json:"expectedIndex,omitempty"` // nextPlayer, clue
+	Text          string         `json:"text,omitempty"`          // clue
+	VotedFor      string         `json:"votedFor,omitempty"`      // vote
+	Word          string         `json:"word,omitempty"`          // guess
+	Emoji         string         `json:"emoji,omitempty"`         // react
 }
 
 const (
@@ -153,6 +159,11 @@ func (h *Handler) dispatch(client *hub.Client, cmd Command) error {
 			return &game.Error{Code: "invalid", Message: "settings is required."}
 		}
 		return h.Hub.Settings(client, *cmd.Settings)
+	case "spectate":
+		if cmd.Spectating == nil {
+			return &game.Error{Code: "invalid", Message: "spectating is required."}
+		}
+		return h.Hub.Spectate(client, *cmd.Spectating)
 	case "start":
 		return h.Hub.Start(client)
 	case "ack":
@@ -162,10 +173,21 @@ func (h *Handler) dispatch(client *hub.Client, cmd Command) error {
 			return &game.Error{Code: "invalid", Message: "expectedIndex is required."}
 		}
 		return h.Hub.NextPlayer(client, *cmd.ExpectedIndex)
+	case "clue":
+		if cmd.ExpectedIndex == nil {
+			return &game.Error{Code: "invalid", Message: "expectedIndex is required."}
+		}
+		return h.Hub.Clue(client, cmd.Text, *cmd.ExpectedIndex)
 	case "vote":
 		return h.Hub.Vote(client, cmd.VotedFor)
+	case "guess":
+		return h.Hub.Guess(client, cmd.Word)
 	case "reset":
 		return h.Hub.Reset(client)
+	case "playAgain":
+		return h.Hub.PlayAgain(client)
+	case "react":
+		return h.Hub.React(client, cmd.Emoji)
 	default:
 		return &game.Error{Code: "invalid", Message: "Unknown command."}
 	}

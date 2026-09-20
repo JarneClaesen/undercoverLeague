@@ -6,12 +6,15 @@ enum PhaseTone { neutral, accent, danger }
 
 /// States what is happening right now: a small grey eyebrow ("ROUND 2 ·
 /// DESCRIBING"), a Cinzel title, an optional subtitle. Keyed on [title] so a
-/// change in phase fades and slides instead of snapping.
+/// change in phase fades and slides instead of snapping. [trailing] sits on
+/// the right of the eyebrow line, outside the swap — the turn timer lives
+/// there and must not fade with every title change.
 class PhaseHeader extends StatelessWidget {
   final String? eyebrow;
   final String title;
   final String? subtitle;
   final PhaseTone tone;
+  final Widget? trailing;
 
   const PhaseHeader({
     super.key,
@@ -19,6 +22,7 @@ class PhaseHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.tone = PhaseTone.neutral,
+    this.trailing,
   });
 
   @override
@@ -54,7 +58,7 @@ class PhaseHeader extends StatelessWidget {
       ],
     );
 
-    return AnimatedSwitcher(
+    final switcher = AnimatedSwitcher(
       duration: Motion.of(context, Motion.base),
       switchInCurve: Motion.enter,
       switchOutCurve: Motion.exit,
@@ -70,6 +74,17 @@ class PhaseHeader extends StatelessWidget {
         children: [...previousChildren, ?currentChild],
       ),
       child: content,
+    );
+
+    if (trailing == null) return switcher;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: switcher),
+        const SizedBox(width: 12),
+        trailing!,
+      ],
     );
   }
 }

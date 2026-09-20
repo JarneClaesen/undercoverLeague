@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:undercoverleague/models/lobby.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
 
-/// Names the side a player was on, in the two colours the game already uses
-/// for those sides: gold for the Civilians, danger red for the Undercover.
+/// Names the side a player was on, in the colours the game already uses for
+/// those sides: gold for the Civilians, danger red for the impostors
+/// (Undercover and Mr. White), muted grey for a Spectator.
 ///
 /// Only meaningful once the roles are public (game over), so this is
 /// deliberately a plain label with no reveal behaviour of its own.
@@ -14,8 +16,11 @@ class RoleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hextech = context.hextech;
-    final isUndercover = role.toLowerCase() == 'undercover';
-    final colour = isUndercover ? HextechColors.dangerBright : hextech.accent;
+    final colour = Role.isImpostor(role)
+        ? HextechColors.dangerBright
+        : role == Role.spectator
+            ? hextech.textSecondary
+            : hextech.accent;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -24,7 +29,7 @@ class RoleChip extends StatelessWidget {
         border: Border.all(color: colour.withValues(alpha: 0.6)),
       ),
       child: Text(
-        role.toUpperCase(),
+        Role.label(role).toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colour, fontSize: 10),
       ),
     );
