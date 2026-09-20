@@ -1,0 +1,408 @@
+package hub
+
+import (
+	"errors"
+	"log/slog"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/JarneClaesen/underCoverLeague/server/internal/game"
+	"github.com/JarneClaesen/underCoverLeague/server/internal/store"
+)
+
+type fakeSender struct {
+	events chan Event
+	closed chan string
+}
+
+func newFake() *fakeSender {
+	return &fakeSender{events: make(chan Event, 64), closed: make(chan string, 4)}
+}
+
+func (f *fakeSender) Send(ev Event) bool {
+	select {
+	case f.events <- ev:
+		return true
+	default:
+		return false
+	}
+}
+
+func (f *fakeSender) Close(reason string) {
+	select {
+	case f.closed <- reason:
+	default:
+	}
+}
+
+// next returns the next event of the given type, dropping others.
+func (f *fakeSender) next(t *testing.T, typ string) Event {
+	t.Helper()
+	deadline := time.After(2 * time.Second)
+	for {
+		select {
+		case ev := <-f.events:
+			if ev.Type == typ {
+				return ev
+			}
+		case <-deadline:
+			t.Fatalf("no %q event", typ)
+		}
+	}
+}
+
+// latestLobby drains the queue and returns the last lobby view seen,
+// waiting for at least one.
+func (f *fakeSender) latestLobby(t *testing.T) *game.View {
+	t.Helper()
+	ev := f.next(t, "lobby")
+	for {
+		select {
+		case more := <-f.events:
+			if more.Type == "lobby" {
+				ev = more
+			}
+		default:
+			return ev.Lobby
+		}
+	}
+}
+
+func (f *fakeSender) drain() {
+	for {
+		select {
+		case <-f.events:
+		default:
+			return
+		}
+	}
+}
+
+type player struct {
+	c     *Client
+	s     *fakeSender
+	token string
+	name  string
+}
+
+func newHub(t *testing.T, grace time.Duration) (*Hub, *store.Store) {
+	t.Helper()
+	st, err := store.Open(filepath.Join(t.TempDir(), "h.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { st.Close() })
+	return New(st, grace, slog.Default()), st
+}
+
+func create(t *testing.T, h *Hub, lobby, name string) *player {
+	t.Helper()
+	s := newFake()
+	c := NewClient(s)
+	if err := h.Create(c, 1, lobby, name); err != nil {
+		t.Fatal(err)
+	}
+	j := s.next(t, "joined")
+	if !j.IsHost || j.PlayerName != name {
+		t.Fatalf("joined %+v", j)
+	}
+	return &player{c: c, s: s, token: j.Token, name: name}
+}
+
+func join(t *testing.T, h *Hub, lobby, name string) *player {
+	t.Helper()
+	s := newFake()
+	c := NewClient(s)
+	if err := h.Join(c, 2, lobby, name); err != nil {
+		t.Fatal(err)
+	}
+	j := s.next(t, "joined")
+	return &player{c: c, s: s, token: j.Token, name: name}
+}
+
+func code(err error) string {
+	var e *game.Error
+	if errors.As(err, &e) {
+		return e.Code
+	}
+	return ""
+}
+
+func threePlayers(t *testing.T, h *Hub) []*player {
+	t.Helper()
+	ps := []*player{create(t, h, "L", "A"), join(t, h, "L", "B"), join(t, h, "L", "C")}
+	for _, p := range ps {
+		p.s.drain()
+	}
+	return ps
+}
+
+func startAndAck(t *testing.T, h *Hub, ps []*player) {
+	t.Helper()
+	if err := h.Start(ps[0].c, true, true); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range ps {
+		if err := h.Acknowledge(p.c); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestCreateJoinViews(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+	a := create(t, h, "L", "A")
+	b := join(t, h, "L", "B")
+	for _, p := range []*player{a, b} {
+		v := p.s.latestLobby(t)
+		if len(v.Players) != 2 || v.Host != "A" || v.MyRole != game.RoleSpectator || !v.Connected["A"] || !v.Connected["B"] {
+			t.Errorf("%s view %+v", p.name, v)
+		}
+	}
+	if err := h.Create(NewClient(newFake()), 1, "L", "Z"); code(err) != "exists" {
+		t.Errorf("duplicate create: %v", err)
+	}
+	if err := h.Join(NewClient(newFake()), 1, "L", "B"); code(err) != "nameTaken" {
+		t.Errorf("duplicate join: %v", err)
+	}
+	if err := h.Join(NewClient(newFake()), 1, "nope", "B"); code(err) != "notFound" {
+		t.Errorf("unknown lobby: %v", err)
+	}
+	if err := h.Join(a.c, 1, "L", "Q"); code(err) != "invalid" {
+		t.Errorf("join while bound: %v", err)
+	}
+}
+
+func TestStartHidesSecretsAndAutoAdvances(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+	ps := threePlayers(t, h)
+	if err := h.Start(ps[1].c, true, true); code(err) != "notHost" {
+		t.Errorf("non-host start: %v", err)
+	}
+	if err := h.Start(ps[0].c, true, true); err != nil {
+		t.Fatal(err)
+	}
+	undercovers := 0
+	for _, p := range ps {
+		v := p.s.latestLobby(t)
+		if v.GamePhase != game.PhaseRevealing || v.Roles != nil || v.SelectedWord != "" {
+			t.Errorf("%s leaked secrets: %+v", p.name, v)
+		}
+		switch v.MyRole {
+		case game.RoleUndercover:
+			undercovers++
+			if v.MyWord != nil {
+				t.Errorf("undercover %s got the word", p.name)
+			}
+		case game.RoleCivilian:
+			if v.MyWord == nil || *v.MyWord == "" {
+				t.Errorf("civilian %s got no word", p.name)
+			}
+		default:
+			t.Errorf("%s role %q", p.name, v.MyRole)
+		}
+	}
+	if undercovers != 1 {
+		t.Fatalf("%d undercovers", undercovers)
+	}
+
+	// Nobody sends a "start rounds" command: acknowledging is enough.
+	for _, p := range ps {
+		if err := h.Acknowledge(p.c); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, p := range ps {
+		if v := p.s.latestLobby(t); v.GamePhase != game.PhasePlaying {
+			t.Errorf("%s phase %s", p.name, v.GamePhase)
+		}
+	}
+}
+
+func TestVotingTalliesServerSide(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+	ps := threePlayers(t, h)
+	startAndAck(t, h, ps)
+	byName := map[string]*player{}
+	for _, p := range ps {
+		byName[p.name] = p
+	}
+	v := ps[0].s.latestLobby(t)
+	for i, name := range v.RoundOrder {
+		if err := h.NextPlayer(byName[name].c, i); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if v = ps[0].s.latestLobby(t); !v.RoundFinished {
+		t.Fatalf("round not finished: %+v", v)
+	}
+	// Everyone votes for the player after them in round order: a 3-way tie.
+	for i, name := range v.RoundOrder {
+		target := v.RoundOrder[(i+1)%3]
+		if err := h.Vote(byName[name].c, target); err != nil {
+			t.Fatal(err)
+		}
+	}
+	v = ps[1].s.latestLobby(t)
+	if v.RoundFinished || v.LastEliminated == nil || *v.LastEliminated != "" || len(v.AlivePlayers) != 3 {
+		t.Errorf("tie not handled: %+v", v)
+	}
+}
+
+func TestDisconnectGraceAndResume(t *testing.T) {
+	h, _ := newHub(t, 40*time.Millisecond)
+	ps := threePlayers(t, h)
+	a, b := ps[0], ps[1]
+
+	h.Disconnected(b.c)
+	if v := a.s.latestLobby(t); v.Connected["B"] || len(v.Players) != 3 {
+		t.Fatalf("B should be seated but disconnected: %+v", v)
+	}
+
+	// Resume within the grace window keeps the seat.
+	b2 := newFake()
+	if err := h.Resume(NewClient(b2), 5, "L", b.token); err != nil {
+		t.Fatal(err)
+	}
+	if j := b2.next(t, "joined"); j.PlayerName != "B" || j.IsHost {
+		t.Errorf("resume joined %+v", j)
+	}
+	time.Sleep(80 * time.Millisecond)
+	if v := a.s.latestLobby(t); !v.Connected["B"] || len(v.Players) != 3 {
+		t.Fatalf("B lost after resume: %+v", v)
+	}
+
+	// Bad token.
+	if err := h.Resume(NewClient(newFake()), 5, "L", "nope"); code(err) != "expired" {
+		t.Errorf("bad token: %v", err)
+	}
+}
+
+func TestDisconnectExpiryRemovesPlayer(t *testing.T) {
+	h, _ := newHub(t, 30*time.Millisecond)
+	ps := threePlayers(t, h)
+	a, c := ps[0], ps[2]
+	h.Disconnected(c.c)
+	time.Sleep(90 * time.Millisecond)
+	if v := a.s.latestLobby(t); len(v.Players) != 2 {
+		t.Fatalf("C not removed: %+v", v)
+	}
+	// The old token is gone with the seat.
+	if err := h.Resume(NewClient(newFake()), 1, "L", c.token); code(err) != "expired" {
+		t.Errorf("stale token: %v", err)
+	}
+}
+
+func TestSeatTakeoverByName(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+	ps := threePlayers(t, h)
+	startAndAck(t, h, ps)
+	b := ps[1]
+	role := b.s.latestLobby(t).MyRole
+	h.Disconnected(b.c)
+
+	// Joining under the same name while disconnected takes the seat over,
+	// even mid-game.
+	b2 := join(t, h, "L", "B")
+	if v := b2.s.latestLobby(t); v.MyRole != role || v.GamePhase != game.PhasePlaying {
+		t.Errorf("takeover view %+v", v)
+	}
+	if err := h.Resume(NewClient(newFake()), 1, "L", b.token); code(err) != "expired" {
+		t.Errorf("old token should be revoked: %v", err)
+	}
+	// A connected seat cannot be taken.
+	if err := h.Join(NewClient(newFake()), 1, "L", "B"); code(err) != "inProgress" {
+		t.Errorf("join over connected seat: %v", err)
+	}
+}
+
+func TestHostLeaveClosesLobby(t *testing.T) {
+	h, st := newHub(t, time.Minute)
+	ps := threePlayers(t, h)
+	h.Leave(ps[0].c)
+	for _, p := range ps[1:] {
+		p.s.next(t, "lobbyClosed")
+		select {
+		case <-p.s.closed:
+		default:
+			t.Errorf("%s not closed", p.name)
+		}
+	}
+	if l, _ := st.Load("L"); l != nil {
+		t.Error("lobby still stored")
+	}
+	if len(h.LiveIDs()) != 0 {
+		t.Error("room still live")
+	}
+}
+
+func TestHostGraceExpiryClosesLobby(t *testing.T) {
+	h, _ := newHub(t, 30*time.Millisecond)
+	ps := threePlayers(t, h)
+	h.Disconnected(ps[0].c)
+	ps[1].s.next(t, "lobbyClosed")
+}
+
+func TestNonHostLeaveMidGame(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+	ps := threePlayers(t, h)
+	startAndAck(t, h, ps)
+	h.Leave(ps[2].c)
+	v := ps[0].s.latestLobby(t)
+	if len(v.Players) != 2 {
+		t.Errorf("C still present: %+v", v)
+	}
+	// Three players minus one is two alive: the game resolves.
+	if v.GamePhase != game.PhaseGameOver {
+		t.Errorf("phase %s", v.GamePhase)
+	}
+}
+
+func TestResumeAcrossRestart(t *testing.T) {
+	st, err := store.Open(filepath.Join(t.TempDir(), "r.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+
+	h1 := New(st, time.Minute, slog.Default())
+	a := create(t, h1, "L", "A")
+	join(t, h1, "L", "B")
+	h1.Shutdown()
+	select {
+	case <-a.s.closed:
+	default:
+		t.Fatal("shutdown did not close connections")
+	}
+
+	h2 := New(st, time.Minute, slog.Default())
+	a2 := newFake()
+	if err := h2.Resume(NewClient(a2), 9, "L", a.token); err != nil {
+		t.Fatal(err)
+	}
+	if j := a2.next(t, "joined"); !j.IsHost || j.ReqID != 9 {
+		t.Errorf("joined %+v", j)
+	}
+	if v := a2.latestLobby(t); len(v.Players) != 2 || v.Connected["B"] {
+		t.Errorf("view after restart %+v", v)
+	}
+}
+
+func TestSlowConsumerIsDropped(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+	a := create(t, h, "L", "A")
+	slow := &fakeSender{events: make(chan Event, 1), closed: make(chan string, 1)}
+	if err := h.Join(NewClient(slow), 1, "L", "B"); err != nil {
+		t.Fatal(err)
+	}
+	// Buffer of one holds "joined"; the following lobby view overflows.
+	select {
+	case <-slow.closed:
+	default:
+		t.Fatal("slow client not closed")
+	}
+	if v := a.s.latestLobby(t); v.Connected["B"] {
+		t.Errorf("B should show as disconnected: %+v", v)
+	}
+}
