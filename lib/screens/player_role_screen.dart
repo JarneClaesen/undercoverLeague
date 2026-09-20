@@ -142,48 +142,67 @@ class _PlayerRoleScreenState extends State<PlayerRoleScreen> with SingleTickerPr
       },
     );
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const PhaseHeader(
-            eyebrow: 'ROLE REVEAL',
-            title: 'Your identity',
-            subtitle: "Hold the card. Don't let anyone see.",
-          ),
-          const SizedBox(height: 20),
-          card,
-          const SizedBox(height: 16),
-          StatusNotice(
-            message: PlayerRoleScreen.rulesNote(widget.settings),
-            icon: Icons.menu_book_outlined,
-            tone: NoticeTone.info,
-          ),
-          const SizedBox(height: 20),
-          ReadyMeter(ready: readyCount, total: totalPlayers, label: 'Summoners ready'),
-          const SizedBox(height: 20),
-          if (isSpectator)
-            const StatusNotice(
-              message: 'You are spectating this game. Sit tight while the summoners get ready.',
-              tone: NoticeTone.info,
-            )
-          else if (!hasAcknowledged)
-            HextechButton(
-              label: 'I know my role',
-              onPressed: _hasRevealed ? _acknowledge : null,
-              disabledReason: _hasRevealed ? null : 'Reveal your card first',
-            )
-          else
-            StatusNotice(
-              message: waitingOn > 0
-                  ? 'Locked in. Waiting for $waitingOn more…'
-                  : 'Locked in. Everyone is ready.',
-              tone: NoticeTone.success,
-              pulse: waitingOn > 0,
+    // The card scrolls; the meter and the acknowledge button do not. On a
+    // small phone the button is otherwise below the fold, and nobody thinks to
+    // scroll on a screen whose only job is one tap.
+    Widget action;
+    if (isSpectator) {
+      action = const StatusNotice(
+        message: 'You are spectating this game. Sit tight while the summoners get ready.',
+        tone: NoticeTone.info,
+      );
+    } else if (!hasAcknowledged) {
+      action = HextechButton(
+        label: 'I know my role',
+        onPressed: _hasRevealed ? _acknowledge : null,
+        disabledReason: _hasRevealed ? null : 'Reveal your card first',
+      );
+    } else {
+      action = StatusNotice(
+        message: waitingOn > 0 ? 'Locked in. Waiting for $waitingOn more…' : 'Locked in. Everyone is ready.',
+        tone: NoticeTone.success,
+        pulse: waitingOn > 0,
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const PhaseHeader(
+                  eyebrow: 'ROLE REVEAL',
+                  title: 'Your identity',
+                  subtitle: "Hold the card. Don't let anyone see.",
+                ),
+                const SizedBox(height: 20),
+                card,
+                const SizedBox(height: 16),
+                StatusNotice(
+                  message: PlayerRoleScreen.rulesNote(widget.settings),
+                  icon: Icons.menu_book_outlined,
+                  tone: NoticeTone.info,
+                ),
+              ],
             ),
-        ],
-      ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ReadyMeter(ready: readyCount, total: totalPlayers, label: 'Summoners ready'),
+              const SizedBox(height: 16),
+              action,
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
