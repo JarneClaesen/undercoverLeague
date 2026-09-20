@@ -69,7 +69,7 @@ func TestEndToEnd(t *testing.T) {
 	a := dial(t, srv)
 	a.send(Command{Type: "create", ReqID: 1, LobbyID: " t1 ", Name: "Alice"})
 	joined := a.expect("joined")
-	if joined.ReqID != 1 || !joined.IsHost || joined.LobbyID != "t1" || joined.Token == "" {
+	if joined.ReqID != 1 || !joined.IsHost || joined.LobbyID != "T1" || joined.Token == "" {
 		t.Fatalf("joined %+v", joined)
 	}
 

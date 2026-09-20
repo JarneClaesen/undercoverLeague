@@ -117,8 +117,10 @@ func (h *Hub) SetCatalog(c *game.Catalog) {
 
 // Create opens a new lobby. An empty id asks the server for a generated
 // code; anything else is validated and must not be taken. Either way the
-// "joined" event carries the code the lobby actually got.
+// "joined" event carries the code the lobby actually got. Codes are case
+// insensitive: they are stored and echoed back in upper case.
 func (h *Hub) Create(c *Client, reqID int, id, name string) error {
+	id = game.NormalizeLobbyID(id)
 	generate := id == ""
 	if !generate {
 		if err := game.ValidateLobbyID(id); err != nil {
@@ -156,6 +158,7 @@ func (h *Hub) Create(c *Client, reqID int, id, name string) error {
 }
 
 func (h *Hub) Join(c *Client, reqID int, id, name string) error {
+	id = game.NormalizeLobbyID(id)
 	if err := game.ValidateLobbyID(id); err != nil {
 		return err
 	}
@@ -196,6 +199,7 @@ func (h *Hub) Join(c *Client, reqID int, id, name string) error {
 }
 
 func (h *Hub) Resume(c *Client, reqID int, id, token string) error {
+	id = game.NormalizeLobbyID(id)
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if c.room != nil {

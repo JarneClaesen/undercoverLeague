@@ -160,6 +160,13 @@ func ValidatePlayerName(name string) error {
 	return nil
 }
 
+// NormalizeLobbyID is the canonical spelling of a code: codes are not case
+// sensitive, so "abc12", "Abc12" and "ABC12" all name the same lobby.
+func NormalizeLobbyID(id string) string {
+	return strings.ToUpper(strings.TrimSpace(id))
+}
+
+// ValidateLobbyID checks an already normalized id.
 func ValidateLobbyID(id string) error {
 	switch {
 	case id == "":

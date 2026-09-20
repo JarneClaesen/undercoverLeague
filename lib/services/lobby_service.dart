@@ -26,6 +26,10 @@ class LobbyService {
     return null;
   }
 
+  /// Lobby codes are not case sensitive; the server stores and shows them in
+  /// upper case, so the client does the same before sending or displaying one.
+  static String normalizeLobbyId(String lobbyId) => lobbyId.trim().toUpperCase();
+
   /// Returns an error message, or null when [lobbyId] is usable.
   static String? validateLobbyId(String lobbyId) {
     if (lobbyId.isEmpty) return 'Please enter a lobby ID.';

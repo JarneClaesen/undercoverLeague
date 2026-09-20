@@ -194,6 +194,35 @@ func TestCreateJoinViews(t *testing.T) {
 	}
 }
 
+func TestLobbyCodesAreCaseInsensitive(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+
+	first := newFake()
+	if err := h.Create(NewClient(first), 1, " abc12 ", "A"); err != nil {
+		t.Fatal(err)
+	}
+	if j := first.next(t, "joined"); j.LobbyID != "ABC12" {
+		t.Fatalf("created lobby %q, want the upper-case code", j.LobbyID)
+	}
+	if v := first.latestLobby(t); v.ID != "ABC12" {
+		t.Errorf("view id %q", v.ID)
+	}
+
+	// Joining, colliding on create and resuming all ignore case.
+	b := join(t, h, "Abc12", "B")
+	if err := h.Create(NewClient(newFake()), 1, "aBC12", "C"); code(err) != "exists" {
+		t.Errorf("create with a different casing: %v", err)
+	}
+	h.Disconnected(b.c)
+	resumed := newFake()
+	if err := h.Resume(NewClient(resumed), 5, "abc12", b.token); err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	if j := resumed.next(t, "joined"); j.LobbyID != "ABC12" || j.PlayerName != "B" {
+		t.Errorf("resumed %+v", j)
+	}
+}
+
 func TestCreateWithoutIDGeneratesCode(t *testing.T) {
 	h, _ := newHub(t, time.Minute)
 

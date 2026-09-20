@@ -16,6 +16,7 @@ import 'package:undercoverleague/widgets/hextech_scaffold.dart';
 import 'package:undercoverleague/widgets/hextech_snack.dart';
 import 'package:undercoverleague/widgets/hextech_text_field.dart';
 import 'package:undercoverleague/widgets/status_notice.dart';
+import 'package:undercoverleague/widgets/upper_case_text_formatter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (kIsWeb) {
       final code = Uri.base.queryParameters['lobby'] ?? '';
       if (code.isNotEmpty) {
-        _lobbyIdController.text = code;
+        _lobbyIdController.text = LobbyService.normalizeLobbyId(code);
         _focusNameOnOpen = true;
       }
     }
@@ -145,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_busy) return;
 
     final name = _nameController.text.trim();
-    final lobbyId = _lobbyIdController.text.trim();
+    final lobbyId = LobbyService.normalizeLobbyId(_lobbyIdController.text);
     final nameError = LobbyService.validatePlayerName(name);
     final lobbyError =
         requireCode || lobbyId.isNotEmpty ? LobbyService.validateLobbyId(lobbyId) : null;
@@ -210,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final result = await _lobbyService.joinLobby(lobbyId, name);
       switch (result) {
         case JoinResult.ok:
-          _navigateToLobby(name, lobbyId, isHost: false);
+          _navigateToLobby(name, GameConnection.instance.session?.lobbyId ?? lobbyId, isHost: false);
         case JoinResult.notFound:
           _setLobbyError('No lobby with that code. Check it with the host.');
         case JoinResult.inProgress:
@@ -261,6 +262,8 @@ class _HomeScreenState extends State<HomeScreen> {
             hint: 'Leave empty to get a random code',
             prefixIcon: Icons.tag,
             maxLength: 64,
+            textCapitalization: TextCapitalization.characters,
+            inputFormatters: const [UpperCaseTextFormatter()],
             textInputAction: TextInputAction.go,
             errorText: _lobbyError,
             onSubmitted: (_) => _busy ? null : _joinLobby(),
