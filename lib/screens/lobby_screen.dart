@@ -10,43 +10,55 @@ class LobbyScreen extends StatefulWidget {
   final String playerName;
   final bool isHost;
 
-  LobbyScreen({required this.lobbyId, required this.playerName, required this.isHost});
+  const LobbyScreen({
+    super.key,
+    required this.lobbyId,
+    required this.playerName,
+    required this.isHost,
+  });
 
   @override
-  _LobbyScreenState createState() => _LobbyScreenState();
+  State<LobbyScreen> createState() => _LobbyScreenState();
 }
 
 class _LobbyScreenState extends State<LobbyScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   bool _isLeaving = false;
+  bool _isStarting = false;
+  bool _inGame = false;
   bool useChampions = true;
   bool useItems = true;
-  bool _gameStarted = false;
 
   @override
   void dispose() {
+    // Leaving through any path other than the dialog (e.g. the lobby was
+    // deleted under us) still needs to remove this player server-side.
     if (!_isLeaving) {
-      _leaveLobby();
+      _isLeaving = true;
+      _firebaseService
+          .leaveLobby(widget.lobbyId, widget.playerName, widget.isHost)
+          .catchError((e) => debugPrint('Error leaving lobby: $e'));
     }
     super.dispose();
   }
 
+  void _goHome() {
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const ResponsiveLayout(child: HomeScreen())),
+      (Route<dynamic> route) => false,
+    );
+  }
+
   Future<void> _leaveLobby() async {
     if (_isLeaving) return;
-    setState(() {
-      _isLeaving = true;
-    });
+    setState(() => _isLeaving = true);
     try {
       await _firebaseService.leaveLobby(widget.lobbyId, widget.playerName, widget.isHost);
     } catch (e) {
-      print('Error leaving lobby: $e');
+      debugPrint('Error leaving lobby: $e');
     }
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => ResponsiveLayout(child: HomeScreen())),
-            (Route<dynamic> route) => false,
-      );
-    }
+    _goHome();
   }
 
   void _showLeaveConfirmationDialog() {
@@ -54,17 +66,17 @@ class _LobbyScreenState extends State<LobbyScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Leave Lobby'),
-          content: Text('Are you sure you want to leave the lobby?'),
+          title: const Text('Leave Lobby'),
+          content: Text(widget.isHost
+              ? 'You are the host. Leaving will close the lobby for everyone.'
+              : 'Are you sure you want to leave the lobby?'),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: Text('Leave'),
+              child: const Text('Leave'),
               onPressed: () {
                 Navigator.of(context).pop();
                 _leaveLobby();
@@ -76,136 +88,140 @@ class _LobbyScreenState extends State<LobbyScreen> {
     );
   }
 
-  void _startGame() async {
-    await _firebaseService.startGame(widget.lobbyId, useChampions, useItems);
+  Future<void> _startGame() async {
+    if (_isStarting) return;
+    setState(() => _isStarting = true);
+    try {
+      await _firebaseService.startGame(widget.lobbyId, useChampions, useItems);
+    } catch (e) {
+      debugPrint('Error starting game: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not start the game. Please try again.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isStarting = false);
+    }
+  }
+
+  void _openGame(String hostName) {
+    if (_inGame || _isLeaving) return;
+    _inGame = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResponsiveLayout(
+            child: GameScreen(
+              lobbyId: widget.lobbyId,
+              playerName: widget.playerName,
+              hostName: hostName,
+            ),
+          ),
+        ),
+      ).then((_) {
+        if (mounted) setState(() => _inGame = false);
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        _showLeaveConfirmationDialog();
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _showLeaveConfirmationDialog();
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Lobby'),
+          title: const Text('Lobby'),
           automaticallyImplyLeading: false,
           actions: [
             IconButton(
-              icon: Icon(Icons.exit_to_app),
+              icon: const Icon(Icons.exit_to_app),
+              tooltip: 'Leave lobby',
               onPressed: _showLeaveConfirmationDialog,
             ),
           ],
         ),
-        body: StreamBuilder<DocumentSnapshot>(
+        body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: _firebaseService.lobbyStream(widget.lobbyId),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return Center(child: Text('An error occurred. Please try again.'));
+              return const Center(child: Text('An error occurred. Please try again.'));
             }
-
             if (!snapshot.hasData) {
-              return Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             }
 
-            if (!snapshot.data!.exists) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!_isLeaving) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => ResponsiveLayout(child: HomeScreen())),
-                        (Route<dynamic> route) => false,
-                  );
-                }
-              });
-              return Center(child: Text('Lobby has been closed. Returning to home screen...'));
-            }
-
-            var lobbyData = snapshot.data!.data() as Map<String, dynamic>?;
-
+            final lobbyData = snapshot.data!.data();
             if (lobbyData == null) {
-              return Center(child: Text('Lobby data is null. Please try again.'));
-            }
-
-            List<String> players = List<String>.from(lobbyData['players']);
-            String hostName = lobbyData['host'];
-            bool gameStarted = lobbyData['gameStarted'] ?? false;
-
-            // Sort players to put host at the top
-            players.remove(hostName);
-            players.insert(0, hostName);
-
-            if (gameStarted && !_gameStarted) {
-              _gameStarted = true;
+              // The host closed the lobby.
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ResponsiveLayout(
-                      child: GameScreen(
-                        lobbyId: widget.lobbyId,
-                        playerName: widget.playerName,
-                        hostName: hostName,
-                      ),
-                    ),
-                  ),
-                ).then((_) {
-                  setState(() {
-                    _gameStarted = false;
-                  });
-                });
+                if (!_isLeaving) _goHome();
               });
+              return const Center(child: Text('Lobby has been closed. Returning to home screen...'));
             }
+
+            final String hostName = lobbyData['host'] ?? '';
+            final bool gameStarted = lobbyData['gameStarted'] ?? false;
+            final players = List<String>.from(lobbyData['players'] ?? [])
+              ..remove(hostName)
+              ..insert(0, hostName);
 
             if (gameStarted) {
-              return Center(child: Text('Game in progress...'));
+              _openGame(hostName);
+              return const Center(child: Text('Game in progress...'));
             }
 
             return Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Text('Lobby ID: ${widget.lobbyId}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'Lobby ID: ${widget.lobbyId}',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
                 Expanded(
                   child: ListView.builder(
                     itemCount: players.length,
                     itemBuilder: (context, index) {
-                      String player = players[index];
-                      bool isHost = player == hostName;
+                      final player = players[index];
+                      final isHost = player == hostName;
                       return ListTile(
                         title: Text(player),
-                        leading: Icon(Icons.person),
-                        trailing: isHost ? Icon(Icons.star, color: Colors.yellow) : null,
+                        leading: const Icon(Icons.person),
+                        trailing: isHost ? const Icon(Icons.star, color: Colors.yellow) : null,
                       );
                     },
                   ),
                 ),
                 if (widget.isHost) ...[
                   CheckboxListTile(
-                    title: Text('Use Champions'),
+                    title: const Text('Use Champions'),
                     value: useChampions,
-                    onChanged: (value) => setState(() => useChampions = value!),
+                    // Never allow both to be off: there would be nothing to draw.
+                    onChanged: !useItems ? null : (value) => setState(() => useChampions = value!),
                   ),
                   CheckboxListTile(
-                    title: Text('Use Items'),
+                    title: const Text('Use Items'),
                     value: useItems,
-                    onChanged: (value) => setState(() => useItems = value!),
+                    onChanged: !useChampions ? null : (value) => setState(() => useItems = value!),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: ElevatedButton(
-                      onPressed: players.length >= 3 ? _startGame : null,
-                      child: Text('Start Game'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: Size(double.infinity, 50),
-                      ),
+                      onPressed: players.length >= 3 && !_isStarting ? _startGame : null,
+                      style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+                      child: Text(players.length >= 3 ? 'Start Game' : 'Need at least 3 players'),
                     ),
                   ),
-                ],
-                if (!widget.isHost)
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
+                ] else
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
                     child: Text('Waiting for host to start the game...', style: TextStyle(fontSize: 16)),
                   ),
               ],

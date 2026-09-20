@@ -4,61 +4,87 @@ import 'package:undercoverleague/services/firebase_service.dart';
 import 'package:undercoverleague/widgets/responsive_layout.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _lobbyIdController = TextEditingController();
   final FirebaseService _firebaseService = FirebaseService();
+  bool _busy = false;
 
-  void _createLobby() async {
-    if (_nameController.text.isNotEmpty && _lobbyIdController.text.isNotEmpty) {
-      bool lobbyExists = await _firebaseService.lobbyExists(_lobbyIdController.text);
-      if (lobbyExists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lobby ID already exists. Please choose a different ID.')),
-        );
-      } else {
-        await _firebaseService.createLobby(_nameController.text, _lobbyIdController.text);
-        _navigateToLobby(true);
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter both your name and a lobby ID.')),
-      );
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _lobbyIdController.dispose();
+    super.dispose();
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// Validates both fields, showing the first problem found. Returns
+  /// `(name, lobbyId)` when everything is fine.
+  (String, String)? _validatedInput() {
+    final name = _nameController.text.trim();
+    final lobbyId = _lobbyIdController.text.trim();
+    final error = FirebaseService.validatePlayerName(name) ?? FirebaseService.validateLobbyId(lobbyId);
+    if (error != null) {
+      _showMessage(error);
+      return null;
+    }
+    return (name, lobbyId);
+  }
+
+  Future<void> _run(Future<void> Function(String name, String lobbyId) action) async {
+    if (_busy) return;
+    final input = _validatedInput();
+    if (input == null) return;
+    setState(() => _busy = true);
+    try {
+      await action(input.$1, input.$2);
+    } catch (e) {
+      _showMessage('Something went wrong. Please try again.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
-  void _joinLobby() async {
-    if (_nameController.text.isNotEmpty && _lobbyIdController.text.isNotEmpty) {
-      bool lobbyExists = await _firebaseService.lobbyExists(_lobbyIdController.text);
-      if (lobbyExists) {
-        await _firebaseService.joinLobby(_lobbyIdController.text, _nameController.text);
-        _navigateToLobby(false);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lobby does not exist. Please check the ID.')),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter both your name and the lobby ID.')),
-      );
-    }
-  }
+  Future<void> _createLobby() => _run((name, lobbyId) async {
+        final created = await _firebaseService.createLobby(name, lobbyId);
+        if (!created) {
+          _showMessage('Lobby ID already exists. Please choose a different ID.');
+          return;
+        }
+        _navigateToLobby(name, lobbyId, isHost: true);
+      });
 
-  void _navigateToLobby(bool isHost) {
+  Future<void> _joinLobby() => _run((name, lobbyId) async {
+        final result = await _firebaseService.joinLobby(lobbyId, name);
+        switch (result) {
+          case JoinResult.ok:
+            _navigateToLobby(name, lobbyId, isHost: false);
+          case JoinResult.notFound:
+            _showMessage('Lobby does not exist. Please check the ID.');
+          case JoinResult.inProgress:
+            _showMessage('That lobby has a game in progress. Try again when it is over.');
+          case JoinResult.nameTaken:
+            _showMessage('Someone in that lobby already has that name.');
+        }
+      });
+
+  void _navigateToLobby(String name, String lobbyId, {required bool isHost}) {
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ResponsiveLayout(
-          child: LobbyScreen(
-            lobbyId: _lobbyIdController.text,
-            playerName: _nameController.text,
-            isHost: isHost,
-          ),
+          child: LobbyScreen(lobbyId: lobbyId, playerName: name, isHost: isHost),
         ),
       ),
     );
@@ -67,29 +93,30 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Undercover League')),
+      appBar: AppBar(title: const Text('Undercover League')),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _nameController,
-              decoration: InputDecoration(labelText: 'Enter your name'),
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Enter your name'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextField(
               controller: _lobbyIdController,
-              decoration: InputDecoration(labelText: 'Enter lobby ID'),
+              decoration: const InputDecoration(labelText: 'Enter lobby ID'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _createLobby,
-              child: Text('Create Lobby'),
+              onPressed: _busy ? null : _createLobby,
+              child: const Text('Create Lobby'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _joinLobby,
-              child: Text('Join Lobby'),
+              onPressed: _busy ? null : _joinLobby,
+              child: const Text('Join Lobby'),
             ),
           ],
         ),

@@ -193,7 +193,7 @@ final List<Map<String, String>> items = [
   {"name": "Farsight Alteration", "icon": "assets/items/farsight_alteration.jpg"},
   {"name": "Oracle Lens", "icon": "assets/items/oracle's_lens.jpg"},
   {"name": "Stealth Ward", "icon": "assets/items/stealth_ward.jpg"},
-  {"name": "Eye of the Herald", "icon": "assets/items/Eye_of_the_Herald.webp"},
+  {"name": "Eye of the Herald", "icon": "assets/items/eye_of_the_herald.jpg"},
   {"name": "Poro-Snax", "icon": "assets/items/poro-snax.jpg"},
   {"name": "Berserker's Greaves", "icon": "assets/items/berserker's_greaves.jpg"},
   {"name": "Boots", "icon": "assets/items/boots.jpg"},

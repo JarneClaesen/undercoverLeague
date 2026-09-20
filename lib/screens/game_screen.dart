@@ -10,34 +10,40 @@ class GameScreen extends StatefulWidget {
   final String playerName;
   final String hostName;
 
-  GameScreen({required this.lobbyId, required this.playerName, required this.hostName});
+  const GameScreen({
+    super.key,
+    required this.lobbyId,
+    required this.playerName,
+    required this.hostName,
+  });
 
   @override
-  _GameScreenState createState() => _GameScreenState();
+  State<GameScreen> createState() => _GameScreenState();
 }
 
 class _GameScreenState extends State<GameScreen> {
+  final FirebaseService _firebaseService = FirebaseService();
   bool _isReturningToLobby = false;
+
+  bool get _isHost => widget.playerName == widget.hostName;
 
   void _showEndGameConfirmationDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('End Game'),
-          content: Text('Are you sure you want to end the game and return to the lobby?'),
+          title: const Text('End Game'),
+          content: const Text('Are you sure you want to end the game and return to the lobby?'),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: Text('End Game'),
+              child: const Text('End Game'),
               onPressed: () {
                 Navigator.of(context).pop();
-                FirebaseService().endGameAndReturnToLobby(widget.lobbyId);
+                _firebaseService.resetGame(widget.lobbyId);
               },
             ),
           ],
@@ -46,143 +52,176 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  /// Pops back to the lobby exactly once, however many snapshots arrive.
   void _returnToLobby() {
-    if (!_isReturningToLobby) {
-      _isReturningToLobby = true;
-      Navigator.of(context).pop();
-    }
+    if (_isReturningToLobby) return;
+    _isReturningToLobby = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  /// Phase transitions are driven by the host only, so a client with a
+  /// flaky connection can't replay a stale transition later. The service
+  /// methods re-check the state in a transaction, so a duplicate call is
+  /// harmless anyway.
+  void _hostTransition(Future<void> Function() transition) {
+    if (!_isHost) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) transition().catchError((e) => debugPrint('Transition failed: $e'));
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (widget.playerName == widget.hostName) {
-          _showEndGameConfirmationDialog();
-        }
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _isHost) _showEndGameConfirmationDialog();
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Undercover Game'),
+          title: const Text('Undercover Game'),
           automaticallyImplyLeading: false,
           actions: [
-            if (widget.playerName == widget.hostName)
+            if (_isHost)
               IconButton(
-                icon: Icon(Icons.stop),
+                icon: const Icon(Icons.stop),
                 onPressed: _showEndGameConfirmationDialog,
                 tooltip: 'End Game',
               ),
           ],
         ),
-        body: StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseService().gameStream(widget.lobbyId),
+        body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: _firebaseService.lobbyStream(widget.lobbyId),
           builder: (context, snapshot) {
-            if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+            if (snapshot.hasError) {
+              return const Center(child: Text('An error occurred. Please try again.'));
+            }
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-            var gameData = snapshot.data!.data() as Map<String, dynamic>?;
-
+            final gameData = snapshot.data!.data();
             if (gameData == null) {
-              return Center(child: Text('Game data not found'));
+              // Lobby deleted; the LobbyScreen underneath handles navigation.
+              return const Center(child: Text('Lobby has been closed.'));
             }
 
-            bool gameStarted = gameData['gameStarted'] ?? false;
+            final bool gameStarted = gameData['gameStarted'] ?? false;
             if (!gameStarted) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _returnToLobby();
-              });
-              return Center(child: Text('Game ended. Returning to lobby...'));
+              _returnToLobby();
+              return const Center(child: Text('Game ended. Returning to lobby...'));
             }
 
-            String gamePhase = gameData['gamePhase'] ?? '';
-            Map<String, dynamic> rolesData = gameData['roles'] ?? {};
-            List<String> alivePlayers = List<String>.from(gameData['alivePlayers'] ?? []);
-            List<String> roundOrder = List<String>.from(gameData['roundOrder'] ?? []);
-            int currentPlayerIndex = gameData['currentPlayerIndex'] ?? 0;
-            bool isRoundFinished = gameData['roundFinished'] ?? false;
-            Map<String, bool> rolesAcknowledged = Map<String, bool>.from(gameData['rolesAcknowledged'] ?? {});
+            final String gamePhase = gameData['gamePhase'] ?? '';
+            final roles = Map<String, dynamic>.from(gameData['roles'] ?? {});
+            final alivePlayers = List<String>.from(gameData['alivePlayers'] ?? []);
+            final roundOrder = List<String>.from(gameData['roundOrder'] ?? []);
+            final int currentPlayerIndex = gameData['currentPlayerIndex'] ?? 0;
+            final bool isRoundFinished = gameData['roundFinished'] ?? false;
+            final rolesAcknowledged = Map<String, dynamic>.from(gameData['rolesAcknowledged'] ?? {})
+                .map((k, v) => MapEntry(k, v == true));
+            final votes = Map<String, dynamic>.from(gameData['votes'] ?? {});
+
+            final String playerRole = roles[widget.playerName] ?? 'Spectator';
+            final String word = gameData['selectedWord'] ?? '';
+            final String icon = gameData['selectedIcon'] ?? defaultIconPath;
+            final bool isChampion = gameData['selectedIsChampion'] ?? true;
+            final String? lastEliminated = gameData['lastEliminated'];
 
             if (gamePhase == 'gameOver') {
-              String winner = gameData['winner'] ?? 'Unknown';
+              final String winner = gameData['winner'] ?? 'Unknown';
+              final undercover = roles.entries
+                  .where((e) => e.value == 'Undercover')
+                  .map((e) => e.key)
+                  .join(', ');
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Game Over!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 20),
-                    Text('$winner win!', style: TextStyle(fontSize: 20)),
-                    SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: () {
-                        FirebaseService().resetGame(widget.lobbyId).then((_) {
-                          _returnToLobby();
-                        });
-                      },
-                      child: Text('Return to Lobby'),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                        textStyle: TextStyle(fontSize: 18),
-                      ),
-                    ),
+                    const Text('Game Over!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 20),
+                    Text('$winner win!', style: const TextStyle(fontSize: 20)),
+                    const SizedBox(height: 12),
+                    Text('The Undercover was $undercover', style: const TextStyle(fontSize: 16)),
+                    Text('The word was $word', style: const TextStyle(fontSize: 16)),
+                    const SizedBox(height: 40),
+                    if (_isHost)
+                      ElevatedButton(
+                        onPressed: () => _firebaseService.resetGame(widget.lobbyId),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                          textStyle: const TextStyle(fontSize: 18),
+                        ),
+                        child: const Text('Return to Lobby'),
+                      )
+                    else
+                      const Text('Waiting for the host to return to the lobby...'),
                   ],
                 ),
               );
             }
 
             if (gamePhase == 'revealingRoles') {
-              Map<String, dynamic> playerInfo = rolesData[widget.playerName] ?? {'role': 'Spectator', 'word': '', 'isChampion': 'true'};
-              String playerRole = playerInfo['role'] ?? 'Spectator';
-              String playerWord = playerInfo['word'] ?? '';
-              bool isChampion = playerInfo['isChampion'] == 'true';
-
-              bool allAcknowledged = rolesAcknowledged.values.every((v) => v == true);
-
-              if (allAcknowledged) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  FirebaseService().startGameRounds(widget.lobbyId);
-                });
+              if (rolesAcknowledged.isNotEmpty && rolesAcknowledged.values.every((v) => v)) {
+                _hostTransition(() => _firebaseService.startGameRounds(widget.lobbyId));
               }
-
               return PlayerRoleScreen(
                 lobbyId: widget.lobbyId,
                 playerName: widget.playerName,
                 role: playerRole,
-                word: playerWord,
-                rolesAcknowledged: rolesAcknowledged,
+                word: word,
+                icon: icon,
                 isChampion: isChampion,
+                rolesAcknowledged: rolesAcknowledged,
               );
             }
 
-            if (!alivePlayers.contains(widget.playerName) && widget.playerName != widget.hostName) {
-              return Center(child: Text('You have been eliminated!'));
+            // Eliminated players spectate; the host keeps the full view so
+            // they can still end the game.
+            if (!alivePlayers.contains(widget.playerName) && !_isHost) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('You have been eliminated!', style: TextStyle(fontSize: 24)),
+                    const SizedBox(height: 12),
+                    Text('${alivePlayers.length} players remain', style: const TextStyle(fontSize: 16)),
+                  ],
+                ),
+              );
             }
 
             if (gamePhase == 'playing') {
               if (!isRoundFinished) {
-                Map<String, dynamic> playerInfo = rolesData[widget.playerName] ?? {'role': 'Spectator', 'word': '', 'isChampion': 'true'};
-                String playerRole = playerInfo['role'] ?? 'Spectator';
-                String playerWord = playerInfo['word'] ?? '';
-                bool isChampion = playerInfo['isChampion'] == 'true';
+                final String? currentPlayer =
+                    currentPlayerIndex < roundOrder.length ? roundOrder[currentPlayerIndex] : null;
                 return RoundScreen(
                   lobbyId: widget.lobbyId,
-                  players: roundOrder,
+                  currentPlayer: currentPlayer,
                   currentPlayerIndex: currentPlayerIndex,
-                  isCurrentPlayer: roundOrder[currentPlayerIndex] == widget.playerName,
+                  isCurrentPlayer: currentPlayer == widget.playerName,
                   playerRole: playerRole,
-                  word: playerWord,
+                  word: word,
+                  icon: icon,
                   isChampion: isChampion,
-                );
-              } else {
-                return VotingScreen(
-                  lobbyId: widget.lobbyId,
-                  alivePlayers: alivePlayers,
-                  playerName: widget.playerName,
-                  hostName: widget.hostName,
+                  lastEliminated: lastEliminated,
                 );
               }
+
+              if (alivePlayers.every(votes.containsKey)) {
+                _hostTransition(() => _firebaseService.endVotingRound(widget.lobbyId));
+              }
+              return VotingScreen(
+                lobbyId: widget.lobbyId,
+                alivePlayers: alivePlayers,
+                votes: votes,
+                playerName: widget.playerName,
+              );
             }
 
-            return Center(child: Text('Waiting for game to start...'));
+            return const Center(child: Text('Waiting for game to start...'));
           },
         ),
       ),
