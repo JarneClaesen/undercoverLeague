@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:undercoverleague/models/filter_presets.dart';
 import 'package:undercoverleague/models/game_settings.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
 import 'package:undercoverleague/theme/motion.dart';
@@ -7,9 +6,10 @@ import 'package:undercoverleague/widgets/hextech_chip.dart';
 import 'package:undercoverleague/widgets/lobby_pool_toggles.dart';
 import 'package:undercoverleague/widgets/motion_size.dart';
 
-/// The host's word-pool controls: presets, which packs, which seasons,
-/// which item tiers, which champion classes and regions, plus the server's
-/// count of what that leaves to draw from.
+/// The host's word-pool controls: which packs, which seasons, which item
+/// tiers, which champion classes, regions, lanes, range, resource, damage
+/// type and difficulty, plus the server's count of what that leaves to draw
+/// from.
 ///
 /// [settings] is whatever the server last broadcast (or the screen's
 /// pending draft) and is the source of truth; while a slider is being
@@ -80,10 +80,6 @@ class _LobbyFiltersState extends State<LobbyFilters> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        LobbyPresetsRow(
-          onSelected: (preset) => _commit(preset.apply(s, range)),
-        ),
-        const SizedBox(height: 16),
         LobbyPoolToggles(
           packs: s.packs,
           poolSize: widget.poolSize,
@@ -225,42 +221,6 @@ class _LobbyFiltersState extends State<LobbyFilters> {
         ],
         const SizedBox(height: 14),
         PoolSizeLine(settings: s, poolSize: widget.poolSize),
-      ],
-    );
-  }
-}
-
-/// One-tap pools ("Veteran", "Boots only", …) that replace the filter half
-/// of the settings and leave the rules alone.
-class LobbyPresetsRow extends StatelessWidget {
-  final ValueChanged<FilterPreset> onSelected;
-
-  const LobbyPresetsRow({super.key, required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const HextechSectionLabel('Presets'),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final preset in FilterPreset.all)
-              Tooltip(
-                message: preset.description,
-                child: HextechChip(
-                  label: preset.label,
-                  dense: true,
-                  selected: false,
-                  onSelected: (_) => onSelected(preset),
-                ),
-              ),
-          ],
-        ),
       ],
     );
   }

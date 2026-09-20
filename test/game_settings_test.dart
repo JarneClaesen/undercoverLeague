@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:undercoverleague/models/filter_presets.dart';
 import 'package:undercoverleague/models/game_settings.dart';
 import 'package:undercoverleague/models/lobby.dart';
 import 'package:undercoverleague/services/lobby_service.dart';
@@ -165,41 +164,6 @@ void main() {
     expect(LobbyService.validateSettings(const GameSettings(turnSeconds: 300)), isNull);
     expect(reactionEmoji.length, 8);
     expect(reactionEmoji.first, '\u{1F525}');
-  });
-
-  test('presets replace the pool and keep the rules', () {
-    const range = SeasonRange(champions: (1, 16), items: (3, 16));
-    const current = GameSettings(packs: {WordPack.runes}, undercovers: 2, clueLog: true);
-    final byId = {for (final p in FilterPreset.all) p.id: p};
-    expect(byId.keys, ['veteran', 'fresh', 'legendary', 'components', 'boots', 'mages', 'everything']);
-
-    final veteran = byId['veteran']!.apply(current, range);
-    expect(veteran.packs, {'champions', 'items'});
-    expect(veteran.champSeasons, (1, 5));
-    expect(veteran.itemSeasons, (3, 5));
-    expect(veteran.undercovers, 2);
-    expect(veteran.clueLog, isTrue);
-
-    final fresh = byId['fresh']!.apply(current, range);
-    expect(fresh.champSeasons, (16, 16));
-    expect(fresh.itemSeasons, (16, 16));
-    // Without a range the seasons cannot be known; they are left as they were.
-    expect(byId['fresh']!.apply(current, null).champSeasons, current.champSeasons);
-
-    expect(byId['legendary']!.apply(current, range).itemTiers, {'legendary'});
-    expect(byId['legendary']!.apply(current, range).packs, {'items'});
-    expect(byId['components']!.apply(current, range).itemTiers, {'component'});
-    expect(byId['boots']!.apply(current, range).itemTiers, {'boots'});
-
-    final mages = byId['mages']!.apply(current, range);
-    expect(mages.packs, {'champions', 'abilities'});
-    expect(mages.champClasses, {'Mage'});
-
-    final everything = byId['everything']!.apply(current, range);
-    expect(everything.packs, WordPack.all.toSet());
-    expect(everything.itemTiers, ItemTier.all.toSet());
-    expect(everything.champClasses, isEmpty);
-    expect(everything.champSeasons, (0, 0));
   });
 
   test('impostor limit follows 2 * impostors < players', () {

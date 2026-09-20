@@ -88,8 +88,6 @@ void main() {
     expect(find.textContaining('CHAMPIONS'), findsWidgets);
     expect(find.text('ITEM TIERS'), findsOneWidget);
     expect(find.text('CHAMPION FILTERS'), findsOneWidget);
-    expect(find.text('PRESETS'), findsOneWidget);
-    expect(find.text('VETERAN'), findsOneWidget);
     expect(find.text('RULES'), findsOneWidget);
     expect(find.text('Undercovers'), findsOneWidget);
     expect(find.text('Decoy word'), findsOneWidget);
