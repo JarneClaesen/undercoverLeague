@@ -771,7 +771,7 @@ func TestViewNewFields(t *testing.T) {
 	b, _ := json.Marshal(v)
 	for _, key := range []string{`"spectators":[]`, `"round":0`, `"deadline":0`, `"clues":[]`, `"guesser":""`, `"lastGuess":null`,
 		`"ballots":[]`, `"scores":{}`, `"gamesPlayed":0`, `"achievements":{}`, `"stats":{}`, `"myDecoy":false`, `"selectedPack":""`,
-		`"poolSize":{"champions":6,"items":9}`, `"classes":[`, `"regions":[`, `"dailyTheme":{"id":"`, `"undercovers":1`, `"randomOrder":true`} {
+		`"poolSize":{"champions":6,"items":9}`, `"classes":[`, `"regions":[`, `"dailyTheme":{"id":"`, `"undercovers":1`, `"randomOrder":false`} {
 		if !strings.Contains(string(b), key) {
 			t.Errorf("view JSON lacks %s", key)
 		}

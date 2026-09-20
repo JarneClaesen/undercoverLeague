@@ -17,8 +17,9 @@ type Settings struct {
 	MrWhites int `json:"mrWhites"`
 	// DecoyWord gives Undercovers a neighbour of the word instead of nothing.
 	DecoyWord bool `json:"decoyWord"`
-	// RandomOrder reshuffles the round order after every tally; false keeps
-	// the Start order and rotates the first speaker by one each round.
+	// RandomOrder reshuffles the round order after every tally; the default,
+	// false, keeps the Start order and rotates the first speaker by one each
+	// round.
 	RandomOrder bool `json:"randomOrder"`
 	// TurnSeconds bounds a describing turn; voting and a last guess get
 	// twice as long. 0 turns the timer off, otherwise 10..300.
@@ -35,25 +36,24 @@ const (
 )
 
 func DefaultSettings() Settings {
-	return Settings{Filter: DefaultFilter(), Undercovers: 1, RandomOrder: true}
+	return Settings{Filter: DefaultFilter(), Undercovers: 1}
 }
 
 // UnmarshalJSON decodes the Filter part through Filter's own decoder (which
 // the embedding would otherwise promote to the whole struct) and the rule
-// fields separately. A missing "randomOrder" key, as on rows saved before it
-// existed, means the old behaviour, true; an explicit false is kept.
+// fields separately.
 func (s *Settings) UnmarshalJSON(b []byte) error {
 	if err := s.Filter.UnmarshalJSON(b); err != nil {
 		return err
 	}
 	var aux struct {
-		Undercovers int   `json:"undercovers"`
-		MrWhites    int   `json:"mrWhites"`
-		DecoyWord   bool  `json:"decoyWord"`
-		RandomOrder *bool `json:"randomOrder"`
-		TurnSeconds int   `json:"turnSeconds"`
-		ClueLog     bool  `json:"clueLog"`
-		RotateHost  bool  `json:"rotateHost"`
+		Undercovers int  `json:"undercovers"`
+		MrWhites    int  `json:"mrWhites"`
+		DecoyWord   bool `json:"decoyWord"`
+		RandomOrder bool `json:"randomOrder"`
+		TurnSeconds int  `json:"turnSeconds"`
+		ClueLog     bool `json:"clueLog"`
+		RotateHost  bool `json:"rotateHost"`
 	}
 	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
@@ -61,7 +61,7 @@ func (s *Settings) UnmarshalJSON(b []byte) error {
 	s.Undercovers = aux.Undercovers
 	s.MrWhites = aux.MrWhites
 	s.DecoyWord = aux.DecoyWord
-	s.RandomOrder = aux.RandomOrder == nil || *aux.RandomOrder
+	s.RandomOrder = aux.RandomOrder
 	s.TurnSeconds = aux.TurnSeconds
 	s.ClueLog = aux.ClueLog
 	s.RotateHost = aux.RotateHost

@@ -82,8 +82,8 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
   onto `packs` by `Filter.UnmarshalJSON`. Zero season bounds mean "all";
   `itemTiers` null = all, `[]` = none; classes/regions empty = all.
 - `game.Settings` embeds `Filter` (JSON flattened) plus `undercovers` (>= 1),
-  `mrWhites` (needs `decoyWord`), `decoyWord`, `randomOrder` (absent key =
-  true; `Settings.UnmarshalJSON` exists because the embedded Filter's would
+  `mrWhites` (needs `decoyWord`), `decoyWord`, `randomOrder` (default false;
+  `Settings.UnmarshalJSON` exists because the embedded Filter's would
   otherwise be promoted), `turnSeconds` (0 or 10..300), `clueLog`,
   `rotateHost`. `{"type":"settings","settings":{…Settings…}}` is host-only in
   the lobby; `Start` also requires `2*(undercovers+mrWhites) < active players`.
@@ -106,8 +106,9 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
   `eliminated` (no impostor alive) or `outnumbered` (impostors >= civilians).
 - Turns: `nextPlayer{expectedIndex}` ends a turn, or `clue{text,expectedIndex}`
   (<= 40 runes) when `clueLog` is on (`nextPlayer` is then rejected); `clues
-  [{round,player,text}]` is public. `round` is 1-based. `randomOrder: false`
-  keeps the Start order and rotates the first speaker after each tally.
+  [{round,player,text}]` is public. `round` is 1-based. By default the Start
+  order is kept and the first speaker rotates after each tally; `randomOrder`
+  reshuffles instead.
 - Timer: `deadline` (unix ms, 0 = none) is set per describing turn
   (`turnSeconds`), voting and last guess (2x). The hub arms one
   `time.AfterFunc` per room in `commit`, re-validated under the lock by

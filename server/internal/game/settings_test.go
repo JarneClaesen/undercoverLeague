@@ -92,8 +92,8 @@ func TestSettingsLegacyJSON(t *testing.T) {
 		randomOrder bool
 		undercovers int
 	}{
-		{"pre-packs row", `{"useChampions":true,"useItems":false,"champSeasons":[0,0]}`, []Pack{PackChampions}, true, 0},
-		{"packs without rules", `{"packs":["items"]}`, []Pack{PackItems}, true, 0},
+		{"pre-packs row", `{"useChampions":true,"useItems":false,"champSeasons":[0,0]}`, []Pack{PackChampions}, false, 0},
+		{"packs without rules", `{"packs":["items"]}`, []Pack{PackItems}, false, 0},
 		{"explicit random order false", `{"packs":["items"],"randomOrder":false,"undercovers":1}`, []Pack{PackItems}, false, 1},
 		{"explicit random order true", `{"packs":["items"],"randomOrder":true}`, []Pack{PackItems}, true, 0},
 	}
@@ -123,16 +123,16 @@ func TestNormalizeOldSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	l.Normalize()
-	if l.Settings.Undercovers != 1 || !l.Settings.RandomOrder || !slices.Equal(l.Settings.Packs, DefaultFilter().Packs) {
+	if l.Settings.Undercovers != 1 || l.Settings.RandomOrder || !slices.Equal(l.Settings.Packs, DefaultFilter().Packs) {
 		t.Errorf("old row settings %+v", l.Settings)
 	}
 
 	var withFilter Lobby
-	if err := json.Unmarshal([]byte(`{"id":"L","host":"A","players":["A"],"settings":{"packs":["items"],"randomOrder":false}}`), &withFilter); err != nil {
+	if err := json.Unmarshal([]byte(`{"id":"L","host":"A","players":["A"],"settings":{"packs":["items"],"randomOrder":true}}`), &withFilter); err != nil {
 		t.Fatal(err)
 	}
 	withFilter.Normalize()
-	if s := withFilter.Settings; s.Undercovers != 1 || s.RandomOrder || !slices.Equal(s.Packs, []Pack{PackItems}) {
+	if s := withFilter.Settings; s.Undercovers != 1 || !s.RandomOrder || !slices.Equal(s.Packs, []Pack{PackItems}) {
 		t.Errorf("row with a filter but no rules %+v", s)
 	}
 }

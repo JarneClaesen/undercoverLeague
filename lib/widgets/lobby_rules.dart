@@ -86,7 +86,7 @@ class LobbyRules extends StatelessWidget {
         ),
         _RuleSwitch(
           title: 'Random turn order',
-          subtitle: 'Off keeps the order and rotates the first speaker',
+          subtitle: 'Reshuffle every round instead of rotating the first speaker',
           value: s.randomOrder,
           onChanged: (v) => onChanged(s.copyWith(randomOrder: v)),
         ),

@@ -63,7 +63,7 @@ void main() {
     expect(saved.itemSeasons, (0, 12));
     expect(saved.itemTiers, {'boots', 'legendary'});
     expect(saved.undercovers, 1);
-    expect(saved.randomOrder, isTrue);
+    expect(saved.randomOrder, isFalse);
 
     const next = GameSettings(packs: {WordPack.runes, WordPack.monsters}, mrWhites: 1, decoyWord: true);
     await SettingsPrefs.saveHostDefaults(next);

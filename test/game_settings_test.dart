@@ -50,7 +50,7 @@ void main() {
     expect(d.undercovers, 1);
     expect(d.mrWhites, 0);
     expect(d.decoyWord, isFalse);
-    expect(d.randomOrder, isTrue);
+    expect(d.randomOrder, isFalse);
     expect(d.turnSeconds, 0);
     expect(d.clueLog, isFalse);
     expect(d.rotateHost, isFalse);
@@ -73,7 +73,7 @@ void main() {
     expect(legacy.champSeasons, (1, 5));
     expect(legacy.itemTiers, {'starter'});
     expect(legacy.undercovers, 1);
-    expect(legacy.randomOrder, isTrue);
+    expect(legacy.randomOrder, isFalse);
     expect(legacy.decoyWord, isFalse);
 
     // Booleans absent altogether mean both packs, like before packs existed.
@@ -342,7 +342,7 @@ void main() {
       'Champions S1–S16 (Mage) · Abilities · Monsters',
     );
     expect(
-      LobbyRulesSummary.describe(const GameSettings(undercovers: 2, mrWhites: 1, decoyWord: true, turnSeconds: 60)),
+      LobbyRulesSummary.describe(const GameSettings(undercovers: 2, mrWhites: 1, decoyWord: true, randomOrder: true, turnSeconds: 60)),
       '2 Undercovers · 1 Mr. White · decoy words · random turn order · 60 s per turn',
     );
   });
