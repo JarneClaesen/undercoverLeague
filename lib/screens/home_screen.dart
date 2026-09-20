@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:undercoverleague/screens/lobby_screen.dart';
-import 'package:undercoverleague/services/firebase_service.dart';
+import 'package:undercoverleague/services/game_connection.dart';
+import 'package:undercoverleague/services/lobby_service.dart';
 import 'package:undercoverleague/widgets/responsive_layout.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,8 +14,24 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _lobbyIdController = TextEditingController();
-  final FirebaseService _firebaseService = FirebaseService();
+  final LobbyService _lobbyService = LobbyService();
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Coming back here after the session ended elsewhere: say why, once.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      switch (GameConnection.instance.takeCloseReason()) {
+        case 'closed':
+          _showMessage('The host closed the lobby.');
+        case 'expired':
+          _showMessage('Your seat in the lobby is gone. Join again with the same name to get it back.');
+        case 'unreachable':
+          _showMessage('Lost the connection to the server.');
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -33,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
   (String, String)? _validatedInput() {
     final name = _nameController.text.trim();
     final lobbyId = _lobbyIdController.text.trim();
-    final error = FirebaseService.validatePlayerName(name) ?? FirebaseService.validateLobbyId(lobbyId);
+    final error = LobbyService.validatePlayerName(name) ?? LobbyService.validateLobbyId(lobbyId);
     if (error != null) {
       _showMessage(error);
       return null;
@@ -49,23 +66,24 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await action(input.$1, input.$2);
     } catch (e) {
-      _showMessage('Something went wrong. Please try again.');
+      debugPrint('Lobby action failed: $e');
+      _showMessage('Could not reach the game server. Please try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _createLobby() => _run((name, lobbyId) async {
-        final created = await _firebaseService.createLobby(name, lobbyId);
+        final created = await _lobbyService.createLobby(name, lobbyId);
         if (!created) {
-          _showMessage('Lobby ID already exists. Please choose a different ID.');
+          _showMessage('Lobby ID already exists. If it is yours, use Join with the same name.');
           return;
         }
         _navigateToLobby(name, lobbyId, isHost: true);
       });
 
   Future<void> _joinLobby() => _run((name, lobbyId) async {
-        final result = await _firebaseService.joinLobby(lobbyId, name);
+        final result = await _lobbyService.joinLobby(lobbyId, name);
         switch (result) {
           case JoinResult.ok:
             _navigateToLobby(name, lobbyId, isHost: false);

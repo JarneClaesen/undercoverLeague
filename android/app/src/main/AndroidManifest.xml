@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The game runs against a WebSocket server; Firebase used to merge this in. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Undercover League"
         android:name="${applicationName}"

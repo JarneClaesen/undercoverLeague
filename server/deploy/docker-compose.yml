@@ -1,0 +1,30 @@
+# Runs next to the phonetracker stack and is reached only through its Caddy:
+#   undercover.jarneclaesen.be { reverse_proxy undercover:8080 }
+# Nothing is published on the host.
+name: undercover
+
+services:
+  undercover:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - undercover_data:/data
+    networks:
+      phonetracker_default:
+        aliases: [undercover]
+    healthcheck:
+      # distroless has no curl; the binary probes itself.
+      test: ["/undercover", "-healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  undercover_data:
+
+networks:
+  phonetracker_default:
+    external: true

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:undercoverleague/services/firebase_service.dart';
+import 'package:undercoverleague/services/lobby_service.dart';
 import 'package:undercoverleague/widgets/role_card.dart';
 
 /// Body of the role-reveal phase. Rendered inside GameScreen's Scaffold.
 class PlayerRoleScreen extends StatelessWidget {
-  final String lobbyId;
   final String playerName;
   final String role;
   final String word;
@@ -14,7 +13,6 @@ class PlayerRoleScreen extends StatelessWidget {
 
   const PlayerRoleScreen({
     super.key,
-    required this.lobbyId,
     required this.playerName,
     required this.role,
     required this.word,
@@ -40,7 +38,7 @@ class PlayerRoleScreen extends StatelessWidget {
             const SizedBox(height: 20),
             if (!hasAcknowledged && role != 'Spectator')
               ElevatedButton(
-                onPressed: () => FirebaseService().acknowledgeRole(lobbyId, playerName),
+                onPressed: LobbyService().acknowledgeRole,
                 child: const Text('I understand my role'),
               )
             else

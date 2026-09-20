@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:undercoverleague/services/firebase_service.dart';
+import 'package:undercoverleague/services/lobby_service.dart';
 import 'package:undercoverleague/widgets/role_card.dart';
 
 /// Body of a describing round. Rendered inside GameScreen's Scaffold.
 class RoundScreen extends StatelessWidget {
-  final String lobbyId;
   final String? currentPlayer;
   final int currentPlayerIndex;
   final bool isCurrentPlayer;
@@ -16,7 +15,6 @@ class RoundScreen extends StatelessWidget {
 
   const RoundScreen({
     super.key,
-    required this.lobbyId,
     required this.currentPlayer,
     required this.currentPlayerIndex,
     required this.isCurrentPlayer,
@@ -58,7 +56,7 @@ class RoundScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   if (isCurrentPlayer)
                     ElevatedButton(
-                      onPressed: () => FirebaseService().nextPlayer(lobbyId, currentPlayerIndex),
+                      onPressed: () => LobbyService().nextPlayer(currentPlayerIndex),
                       child: const Text('End Turn'),
                     ),
                 ],

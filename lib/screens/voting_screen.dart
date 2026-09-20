@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:undercoverleague/services/firebase_service.dart';
+import 'package:undercoverleague/services/lobby_service.dart';
 
 /// Body of the voting phase. Rendered inside GameScreen's Scaffold, which
-/// owns the Firestore stream and the phase transitions.
+/// owns the lobby stream. The server tallies once everyone has voted.
 class VotingScreen extends StatefulWidget {
-  final String lobbyId;
   final List<String> alivePlayers;
-  final Map<String, dynamic> votes;
+  final Map<String, String> votes;
   final String playerName;
 
   const VotingScreen({
     super.key,
-    required this.lobbyId,
     required this.alivePlayers,
     required this.votes,
     required this.playerName,
@@ -29,7 +27,9 @@ class _VotingScreenState extends State<VotingScreen> {
     if (_submitting || selectedPlayer == null) return;
     setState(() => _submitting = true);
     try {
-      await FirebaseService().castVote(widget.lobbyId, widget.playerName, selectedPlayer!);
+      LobbyService().castVote(selectedPlayer!);
+      // The lobby view with our vote arrives shortly; hold the button until then.
+      await Future<void>.delayed(const Duration(milliseconds: 500));
     } catch (e) {
       debugPrint('Error casting vote: $e');
       if (mounted) {

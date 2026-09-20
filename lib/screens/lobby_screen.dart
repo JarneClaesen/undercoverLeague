@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:undercoverleague/services/firebase_service.dart';
+import 'package:undercoverleague/models/lobby.dart';
 import 'package:undercoverleague/screens/game_screen.dart';
 import 'package:undercoverleague/screens/home_screen.dart';
+import 'package:undercoverleague/services/lobby_service.dart';
+import 'package:undercoverleague/widgets/connection_banner.dart';
 import 'package:undercoverleague/widgets/responsive_layout.dart';
 
 class LobbyScreen extends StatefulWidget {
@@ -22,7 +23,7 @@ class LobbyScreen extends StatefulWidget {
 }
 
 class _LobbyScreenState extends State<LobbyScreen> {
-  final FirebaseService _firebaseService = FirebaseService();
+  final LobbyService _lobbyService = LobbyService();
   bool _isLeaving = false;
   bool _isStarting = false;
   bool _inGame = false;
@@ -35,9 +36,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     // deleted under us) still needs to remove this player server-side.
     if (!_isLeaving) {
       _isLeaving = true;
-      _firebaseService
-          .leaveLobby(widget.lobbyId, widget.playerName, widget.isHost)
-          .catchError((e) => debugPrint('Error leaving lobby: $e'));
+      _lobbyService.leaveLobby().catchError((e) => debugPrint('Error leaving lobby: $e'));
     }
     super.dispose();
   }
@@ -54,7 +53,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     if (_isLeaving) return;
     setState(() => _isLeaving = true);
     try {
-      await _firebaseService.leaveLobby(widget.lobbyId, widget.playerName, widget.isHost);
+      await _lobbyService.leaveLobby();
     } catch (e) {
       debugPrint('Error leaving lobby: $e');
     }
@@ -92,7 +91,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
     if (_isStarting) return;
     setState(() => _isStarting = true);
     try {
-      await _firebaseService.startGame(widget.lobbyId, useChampions, useItems);
+      _lobbyService.startGame(useChampions: useChampions, useItems: useItems);
+      // The server answers with a new lobby view; keep the button disabled
+      // briefly so a double tap cannot fire twice before it arrives.
+      await Future<void>.delayed(const Duration(milliseconds: 500));
     } catch (e) {
       debugPrint('Error starting game: $e');
       if (mounted) {
@@ -146,38 +148,35 @@ class _LobbyScreenState extends State<LobbyScreen> {
             ),
           ],
         ),
-        body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: _firebaseService.lobbyStream(widget.lobbyId),
+        body: StreamBuilder<Lobby?>(
+          stream: _lobbyService.lobbyStream(),
+          initialData: _lobbyService.currentLobby,
           builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return const Center(child: Text('An error occurred. Please try again.'));
-            }
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final lobbyData = snapshot.data!.data();
-            if (lobbyData == null) {
-              // The host closed the lobby.
+            final lobby = snapshot.data;
+            if (lobby == null) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              // The lobby was closed (host left) or the session was lost.
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!_isLeaving) _goHome();
               });
               return const Center(child: Text('Lobby has been closed. Returning to home screen...'));
             }
 
-            final String hostName = lobbyData['host'] ?? '';
-            final bool gameStarted = lobbyData['gameStarted'] ?? false;
-            final players = List<String>.from(lobbyData['players'] ?? [])
+            final hostName = lobby.host;
+            final players = List<String>.from(lobby.players)
               ..remove(hostName)
               ..insert(0, hostName);
 
-            if (gameStarted) {
+            if (lobby.gameStarted) {
               _openGame(hostName);
               return const Center(child: Text('Game in progress...'));
             }
 
             return Column(
               children: [
+                const ConnectionBanner(),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
@@ -191,9 +190,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     itemBuilder: (context, index) {
                       final player = players[index];
                       final isHost = player == hostName;
+                      final online = lobby.connected[player] ?? true;
                       return ListTile(
                         title: Text(player),
-                        leading: const Icon(Icons.person),
+                        subtitle: online ? null : const Text('Reconnecting…'),
+                        leading: Icon(Icons.person, color: online ? null : Theme.of(context).disabledColor),
                         trailing: isHost ? const Icon(Icons.star, color: Colors.yellow) : null,
                       );
                     },
