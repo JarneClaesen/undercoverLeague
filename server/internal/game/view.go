@@ -36,22 +36,12 @@ type View struct {
 	Roles        map[string]string `json:"roles,omitempty"`
 	SelectedWord string            `json:"selectedWord,omitempty"`
 
-	// Settings is the host's pool filter, normalized against the catalog so
-	// clients always see concrete season bounds and an explicit tier list.
-	Settings Filter `json:"settings"`
-	// PoolSize and SeasonRange are only sent in the lobby phase, where the
-	// host is choosing; they describe the catalog, not the game.
-	PoolSize    *PoolSize    `json:"poolSize,omitempty"`
-	SeasonRange *SeasonRange `json:"seasonRange,omitempty"`
-
 	// Connected is false for players inside their disconnect grace window.
 	Connected map[string]bool `json:"connected"`
 	Version   int64           `json:"version"`
 }
 
-// ViewFor projects the lobby for one player. c may be nil (no catalog yet):
-// the settings are then passed through unnormalized and no pool size is sent.
-func (l *Lobby) ViewFor(player string, connected map[string]bool, c *Catalog) View {
+func (l *Lobby) ViewFor(player string, connected map[string]bool) View {
 	v := View{
 		ID:                 l.ID,
 		Host:               l.Host,
@@ -70,15 +60,8 @@ func (l *Lobby) ViewFor(player string, connected map[string]bool, c *Catalog) Vi
 		SelectedIsChampion: l.SelectedIsChampion,
 		MyRole:             RoleSpectator,
 		MyIcon:             DefaultIcon,
-		Settings:           l.Settings.Normalized(c),
 		Connected:          connected,
 		Version:            l.Version,
-	}
-	if c != nil && l.GamePhase == PhaseLobby {
-		size := c.PoolSize(v.Settings)
-		v.PoolSize = &size
-		r := c.SeasonRange()
-		v.SeasonRange = &r
 	}
 	if v.Connected == nil {
 		v.Connected = map[string]bool{}
