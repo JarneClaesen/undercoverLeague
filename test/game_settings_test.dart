@@ -39,6 +39,19 @@ void main() {
     expect(saved.clampedTo(const SeasonRange(champions: (0, 0), items: (0, 0))), saved);
   });
 
+  test('unboundedWithin keeps "up to the newest season" open-ended', () {
+    const range = SeasonRange(champions: (1, 16), items: (3, 16));
+    const everything = GameSettings(champSeasons: (1, 16), itemSeasons: (3, 16));
+    expect(everything.unboundedWithin(range), const GameSettings());
+    // Next season the same saved value clamps to the new full range.
+    const next = SeasonRange(champions: (1, 17), items: (3, 17));
+    expect(everything.unboundedWithin(range).clampedTo(next).champSeasons, (1, 17));
+    // Inner bounds stay put.
+    const old = GameSettings(champSeasons: (2, 5), itemSeasons: (3, 10));
+    expect(old.unboundedWithin(range).champSeasons, (2, 5));
+    expect(old.unboundedWithin(range).itemSeasons, (0, 10));
+  });
+
   test('Lobby tolerates views with and without pool info', () {
     final old = Lobby.fromJson({'id': 'x', 'host': 'A'});
     expect(old.settings, const GameSettings());

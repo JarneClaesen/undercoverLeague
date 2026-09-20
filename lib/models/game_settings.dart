@@ -65,6 +65,21 @@ class GameSettings {
         itemSeasons: _clamp(itemSeasons, range.items),
       );
 
+  /// The inverse of [clampedTo], for saving: a bound sitting on the edge of
+  /// the catalog becomes 0 ("oldest" / "newest"), so a host who chose
+  /// everything up to the current season still gets next season's
+  /// champions and items once they exist.
+  GameSettings unboundedWithin(SeasonRange range) => copyWith(
+        champSeasons: _unbound(champSeasons, range.champions),
+        itemSeasons: _unbound(itemSeasons, range.items),
+      );
+
+  static (int, int) _unbound((int, int) r, (int, int) bounds) {
+    final (lo, hi) = bounds;
+    if (lo == 0 && hi == 0) return r;
+    return (r.$1 <= lo ? 0 : r.$1, r.$2 >= hi ? 0 : r.$2);
+  }
+
   static (int, int) _clamp((int, int) r, (int, int) bounds) {
     final (lo, hi) = bounds;
     if (lo == 0 && hi == 0) return r;

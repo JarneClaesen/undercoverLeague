@@ -136,7 +136,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
   void _updateSettings(GameSettings settings) {
     try {
       _lobbyService.updateSettings(settings);
-      SettingsPrefs.saveHostDefaults(settings);
+      final range = _lobbyService.currentLobby?.seasonRange;
+      SettingsPrefs.saveHostDefaults(range == null ? settings : settings.unboundedWithin(range));
     } catch (e) {
       debugPrint('Error updating settings: $e');
     }
