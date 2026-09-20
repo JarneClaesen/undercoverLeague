@@ -155,8 +155,6 @@ class _GameOverViewState extends State<GameOverView> {
 
   // 2 — The word everyone has been circling all game.
   Widget _wordPanel(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final hextech = context.hextech;
     final word = _lobby.selectedWord ?? _lobby.myWord ?? '';
 
     return HextechPanel(
@@ -167,19 +165,9 @@ class _GameOverViewState extends State<GameOverView> {
           const SizedBox(height: 16),
           GameOverPortrait(
             icon: _lobby.myIcon,
+            word: word,
             isChampion: _lobby.selectedIsChampion,
             delay: _beats[1],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _lobby.selectedIsChampion ? 'CHAMPION' : 'ITEM',
-            style: textTheme.labelSmall?.copyWith(color: hextech.textSecondary, letterSpacing: 2.4),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            word,
-            textAlign: TextAlign.center,
-            style: textTheme.headlineMedium?.copyWith(color: hextech.accentGlow),
           ),
         ],
       ),

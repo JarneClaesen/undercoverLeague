@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:undercoverleague/theme/hextech_colors.dart';
 import 'package:undercoverleague/theme/motion.dart';
 import 'package:undercoverleague/widgets/hextech_panel.dart';
+import 'package:undercoverleague/widgets/word_card.dart';
 import 'package:undercoverleague/widgets/word_image.dart';
 
 /// How much room the card is given: [large] is the centrepiece of the reveal
@@ -126,29 +127,49 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
 
   void _hide([PointerEvent? _]) => _flip.reverse();
 
+  /// The large card is a real trading card: portrait, at the loading art's
+  /// own ratio, capped so it fits a phone screen above the ready meter. The
+  /// compact card is a full-width strip. Every face uses the same size so the
+  /// flip never changes layout.
+  static const double _maxLargeWidth = 260;
+  static const double _compactHeight = 112;
+
+  Size _cardSize(BoxConstraints constraints) {
+    if (!_large) return Size(constraints.maxWidth, _compactHeight);
+    final width = math.min(constraints.maxWidth, _maxLargeWidth);
+    return Size(width, width * wordCardAspect);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final card = AnimatedBuilder(
-      animation: _flip,
-      builder: (context, _) {
-        final t = _flip.value;
-        final showFront = t >= 0.5;
-        final face = showFront
-            // The front is counter-rotated so the flip does not leave it
-            // mirrored once the card has come round.
-            ? Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()..rotateY(math.pi),
-                child: _front(context),
-              )
-            : _back(context);
+    final card = LayoutBuilder(
+      builder: (context, constraints) {
+        final size = _cardSize(constraints);
+        return Center(
+          child: AnimatedBuilder(
+            animation: _flip,
+            builder: (context, _) {
+              final t = _flip.value;
+              final showFront = t >= 0.5;
+              final face = showFront
+                  // The front is counter-rotated so the flip does not leave it
+                  // mirrored once the card has come round.
+                  ? Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.identity()..rotateY(math.pi),
+                      child: _front(context, size),
+                    )
+                  : _back(context, size);
 
-        return Transform(
-          alignment: Alignment.center,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0015)
-            ..rotateY(t * math.pi),
-          child: face,
+              return Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.0015)
+                  ..rotateY(t * math.pi),
+                child: face,
+              );
+            },
+          ),
         );
       },
     );
@@ -170,9 +191,9 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
   // Faces
   // ---------------------------------------------------------------------------
 
-  Widget _shell({required Widget child, PanelTone tone = PanelTone.neutral, bool accent = false}) {
-    return SizedBox(
-      height: _large ? 340 : 112,
+  Widget _shell(Size size, {required Widget child, PanelTone tone = PanelTone.neutral, bool accent = false}) {
+    return SizedBox.fromSize(
+      size: size,
       child: HextechPanel(
         tone: tone,
         accent: accent,
@@ -189,7 +210,7 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
     );
   }
 
-  Widget _back(BuildContext context) {
+  Widget _back(BuildContext context, Size size) {
     final textTheme = Theme.of(context).textTheme;
     final hextech = context.hextech;
     final emblemSize = _large ? 120.0 : 56.0;
@@ -222,75 +243,72 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
           .shimmer(duration: Motion.reveal, color: hextech.accentGlow.withValues(alpha: 0.6));
     }
 
-    return _shell(accent: true, child: body);
+    return _shell(size, accent: true, child: body);
   }
 
-  Widget _front(BuildContext context) {
-    if (_isCivilian) return _shell(accent: true, child: _civilianFront(context));
-    if (_isUndercover) {
-      return _shell(tone: PanelTone.danger, accent: true, child: _undercoverFront(context));
+  Widget _front(BuildContext context, Size size) {
+    if (_isCivilian) {
+      if (_large) return _civilianCard(size);
+      return _shell(size, accent: true, child: _civilianStrip(context));
     }
-    return _shell(child: _spectatorFront(context));
+    if (_isUndercover) {
+      return _shell(size, tone: PanelTone.danger, accent: true, child: _undercoverFront(context));
+    }
+    return _shell(size, child: _spectatorFront(context));
   }
 
-  Widget _civilianFront(BuildContext context) {
+  String get _eyebrow => widget.isChampion ? 'YOUR CHAMPION' : 'YOUR ITEM';
+
+  /// The large civilian face is the trading card itself: art edge to edge,
+  /// name on the plate, nothing cropped.
+  Widget _civilianCard(Size size) {
+    return WordCard(
+      icon: widget.icon,
+      word: widget.word,
+      isChampion: widget.isChampion,
+      width: size.width,
+      eyebrow: _eyebrow,
+      chip: 'CIVILIAN',
+    );
+  }
+
+  /// The compact face keeps a sliver of the art at its true ratio next to
+  /// the name, so the docked card still reads as the same card.
+  Widget _civilianStrip(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final hextech = context.hextech;
-    final eyebrow = widget.isChampion ? 'YOUR CHAMPION' : 'YOUR ITEM';
+    final eyebrow = _eyebrow;
 
-    if (!_large) {
-      return Row(
-        children: [
-          _portrait(context, width: 76, height: 86),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  eyebrow,
-                  style: textTheme.labelSmall?.copyWith(color: hextech.textSecondary, letterSpacing: 2),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.word,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.titleMedium?.copyWith(color: hextech.accentGlow),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Row(
       children: [
-        Text(
-          eyebrow,
-          style: textTheme.labelSmall?.copyWith(color: hextech.textSecondary, letterSpacing: 3),
+        _portrait(context, width: 50, height: 50 * wordCardAspect),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                eyebrow,
+                style: textTheme.labelSmall?.copyWith(color: hextech.textSecondary, letterSpacing: 2),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.word,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.titleMedium?.copyWith(color: hextech.accentGlow),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        _portrait(context, width: 180, height: 204),
-        const SizedBox(height: 14),
-        Text(
-          widget.word,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: textTheme.headlineSmall?.copyWith(color: hextech.accentGlow),
-        ),
-        const SizedBox(height: 10),
-        _RoleChip(label: 'CIVILIAN', colour: hextech.accent),
       ],
     );
   }
 
-  /// Champions are tall portraits and want a filled frame; items are 64 px
-  /// squares and must never be blown up past their own resolution.
+  /// Champions are tall portraits and fill the frame at their own ratio;
+  /// items are 64 px squares and must never be blown up past their own
+  /// resolution.
   Widget _portrait(BuildContext context, {required double width, required double height}) {
     final hextech = context.hextech;
     final side = math.min(width, height);
@@ -385,29 +403,6 @@ class _RevealCardState extends State<RevealCard> with SingleTickerProviderStateM
               ?.copyWith(color: hextech.textSecondary),
         ),
       ],
-    );
-  }
-}
-
-/// The tone-coloured pill under a revealed role.
-class _RoleChip extends StatelessWidget {
-  final String label;
-  final Color colour;
-
-  const _RoleChip({required this.label, required this.colour});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: colour.withValues(alpha: 0.12),
-        border: Border.all(color: colour.withValues(alpha: 0.6)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colour, letterSpacing: 2),
-      ),
     );
   }
 }
