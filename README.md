@@ -11,7 +11,7 @@ champion or item except the Undercover, who has to blend in. Flutter app
 
 | Path | What |
 |---|---|
-| `lib/` | Flutter app. `services/game_connection.dart` owns the socket; `services/lobby_service.dart` sends commands; screens render `models/lobby.dart`. |
+| `lib/` | Flutter app. `services/game_connection.dart` owns the socket; `services/lobby_service.dart` sends commands; screens render `models/lobby.dart`. `theme/` holds the Hextech design tokens (colours, type, motion) and `widgets/` the shared Hextech components; fonts are bundled under `assets/fonts/` (OFL). |
 | `server/internal/game` | Game rules (pure, table-tested) and the word list `words.json`. |
 | `server/internal/hub` | Live lobbies: who is connected, disconnect grace, persistence, per-player broadcasts. |
 | `server/internal/ws` | WebSocket transport and message shapes. |
@@ -19,7 +19,9 @@ champion or item except the Undercover, who has to blend in. Flutter app
 | `server/deploy` | `docker-compose.yml` and `deploy.sh` for the Hetzner box. |
 
 All game logic runs on the server; clients only see their own role, and
-the Undercover never receives the word. Dropped connections keep their
+the Undercover never receives the word. Creating a lobby with an empty
+code makes the server pick a 5-letter one; after every vote the tallied
+ballot is sent to everyone as `lastVotes` so the app can replay it. Dropped connections keep their
 seat for 45 s and resume with a token; rejoining under the same name also
 takes the seat back.
 

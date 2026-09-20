@@ -19,6 +19,10 @@ type View struct {
 	CurrentPlayerIndex int               `json:"currentPlayerIndex"`
 	RoundFinished      bool              `json:"roundFinished"`
 	Votes              map[string]string `json:"votes"`
+	// LastVotes is the ballot of the round that just ended. It only ever has
+	// entries after a tally, so showing everyone who voted for whom reveals
+	// nothing that is still in play.
+	LastVotes          map[string]string `json:"lastVotes"`
 	RolesAcknowledged  map[string]bool   `json:"rolesAcknowledged"`
 	Winner             string            `json:"winner,omitempty"`
 	LastEliminated     *string           `json:"lastEliminated"`
@@ -49,6 +53,7 @@ func (l *Lobby) ViewFor(player string, connected map[string]bool) View {
 		CurrentPlayerIndex: l.CurrentPlayerIndex,
 		RoundFinished:      l.RoundFinished,
 		Votes:              maps.Clone(l.Votes),
+		LastVotes:          maps.Clone(l.LastVotes),
 		RolesAcknowledged:  maps.Clone(l.RolesAcknowledged),
 		Winner:             l.Winner,
 		LastEliminated:     l.LastEliminated,

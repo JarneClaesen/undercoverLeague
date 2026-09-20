@@ -2,13 +2,25 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:undercoverleague/models/lobby.dart';
+import 'package:undercoverleague/screens/eliminated_view.dart';
+import 'package:undercoverleague/screens/game_over_view.dart';
 import 'package:undercoverleague/screens/player_role_screen.dart';
 import 'package:undercoverleague/screens/round_screen.dart';
+import 'package:undercoverleague/screens/vote_result_view.dart';
 import 'package:undercoverleague/screens/voting_screen.dart';
 import 'package:undercoverleague/services/game_connection.dart';
 import 'package:undercoverleague/services/lobby_service.dart';
-import 'package:undercoverleague/widgets/connection_banner.dart';
+import 'package:undercoverleague/theme/hextech_colors.dart';
+import 'package:undercoverleague/widgets/hextech_dialog.dart';
+import 'package:undercoverleague/widgets/hextech_scaffold.dart';
+import 'package:undercoverleague/widgets/hextech_snack.dart';
+import 'package:undercoverleague/widgets/phase_switcher.dart';
+import 'package:undercoverleague/widgets/reveal_card.dart';
+import 'package:undercoverleague/widgets/status_notice.dart';
 
+/// The shell the whole game runs inside: it owns the lobby stream and picks
+/// which phase body to show. Each phase is its own widget so this file only
+/// ever answers "what is happening now", never "how does it look".
 class GameScreen extends StatefulWidget {
   final String lobbyId;
   final String playerName;
@@ -20,10 +32,23 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
+/// Which body the shell is showing. Also the [PhaseSwitcher] key, so a change
+/// of phase cross-fades while a new snapshot inside one phase does not.
+enum _Phase { loading, closed, ending, reveal, round, voting, voteResult, eliminated, gameOver, waiting }
+
+/// How long the vote-result interstitial stays up unless the player taps it away.
+const _voteResultDuration = Duration(seconds: 5);
+
 class _GameScreenState extends State<GameScreen> {
   final LobbyService _lobbyService = LobbyService();
   StreamSubscription<GameError>? _errors;
   bool _isReturningToLobby = false;
+
+  /// The tally is only observable as the transition voting -> not voting, so
+  /// the previous snapshot's [Lobby.roundFinished] is remembered to spot it.
+  bool? _wasVoting;
+  bool _showingVoteResult = false;
+  Timer? _voteResultTimer;
 
   bool get _isHost => widget.playerName == widget.hostName;
 
@@ -33,36 +58,52 @@ class _GameScreenState extends State<GameScreen> {
     // Actions the server refused (e.g. a tap that arrived after the turn
     // moved on) are worth a small notice; the view itself is already right.
     _errors = GameConnection.instance.errors.listen((e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted) showHextechSnack(context, e.message, tone: SnackTone.warning);
     });
   }
 
   @override
   void dispose() {
     _errors?.cancel();
+    _voteResultTimer?.cancel();
     super.dispose();
   }
 
-  void _showEndGameConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('End Game'),
-          content: const Text('Are you sure you want to end the game and return to the lobby?'),
-          actions: <Widget>[
-            TextButton(child: const Text('Cancel'), onPressed: () => Navigator.of(context).pop()),
-            TextButton(
-              child: const Text('End Game'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _lobbyService.resetGame();
-              },
-            ),
-          ],
-        );
-      },
+  /// Shows the tally once per finished vote: when a snapshot flips from
+  /// voting to describing (or straight to game over) with a ballot attached.
+  /// Runs inside build, so it only mutates fields; the timer does the setState.
+  void _trackVoteResult(Lobby? lobby) {
+    if (lobby == null || !lobby.gameStarted) {
+      _wasVoting = null;
+      if (_showingVoteResult) _dismissVoteResult(rebuild: false);
+      return;
+    }
+    final voting = lobby.gamePhase == 'playing' && lobby.roundFinished;
+    final tallied = _wasVoting == true && !voting && lobby.lastVotes.isNotEmpty;
+    _wasVoting = voting;
+    if (!tallied || _showingVoteResult) return;
+    _showingVoteResult = true;
+    _voteResultTimer?.cancel();
+    _voteResultTimer = Timer(_voteResultDuration, _dismissVoteResult);
+  }
+
+  void _dismissVoteResult({bool rebuild = true}) {
+    _voteResultTimer?.cancel();
+    _voteResultTimer = null;
+    if (!_showingVoteResult) return;
+    _showingVoteResult = false;
+    if (rebuild && mounted) setState(() {});
+  }
+
+  Future<void> _showEndGameConfirmationDialog() async {
+    final confirmed = await showHextechDialog(
+      context,
+      title: 'End game',
+      message: 'Are you sure you want to end the game and return to the lobby?',
+      confirmLabel: 'End game',
+      danger: true,
     );
+    if (confirmed) _lobbyService.resetGame();
   }
 
   /// Pops back to the lobby exactly once, however many snapshots arrive.
@@ -81,128 +122,176 @@ class _GameScreenState extends State<GameScreen> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && _isHost) _showEndGameConfirmationDialog();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Undercover Game'),
-          automaticallyImplyLeading: false,
-          actions: [
-            if (_isHost)
-              IconButton(icon: const Icon(Icons.stop), onPressed: _showEndGameConfirmationDialog, tooltip: 'End Game'),
-          ],
-        ),
-        body: StreamBuilder<Lobby?>(
-          stream: _lobbyService.lobbyStream(),
-          initialData: _lobbyService.currentLobby,
-          builder: (context, snapshot) {
-            final lobby = snapshot.data;
-            if (lobby == null) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              // Lobby closed or session lost; the LobbyScreen underneath navigates home.
-              return const Center(child: Text('Lobby has been closed.'));
-            }
+      child: StreamBuilder<Lobby?>(
+        stream: _lobbyService.lobbyStream(),
+        initialData: _lobbyService.currentLobby,
+        builder: (context, snapshot) {
+          final lobby = snapshot.data;
+          _trackVoteResult(lobby);
+          final phase = _phaseOf(lobby, snapshot.connectionState);
 
-            if (!lobby.gameStarted) {
-              _returnToLobby();
-              return const Center(child: Text('Game ended. Returning to lobby...'));
-            }
+          // The lobby has to go home exactly once, and only while a real
+          // snapshot says the game is over.
+          if (phase == _Phase.ending) _returnToLobby();
 
-            return Column(
-              children: [
-                const ConnectionBanner(),
-                Expanded(child: _gameBody(lobby)),
-              ],
-            );
-          },
-        ),
+          return HextechScaffold(
+            title: 'Undercover',
+            subtitle: widget.lobbyId,
+            actions: [
+              if (_isHost)
+                IconButton(
+                  icon: const Icon(Icons.stop_circle_outlined),
+                  color: HextechColors.danger,
+                  onPressed: _showEndGameConfirmationDialog,
+                  tooltip: 'End game',
+                ),
+            ],
+            footer: _footer(phase, lobby),
+            body: PhaseSwitcher(
+              phaseKey: phase,
+              child: _body(phase, lobby),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _gameBody(Lobby lobby) {
-    // The server already filtered this view for us: myWord is null for the
-    // Undercover until the game is over.
-    final playerRole = lobby.myRole;
-    final word = lobby.myWord ?? lobby.selectedWord ?? '';
-    final icon = lobby.myIcon;
-    final isChampion = lobby.selectedIsChampion;
-
-    if (lobby.isGameOver) {
-      final winner = lobby.winner ?? 'Unknown';
-      final undercover = lobby.undercoverNames;
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Game Over!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            Text('$winner win!', style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 12),
-            Text('The Undercover was $undercover', style: const TextStyle(fontSize: 16)),
-            Text('The word was $word', style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 40),
-            if (_isHost)
-              ElevatedButton(
-                onPressed: _lobbyService.resetGame,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  textStyle: const TextStyle(fontSize: 18),
-                ),
-                child: const Text('Return to Lobby'),
-              )
-            else
-              const Text('Waiting for the host to return to the lobby...'),
-          ],
-        ),
-      );
+  _Phase _phaseOf(Lobby? lobby, ConnectionState connectionState) {
+    if (lobby == null) {
+      return connectionState == ConnectionState.waiting ? _Phase.loading : _Phase.closed;
     }
+    if (!lobby.gameStarted) return _Phase.ending;
+    // The tally is shown to everyone, including whoever it just eliminated,
+    // before the next phase (or the game-over screen) takes over.
+    if (_showingVoteResult) return _Phase.voteResult;
+    if (lobby.isGameOver) return _Phase.gameOver;
+    if (lobby.gamePhase == 'revealingRoles') return _Phase.reveal;
 
-    if (lobby.gamePhase == 'revealingRoles') {
-      return PlayerRoleScreen(
-        playerName: widget.playerName,
-        role: playerRole,
-        word: word,
-        icon: icon,
-        isChampion: isChampion,
-        rolesAcknowledged: lobby.rolesAcknowledged,
-      );
-    }
-
-    // Eliminated players spectate; the host keeps the full view so
-    // they can still end the game.
-    final alivePlayers = lobby.alivePlayers;
-    if (!alivePlayers.contains(widget.playerName) && !_isHost) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('You have been eliminated!', style: TextStyle(fontSize: 24)),
-            const SizedBox(height: 12),
-            Text('${alivePlayers.length} players remain', style: const TextStyle(fontSize: 16)),
-          ],
-        ),
-      );
-    }
+    // Eliminated players spectate; the host keeps the full view so they can
+    // still end the game.
+    if (!lobby.alivePlayers.contains(widget.playerName) && !_isHost) return _Phase.eliminated;
 
     if (lobby.gamePhase == 'playing') {
-      if (!lobby.roundFinished) {
-        final currentPlayer = lobby.currentPlayer;
+      return lobby.roundFinished ? _Phase.voting : _Phase.round;
+    }
+    return _Phase.waiting;
+  }
+
+  /// The peek card, docked under the body while a round is being played, so
+  /// anybody can re-check their word without leaving the phase they are in.
+  Widget? _footer(_Phase phase, Lobby? lobby) {
+    if (lobby == null) return null;
+    if (phase != _Phase.round && phase != _Phase.voting) return null;
+    return RevealCard(
+      role: lobby.myRole,
+      word: lobby.myWord ?? lobby.selectedWord ?? '',
+      icon: lobby.myIcon,
+      isChampion: lobby.selectedIsChampion,
+      size: RevealCardSize.compact,
+    );
+  }
+
+  Widget _body(_Phase phase, Lobby? lobby) {
+    switch (phase) {
+      case _Phase.loading:
+        return const Center(child: CircularProgressIndicator());
+
+      case _Phase.closed:
+        // Lobby closed or session lost; the LobbyScreen underneath navigates home.
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: StatusNotice(message: 'Lobby has been closed.', tone: NoticeTone.danger),
+          ),
+        );
+
+      case _Phase.ending:
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StatusNotice(
+                  message: 'Game ended. Returning to the lobby…',
+                  tone: NoticeTone.warning,
+                  pulse: true,
+                ),
+                SizedBox(height: 20),
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ],
+            ),
+          ),
+        );
+
+      case _Phase.gameOver:
+        return GameOverView(
+          lobby: lobby!,
+          playerName: widget.playerName,
+          isHost: _isHost,
+          onBackToLobby: _lobbyService.resetGame,
+        );
+
+      case _Phase.reveal:
+        return PlayerRoleScreen(
+          playerName: widget.playerName,
+          role: lobby!.myRole,
+          word: lobby.myWord ?? lobby.selectedWord ?? '',
+          icon: lobby.myIcon,
+          isChampion: lobby.selectedIsChampion,
+          rolesAcknowledged: lobby.rolesAcknowledged,
+        );
+
+      case _Phase.voteResult:
+        final eliminated = lobby!.lastEliminated;
+        final candidates = [
+          ...lobby.alivePlayers,
+          if (eliminated != null && eliminated.isNotEmpty && !lobby.alivePlayers.contains(eliminated)) eliminated,
+        ];
+        return VoteResultView(
+          lastVotes: lobby.lastVotes,
+          candidates: candidates,
+          eliminated: eliminated,
+          you: widget.playerName,
+          onDone: _dismissVoteResult,
+        );
+
+      case _Phase.eliminated:
+        return EliminatedView(lobby: lobby!, playerName: widget.playerName);
+
+      case _Phase.round:
         return RoundScreen(
-          currentPlayer: currentPlayer,
+          currentPlayer: lobby!.currentPlayer,
           currentPlayerIndex: lobby.currentPlayerIndex,
-          isCurrentPlayer: currentPlayer == widget.playerName,
-          playerRole: playerRole,
-          word: word,
-          icon: icon,
-          isChampion: isChampion,
+          isCurrentPlayer: lobby.currentPlayer == widget.playerName,
+          roundOrder: lobby.roundOrder,
+          playerName: widget.playerName,
           lastEliminated: lobby.lastEliminated,
         );
-      }
 
-      return VotingScreen(alivePlayers: alivePlayers, votes: lobby.votes, playerName: widget.playerName);
+      case _Phase.voting:
+        return VotingScreen(
+          alivePlayers: lobby!.alivePlayers,
+          votes: lobby.votes,
+          playerName: widget.playerName,
+        );
+
+      case _Phase.waiting:
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: StatusNotice(
+              message: 'Waiting for the game to start…',
+              tone: NoticeTone.warning,
+              pulse: true,
+            ),
+          ),
+        );
     }
-
-    return const Center(child: Text('Waiting for game to start...'));
   }
 }

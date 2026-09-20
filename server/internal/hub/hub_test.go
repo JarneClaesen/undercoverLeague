@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -171,6 +172,49 @@ func TestCreateJoinViews(t *testing.T) {
 	}
 	if err := h.Join(a.c, 1, "L", "Q"); code(err) != "invalid" {
 		t.Errorf("join while bound: %v", err)
+	}
+}
+
+func TestCreateWithoutIDGeneratesCode(t *testing.T) {
+	h, _ := newHub(t, time.Minute)
+
+	first := newFake()
+	if err := h.Create(NewClient(first), 3, "", "A"); err != nil {
+		t.Fatal(err)
+	}
+	j := first.next(t, "joined")
+	if j.ReqID != 3 || !j.IsHost || j.PlayerName != "A" {
+		t.Fatalf("joined %+v", j)
+	}
+	if len(j.LobbyID) != codeLength {
+		t.Fatalf("code %q is not %d characters", j.LobbyID, codeLength)
+	}
+	for _, r := range j.LobbyID {
+		if !strings.ContainsRune(codeAlphabet, r) {
+			t.Fatalf("code %q uses %q, which is not in the alphabet", j.LobbyID, r)
+		}
+	}
+	// The generated code is the lobby's real ID: it can be joined and it is
+	// what the views carry.
+	if v := first.latestLobby(t); v.ID != j.LobbyID {
+		t.Errorf("view id %q, joined said %q", v.ID, j.LobbyID)
+	}
+	join(t, h, j.LobbyID, "B")
+
+	second := newFake()
+	if err := h.Create(NewClient(second), 4, "", "C"); err != nil {
+		t.Fatal(err)
+	}
+	if j2 := second.next(t, "joined"); j2.LobbyID == j.LobbyID {
+		t.Errorf("both lobbies got the code %q", j2.LobbyID)
+	}
+
+	// Only the empty id skips validation.
+	if err := h.Create(NewClient(newFake()), 5, "a/b", "D"); code(err) != "invalid" {
+		t.Errorf("invalid id: %v", err)
+	}
+	if err := h.Create(NewClient(newFake()), 6, strings.Repeat("x", 65), "D"); code(err) != "invalid" {
+		t.Errorf("overlong id: %v", err)
 	}
 }
 

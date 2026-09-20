@@ -1,7 +1,8 @@
 /// One player's view of a lobby, as sent by the server. Secrets are already
 /// filtered server-side: only this player's role is included, the word is
 /// absent for the Undercover, and [roles] / [selectedWord] are only present
-/// once the game is over.
+/// once the game is over. [lastVotes] is the exception that is meant to be
+/// public: it only ever holds a ballot that has already been tallied.
 class Lobby {
   final String id;
   final String host;
@@ -13,6 +14,10 @@ class Lobby {
   final int currentPlayerIndex;
   final bool roundFinished; // false = describing, true = voting
   final Map<String, String> votes;
+
+  /// The ballot of the round that just ended (voter -> target, or 'skip').
+  /// Empty until the first tally.
+  final Map<String, String> lastVotes;
   final Map<String, bool> rolesAcknowledged;
   final String? winner;
   /// null before the first vote, '' when a vote eliminated nobody.
@@ -40,6 +45,7 @@ class Lobby {
     required this.currentPlayerIndex,
     required this.roundFinished,
     required this.votes,
+    this.lastVotes = const {},
     required this.rolesAcknowledged,
     required this.winner,
     required this.lastEliminated,
@@ -65,6 +71,7 @@ class Lobby {
       currentPlayerIndex: json['currentPlayerIndex'] as int? ?? 0,
       roundFinished: json['roundFinished'] as bool? ?? false,
       votes: _map<String>(json['votes']),
+      lastVotes: _map<String>(json['lastVotes']),
       rolesAcknowledged: _map<bool>(json['rolesAcknowledged']),
       winner: json['winner'] as String?,
       lastEliminated: json['lastEliminated'] as String?,

@@ -1,9 +1,12 @@
 package game
 
 import (
+	"encoding/json"
 	"errors"
+	"maps"
 	"math/rand/v2"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -241,6 +244,95 @@ func TestTally(t *testing.T) {
 				t.Errorf("roundOrder %v alive %v", l.RoundOrder, l.AlivePlayers)
 			}
 		})
+	}
+}
+
+func TestLastVotesSnapshot(t *testing.T) {
+	l := newStarted(t, "A", "B", "C", "D")
+	toPlaying(t, l)
+	// Pin the Undercover to D so eliminating B does not end the game.
+	for p := range l.Roles {
+		l.Roles[p] = RoleCivilian
+	}
+	l.Roles["D"] = RoleUndercover
+	l.RoundFinished = true
+
+	if len(l.LastVotes) != 0 {
+		t.Fatalf("lastVotes before the first tally: %v", l.LastVotes)
+	}
+	cast := map[string]string{"A": "B", "B": SkipVote, "C": "B", "D": "B"}
+	for voter, target := range cast {
+		if err := l.Vote(voter, target); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !l.Advance(testRNG()) {
+		t.Fatal("tally did not run")
+	}
+
+	if !maps.Equal(l.LastVotes, cast) {
+		t.Errorf("lastVotes = %v, want %v", l.LastVotes, cast)
+	}
+	if len(l.Votes) != 0 {
+		t.Errorf("votes not cleared: %v", l.Votes)
+	}
+	// The snapshot is a copy: the next round's votes must not leak into it.
+	l.RoundFinished = true
+	l.Vote("A", "C")
+	if len(l.LastVotes) != len(cast) {
+		t.Errorf("lastVotes aliases votes: %v", l.LastVotes)
+	}
+	// Everyone sees the finished ballot.
+	if v := l.ViewFor("C", nil); !maps.Equal(v.LastVotes, cast) {
+		t.Errorf("view lastVotes = %v, want %v", v.LastVotes, cast)
+	}
+
+	if err := l.Reset("A"); err != nil {
+		t.Fatal(err)
+	}
+	if len(l.LastVotes) != 0 {
+		t.Errorf("lastVotes survived a reset: %v", l.LastVotes)
+	}
+}
+
+func TestEmptyCollectionsSerialiseAsObjects(t *testing.T) {
+	l := New("L", "A", time.Now())
+	b, err := json.Marshal(l)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"lastVotes":{}`) {
+		t.Errorf("fresh lobby JSON: %s", b)
+	}
+	b, err = json.Marshal(l.ViewFor("A", nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"lastVotes":{}`) {
+		t.Errorf("fresh view JSON: %s", b)
+	}
+}
+
+// A row written before lastVotes existed unmarshals with a nil map; loading
+// it must normalise that away exactly as it does for the other collections.
+func TestNormalizeFillsLastVotes(t *testing.T) {
+	var l Lobby
+	if err := json.Unmarshal([]byte(`{"id":"L","host":"A","players":["A"],"gamePhase":"lobby"}`), &l); err != nil {
+		t.Fatal(err)
+	}
+	if l.LastVotes != nil {
+		t.Fatal("old row should decode with a nil lastVotes")
+	}
+	l.Normalize()
+	if l.LastVotes == nil {
+		t.Error("Normalize left lastVotes nil")
+	}
+	b, err := json.Marshal(l.ViewFor("A", nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"lastVotes":{}`) {
+		t.Errorf("view of a normalised old row: %s", b)
 	}
 }
 

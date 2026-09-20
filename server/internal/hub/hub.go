@@ -103,9 +103,15 @@ func New(st *store.Store, grace time.Duration, log *slog.Logger) *Hub {
 // Binding a connection to a player
 // ---------------------------------------------------------------------------
 
+// Create opens a new lobby. An empty id asks the server for a generated
+// code; anything else is validated and must not be taken. Either way the
+// "joined" event carries the code the lobby actually got.
 func (h *Hub) Create(c *Client, reqID int, id, name string) error {
-	if err := game.ValidateLobbyID(id); err != nil {
-		return err
+	generate := id == ""
+	if !generate {
+		if err := game.ValidateLobbyID(id); err != nil {
+			return err
+		}
 	}
 	if err := game.ValidatePlayerName(name); err != nil {
 		return err
@@ -115,7 +121,13 @@ func (h *Hub) Create(c *Client, reqID int, id, name string) error {
 	if c.room != nil {
 		return game.ErrInvalid
 	}
-	if r, err := h.getOrLoad(id); err != nil {
+	if generate {
+		code, err := h.generateID()
+		if err != nil {
+			return err
+		}
+		id = code
+	} else if r, err := h.getOrLoad(id); err != nil {
 		return err
 	} else if r != nil {
 		return game.ErrExists
@@ -451,6 +463,36 @@ func (h *Hub) cancelTimer(r *room, player string) {
 		t.timer.Stop()
 		delete(r.timers, player)
 	}
+}
+
+// Lobby codes people read off a screen and type on a phone: no O/0, I/1 or
+// similar look-alikes, and short enough to say out loud.
+const (
+	codeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	codeLength   = 5
+	codeAttempts = 20
+)
+
+// generateID returns an unused lobby code. Caller holds h.mu.
+func (h *Hub) generateID() (string, error) {
+	b := make([]byte, codeLength)
+	for range codeAttempts {
+		for i := range b {
+			b[i] = codeAlphabet[h.rng.IntN(len(codeAlphabet))]
+		}
+		id := string(b)
+		r, err := h.getOrLoad(id)
+		if err != nil {
+			return "", err
+		}
+		if r == nil {
+			return id, nil
+		}
+	}
+	// 32^5 codes: reaching this means something is very wrong, not that the
+	// space is full.
+	h.log.Error("no free lobby code", "attempts", codeAttempts)
+	return "", &game.Error{Code: "internal", Message: "Could not create a lobby."}
 }
 
 func newToken() string {

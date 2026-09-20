@@ -1,8 +1,21 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:undercoverleague/screens/lobby_screen.dart';
 import 'package:undercoverleague/services/game_connection.dart';
 import 'package:undercoverleague/services/lobby_service.dart';
-import 'package:undercoverleague/widgets/responsive_layout.dart';
+import 'package:undercoverleague/theme/hextech_colors.dart';
+import 'package:undercoverleague/theme/motion.dart';
+import 'package:undercoverleague/widgets/home_wordmark.dart';
+import 'package:undercoverleague/widgets/hextech_button.dart';
+import 'package:undercoverleague/widgets/hextech_panel.dart';
+import 'package:undercoverleague/widgets/hextech_route.dart';
+import 'package:undercoverleague/widgets/hextech_scaffold.dart';
+import 'package:undercoverleague/widgets/hextech_snack.dart';
+import 'package:undercoverleague/widgets/hextech_text_field.dart';
+import 'package:undercoverleague/widgets/status_notice.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,133 +25,342 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  /// The hero entrance is a welcome, not a transition: it plays on the first
+  /// home screen of the session and never again, so coming back from a lobby
+  /// does not replay it.
+  static bool _entrancePlayed = false;
+
+  /// Two buttons wide enough to sit side by side; below this they stack.
+  static const double _sideBySideWidth = 420;
+
+  static const Duration _noticeLifetime = Duration(seconds: 6);
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _lobbyIdController = TextEditingController();
   final LobbyService _lobbyService = LobbyService();
   bool _busy = false;
 
+  /// Which of the two buttons shows the spinner while [_busy]; display only.
+  String? _busyAction;
+
+  /// Inline validation. Server outcomes land on whichever field the player can
+  /// actually do something about, rather than in a snackbar they must reread.
+  String? _nameError;
+  String? _lobbyError;
+
+  /// Why the last session ended, shown at the top of the panel.
+  String? _closeNotice;
+  NoticeTone _closeNoticeTone = NoticeTone.warning;
+  Timer? _closeNoticeTimer;
+
+  bool _playEntrance = false;
+  bool _focusNameOnOpen = false;
+
   @override
   void initState() {
     super.initState();
+    _playEntrance = !_entrancePlayed;
+    _entrancePlayed = true;
+
+    // Shared link: `…/?lobby=ABC12` pre-fills the code so the player only has
+    // to name themselves.
+    if (kIsWeb) {
+      final code = Uri.base.queryParameters['lobby'] ?? '';
+      if (code.isNotEmpty) {
+        _lobbyIdController.text = code;
+        _focusNameOnOpen = true;
+      }
+    }
+
+    _nameController.addListener(() => _clearError(name: true));
+    _lobbyIdController.addListener(() => _clearError(name: false));
+
     // Coming back here after the session ended elsewhere: say why, once.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       switch (GameConnection.instance.takeCloseReason()) {
         case 'closed':
-          _showMessage('The host closed the lobby.');
+          _showCloseNotice('The host closed the lobby.');
         case 'expired':
-          _showMessage('Your seat in the lobby is gone. Join again with the same name to get it back.');
+          _showCloseNotice('Your seat in the lobby is gone. Join again with the same name to get it back.');
         case 'unreachable':
-          _showMessage('Lost the connection to the server.');
+          _showCloseNotice('Lost the connection to the server.', tone: NoticeTone.danger);
       }
+      // HextechTextField owns its focus node, so the first field is focused by
+      // walking the traversal order rather than by an `autofocus` flag.
+      if (_focusNameOnOpen && mounted) FocusScope.of(context).nextFocus();
     });
   }
 
   @override
   void dispose() {
+    _closeNoticeTimer?.cancel();
     _nameController.dispose();
     _lobbyIdController.dispose();
     super.dispose();
   }
 
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  void _clearError({required bool name}) {
+    if (name ? _nameError == null : _lobbyError == null) return;
+    setState(() {
+      if (name) {
+        _nameError = null;
+      } else {
+        _lobbyError = null;
+      }
+    });
   }
 
-  /// Validates both fields, showing the first problem found. Returns
-  /// `(name, lobbyId)` when everything is fine.
-  (String, String)? _validatedInput() {
+  void _showMessage(String message, {SnackTone tone = SnackTone.warning}) {
+    if (!mounted) return;
+    showHextechSnack(context, message, tone: tone);
+  }
+
+  /// Shows the "why you are back here" notice and starts its countdown. It can
+  /// also be dismissed by hand; either way the timer is cancelled in [dispose].
+  void _showCloseNotice(String message, {NoticeTone tone = NoticeTone.warning}) {
+    if (!mounted) return;
+    setState(() {
+      _closeNotice = message;
+      _closeNoticeTone = tone;
+    });
+    _closeNoticeTimer?.cancel();
+    _closeNoticeTimer = Timer(_noticeLifetime, _dismissCloseNotice);
+  }
+
+  void _dismissCloseNotice() {
+    _closeNoticeTimer?.cancel();
+    if (!mounted || _closeNotice == null) return;
+    setState(() => _closeNotice = null);
+  }
+
+  /// Runs a lobby command once both fields are usable.
+  ///
+  /// [requireCode] is false for Create: an empty code asks the server for a
+  /// generated one. Everything a player can fix is reported on the field that
+  /// is wrong; only a failure to reach the server at all becomes a snackbar.
+  Future<void> _run(
+    Future<void> Function(String name, String lobbyId) action, {
+    required bool requireCode,
+  }) async {
+    if (_busy) return;
+
     final name = _nameController.text.trim();
     final lobbyId = _lobbyIdController.text.trim();
-    final error = LobbyService.validatePlayerName(name) ?? LobbyService.validateLobbyId(lobbyId);
-    if (error != null) {
-      _showMessage(error);
-      return null;
+    final nameError = LobbyService.validatePlayerName(name);
+    final lobbyError =
+        requireCode || lobbyId.isNotEmpty ? LobbyService.validateLobbyId(lobbyId) : null;
+    if (nameError != null || lobbyError != null) {
+      setState(() {
+        _nameError = nameError;
+        _lobbyError = lobbyError;
+      });
+      return;
     }
-    return (name, lobbyId);
-  }
 
-  Future<void> _run(Future<void> Function(String name, String lobbyId) action) async {
-    if (_busy) return;
-    final input = _validatedInput();
-    if (input == null) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _nameError = null;
+      _lobbyError = null;
+    });
     try {
-      await action(input.$1, input.$2);
+      await action(name, lobbyId);
+    } on GameError catch (e) {
+      // The server's own validation of the code (including "a code is still
+      // required" until generated codes land) belongs on the code field.
+      debugPrint('Lobby action rejected: $e');
+      if (e.code == 'invalid') {
+        _setLobbyError(e.message.isEmpty ? 'That lobby code is not valid.' : e.message);
+      } else {
+        _showMessage('Could not reach the game server. Please try again.', tone: SnackTone.error);
+      }
     } catch (e) {
       debugPrint('Lobby action failed: $e');
-      _showMessage('Could not reach the game server. Please try again.');
+      _showMessage('Could not reach the game server. Please try again.', tone: SnackTone.error);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _createLobby() => _run((name, lobbyId) async {
-        final created = await _lobbyService.createLobby(name, lobbyId);
-        if (!created) {
-          _showMessage('Lobby ID already exists. If it is yours, use Join with the same name.');
-          return;
-        }
-        _navigateToLobby(name, lobbyId, isHost: true);
-      });
+  void _setNameError(String message) {
+    if (!mounted) return;
+    setState(() => _nameError = message);
+  }
 
-  Future<void> _joinLobby() => _run((name, lobbyId) async {
-        final result = await _lobbyService.joinLobby(lobbyId, name);
-        switch (result) {
-          case JoinResult.ok:
-            _navigateToLobby(name, lobbyId, isHost: false);
-          case JoinResult.notFound:
-            _showMessage('Lobby does not exist. Please check the ID.');
-          case JoinResult.inProgress:
-            _showMessage('That lobby has a game in progress. Try again when it is over.');
-          case JoinResult.nameTaken:
-            _showMessage('Someone in that lobby already has that name.');
-        }
-      });
+  void _setLobbyError(String message) {
+    if (!mounted) return;
+    setState(() => _lobbyError = message);
+  }
+
+  Future<void> _createLobby() {
+    _busyAction = 'create';
+    return _run((name, lobbyId) async {
+      final created = await _lobbyService.createLobby(name, lobbyId);
+      if (!created) {
+        _setLobbyError('That code is taken. If the lobby is yours, use Join with the same name.');
+        return;
+      }
+      // With a blank code the server picks one; it comes back on the session.
+      _navigateToLobby(name, GameConnection.instance.session?.lobbyId ?? lobbyId, isHost: true);
+    }, requireCode: false);
+  }
+
+  Future<void> _joinLobby() {
+    _busyAction = 'join';
+    return _run((name, lobbyId) async {
+      final result = await _lobbyService.joinLobby(lobbyId, name);
+      switch (result) {
+        case JoinResult.ok:
+          _navigateToLobby(name, lobbyId, isHost: false);
+        case JoinResult.notFound:
+          _setLobbyError('No lobby with that code. Check it with the host.');
+        case JoinResult.inProgress:
+          _setLobbyError('That lobby has a game in progress. Try again when it is over.');
+        case JoinResult.nameTaken:
+          _setNameError('Someone in that lobby already has that name.');
+      }
+    }, requireCode: true);
+  }
 
   void _navigateToLobby(String name, String lobbyId, {required bool isHost}) {
     if (!mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ResponsiveLayout(
-          child: LobbyScreen(lobbyId: lobbyId, playerName: name, isHost: isHost),
-        ),
-      ),
+      hextechRoute(LobbyScreen(lobbyId: lobbyId, playerName: name, isHost: isHost)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Undercover League')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+    final textTheme = Theme.of(context).textTheme;
+    final hextech = context.hextech;
+    final reduced = Motion.reduced(context);
+
+    Widget hero = const Padding(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: HomeWordmark(),
+    );
+
+    Widget panel = HextechPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _closeNoticeSection(),
+          HextechTextField(
+            controller: _nameController,
+            label: 'Summoner name',
+            prefixIcon: Icons.person_outline,
+            textCapitalization: TextCapitalization.words,
+            maxLength: 24,
+            textInputAction: TextInputAction.next,
+            errorText: _nameError,
+          ),
+          const SizedBox(height: 16),
+          HextechTextField(
+            controller: _lobbyIdController,
+            label: 'Lobby code',
+            hint: 'Leave empty to get a random code',
+            prefixIcon: Icons.tag,
+            maxLength: 64,
+            textInputAction: TextInputAction.go,
+            errorText: _lobbyError,
+            onSubmitted: (_) => _busy ? null : _joinLobby(),
+          ),
+          const SizedBox(height: 24),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final create = HextechButton(
+                label: 'Create lobby',
+                busy: _busy && _busyAction == 'create',
+                onPressed: _busy ? null : _createLobby,
+              );
+              final join = HextechButton(
+                label: 'Join lobby',
+                variant: HextechButtonVariant.secondary,
+                busy: _busy && _busyAction == 'join',
+                onPressed: _busy ? null : _joinLobby,
+              );
+              if (constraints.maxWidth >= _sideBySideWidth) {
+                return Row(
+                  children: [
+                    Expanded(child: create),
+                    const SizedBox(width: 12),
+                    Expanded(child: join),
+                  ],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [create, const SizedBox(height: 12), join],
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '3 or more summoners. Share the code with your friends.',
+            textAlign: TextAlign.center,
+            style: textTheme.bodySmall?.copyWith(color: hextech.textSecondary),
+          ),
+        ],
+      ),
+    );
+
+    if (_playEntrance && !reduced) {
+      hero = hero
+          .animate()
+          .fadeIn(duration: Motion.slow, curve: Motion.enter)
+          .slideY(begin: 0.18, end: 0, duration: Motion.slow, curve: Motion.enter);
+      panel = panel
+          .animate(delay: 150.ms)
+          .fadeIn(duration: Motion.slow, curve: Motion.enter)
+          .slideY(begin: 0.10, end: 0, duration: Motion.slow, curve: Motion.enter);
+    }
+
+    return HextechScaffold(
+      // The wordmark below carries the app's name; the header names the task.
+      title: 'Enter the rift',
+      showConnection: false,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _nameController,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Enter your name'),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _lobbyIdController,
-              decoration: const InputDecoration(labelText: 'Enter lobby ID'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _busy ? null : _createLobby,
-              child: const Text('Create Lobby'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _busy ? null : _joinLobby,
-              child: const Text('Join Lobby'),
-            ),
+            hero,
+            const SizedBox(height: 28),
+            panel,
           ],
         ),
       ),
+    );
+  }
+
+  /// The close-reason notice, with the room it takes up animated away once it
+  /// is gone so the fields do not jump.
+  Widget _closeNoticeSection() {
+    final notice = _closeNotice;
+    return AnimatedSize(
+      duration: Motion.of(context, Motion.base),
+      curve: Motion.enter,
+      alignment: Alignment.topCenter,
+      child: notice == null
+          ? const SizedBox(width: double.infinity)
+          : Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: StatusNotice(message: notice, tone: _closeNoticeTone),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    color: context.hextech.textSecondary,
+                    tooltip: 'Dismiss',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _dismissCloseNotice,
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }

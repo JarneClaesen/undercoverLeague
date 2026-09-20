@@ -5,6 +5,7 @@
 package game
 
 import (
+	"maps"
 	"math/rand/v2"
 	"slices"
 	"strings"
@@ -73,8 +74,12 @@ type Lobby struct {
 	CurrentPlayerIndex int               `json:"currentPlayerIndex"`
 	// RoundFinished distinguishes describing (false) from voting (true)
 	// within PhasePlaying.
-	RoundFinished     bool              `json:"roundFinished"`
-	Votes             map[string]string `json:"votes"`
+	RoundFinished bool              `json:"roundFinished"`
+	Votes         map[string]string `json:"votes"`
+	// LastVotes is the tally of the round that just ended: voter -> target,
+	// snapshotted before Votes is cleared so the client can show who voted
+	// for whom. Empty until the first tally.
+	LastVotes         map[string]string `json:"lastVotes"`
 	RolesAcknowledged map[string]bool   `json:"rolesAcknowledged"`
 	Winner            string            `json:"winner"` // "" while undecided
 	// LastEliminated is nil before the first vote, "" when a vote eliminated
@@ -117,6 +122,9 @@ func (l *Lobby) Normalize() {
 	}
 	if l.Votes == nil {
 		l.Votes = map[string]string{}
+	}
+	if l.LastVotes == nil {
+		l.LastVotes = map[string]string{}
 	}
 	if l.RolesAcknowledged == nil {
 		l.RolesAcknowledged = map[string]bool{}
@@ -367,6 +375,10 @@ func (l *Lobby) endVotingRound(rng *rand.Rand) bool {
 	}
 	hasClearWinner := len(leaders) == 1 && maxVotes > 0 && maxVotes > skipVotes
 
+	// Snapshot the ballot before clearing it: the client replays it as the
+	// vote-result interstitial, and by now the round is decided so who voted
+	// for whom is no longer a secret.
+	l.LastVotes = maps.Clone(l.Votes)
 	l.Votes = map[string]string{}
 	l.RoundFinished = false
 	l.CurrentPlayerIndex = 0
@@ -420,6 +432,7 @@ func (l *Lobby) clearGame() {
 	l.CurrentPlayerIndex = 0
 	l.RoundFinished = false
 	l.Votes = map[string]string{}
+	l.LastVotes = map[string]string{}
 	l.RolesAcknowledged = map[string]bool{}
 	l.Winner = ""
 	l.LastEliminated = nil

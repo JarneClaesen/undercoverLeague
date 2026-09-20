@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:undercoverleague/models/lobby.dart';
 import 'package:undercoverleague/screens/game_screen.dart';
 import 'package:undercoverleague/screens/home_screen.dart';
 import 'package:undercoverleague/services/lobby_service.dart';
-import 'package:undercoverleague/widgets/connection_banner.dart';
-import 'package:undercoverleague/widgets/responsive_layout.dart';
+import 'package:undercoverleague/theme/hextech_colors.dart';
+import 'package:undercoverleague/theme/motion.dart';
+import 'package:undercoverleague/widgets/hextech_button.dart';
+import 'package:undercoverleague/widgets/hextech_dialog.dart';
+import 'package:undercoverleague/widgets/hextech_panel.dart';
+import 'package:undercoverleague/widgets/hextech_route.dart';
+import 'package:undercoverleague/widgets/hextech_scaffold.dart';
+import 'package:undercoverleague/widgets/hextech_snack.dart';
+import 'package:undercoverleague/widgets/lobby_code_panel.dart';
+import 'package:undercoverleague/widgets/lobby_open_seat.dart';
+import 'package:undercoverleague/widgets/lobby_pool_toggles.dart';
+import 'package:undercoverleague/widgets/player_tile.dart';
+import 'package:undercoverleague/widgets/status_notice.dart';
 
 class LobbyScreen extends StatefulWidget {
   final String lobbyId;
@@ -23,12 +35,20 @@ class LobbyScreen extends StatefulWidget {
 }
 
 class _LobbyScreenState extends State<LobbyScreen> {
+  /// The game cannot start below this; the roster shows the gap until then.
+  static const int _minimumPlayers = 3;
+
   final LobbyService _lobbyService = LobbyService();
   bool _isLeaving = false;
   bool _isStarting = false;
   bool _inGame = false;
   bool useChampions = true;
   bool useItems = true;
+
+  /// Roster size at the previous build, so the moment the lobby becomes
+  /// startable can be caught and pointed at exactly once.
+  int _lastPlayerCount = 0;
+  int _startShimmer = 0;
 
   @override
   void dispose() {
@@ -44,7 +64,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   void _goHome() {
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const ResponsiveLayout(child: HomeScreen())),
+      hextechRoute(const HomeScreen()),
       (Route<dynamic> route) => false,
     );
   }
@@ -60,31 +80,17 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _goHome();
   }
 
-  void _showLeaveConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Leave Lobby'),
-          content: Text(widget.isHost
-              ? 'You are the host. Leaving will close the lobby for everyone.'
-              : 'Are you sure you want to leave the lobby?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: const Text('Leave'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _leaveLobby();
-              },
-            ),
-          ],
-        );
-      },
+  Future<void> _showLeaveConfirmationDialog() async {
+    final confirmed = await showHextechDialog(
+      context,
+      title: 'Leave lobby',
+      message: widget.isHost
+          ? 'You are the host. Leaving will close the lobby for everyone.'
+          : 'Are you sure you want to leave the lobby?',
+      confirmLabel: 'Leave',
+      danger: true,
     );
+    if (confirmed) await _leaveLobby();
   }
 
   Future<void> _startGame() async {
@@ -98,9 +104,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     } catch (e) {
       debugPrint('Error starting game: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not start the game. Please try again.')),
-        );
+        showHextechSnack(context, 'Could not start the game. Please try again.', tone: SnackTone.error);
       }
     } finally {
       if (mounted) setState(() => _isStarting = false);
@@ -114,18 +118,28 @@ class _LobbyScreenState extends State<LobbyScreen> {
       if (!mounted) return;
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => ResponsiveLayout(
-            child: GameScreen(
-              lobbyId: widget.lobbyId,
-              playerName: widget.playerName,
-              hostName: hostName,
-            ),
+        hextechRoute(
+          GameScreen(
+            lobbyId: widget.lobbyId,
+            playerName: widget.playerName,
+            hostName: hostName,
           ),
         ),
       ).then((_) {
         if (mounted) setState(() => _inGame = false);
       });
+    });
+  }
+
+  /// Notices the build in which the lobby first becomes startable, and queues
+  /// a one-shot shimmer over the start button to say so.
+  void _trackPlayerCount(int count) {
+    if (count == _lastPlayerCount) return;
+    final becameStartable = _lastPlayerCount < _minimumPlayers && count >= _minimumPlayers;
+    _lastPlayerCount = count;
+    if (!becameStartable) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _startShimmer++);
     });
   }
 
@@ -136,18 +150,16 @@ class _LobbyScreenState extends State<LobbyScreen> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _showLeaveConfirmationDialog();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Lobby'),
-          automaticallyImplyLeading: false,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.exit_to_app),
-              tooltip: 'Leave lobby',
-              onPressed: _showLeaveConfirmationDialog,
-            ),
-          ],
-        ),
+      child: HextechScaffold(
+        title: 'Lobby',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            color: HextechColors.danger,
+            tooltip: 'Leave lobby',
+            onPressed: _showLeaveConfirmationDialog,
+          ),
+        ],
         body: StreamBuilder<Lobby?>(
           stream: _lobbyService.lobbyStream(),
           initialData: _lobbyService.currentLobby,
@@ -161,7 +173,16 @@ class _LobbyScreenState extends State<LobbyScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!_isLeaving) _goHome();
               });
-              return const Center(child: Text('Lobby has been closed. Returning to home screen...'));
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: StatusNotice(
+                    message: 'Lobby has been closed. Returning to the home screen…',
+                    tone: NoticeTone.warning,
+                    pulse: true,
+                  ),
+                ),
+              );
             }
 
             final hostName = lobby.host;
@@ -171,65 +192,145 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
             if (lobby.gameStarted) {
               _openGame(hostName);
-              return const Center(child: Text('Game in progress...'));
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(height: 20),
+                    StatusNotice(
+                      message: 'Starting…',
+                      tone: NoticeTone.warning,
+                      pulse: true,
+                    ),
+                  ],
+                ),
+              );
             }
 
+            _trackPlayerCount(players.length);
+
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const ConnectionBanner(),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    'Lobby ID: ${widget.lobbyId}',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: players.length,
-                    itemBuilder: (context, index) {
-                      final player = players[index];
-                      final isHost = player == hostName;
-                      final online = lobby.connected[player] ?? true;
-                      return ListTile(
-                        title: Text(player),
-                        subtitle: online ? null : const Text('Reconnecting…'),
-                        leading: Icon(Icons.person, color: online ? null : Theme.of(context).disabledColor),
-                        trailing: isHost ? const Icon(Icons.star, color: Colors.yellow) : null,
-                      );
-                    },
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    children: [
+                      LobbyCodePanel(lobbyId: widget.lobbyId),
+                      const SizedBox(height: 24),
+                      _rosterHeader(players.length),
+                      const SizedBox(height: 12),
+                      ..._roster(lobby, players, hostName),
+                    ],
                   ),
                 ),
-                if (widget.isHost) ...[
-                  CheckboxListTile(
-                    title: const Text('Use Champions'),
-                    value: useChampions,
-                    // Never allow both to be off: there would be nothing to draw.
-                    onChanged: !useItems ? null : (value) => setState(() => useChampions = value!),
-                  ),
-                  CheckboxListTile(
-                    title: const Text('Use Items'),
-                    value: useItems,
-                    onChanged: !useChampions ? null : (value) => setState(() => useItems = value!),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ElevatedButton(
-                      onPressed: players.length >= 3 && !_isStarting ? _startGame : null,
-                      style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-                      child: Text(players.length >= 3 ? 'Start Game' : 'Need at least 3 players'),
-                    ),
-                  ),
-                ] else
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('Waiting for host to start the game...', style: TextStyle(fontSize: 16)),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: widget.isHost
+                      ? _hostControls(players.length)
+                      : StatusNotice(
+                          message: 'Waiting for $hostName to start the game',
+                          tone: NoticeTone.info,
+                          pulse: true,
+                        ),
+                ),
               ],
             );
           },
         ),
       ),
+    );
+  }
+
+  Widget _rosterHeader(int count) {
+    final textTheme = Theme.of(context).textTheme;
+    final hextech = context.hextech;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'SUMMONERS · $count',
+            style: textTheme.labelSmall?.copyWith(color: hextech.textSecondary, letterSpacing: 2),
+          ),
+        ),
+        Text(
+          'min $_minimumPlayers',
+          style: textTheme.bodySmall?.copyWith(color: hextech.textDisabled),
+        ),
+      ],
+    );
+  }
+
+  /// The players who are here, then a dashed seat for each one still missing
+  /// before the game can start.
+  List<Widget> _roster(Lobby lobby, List<String> players, String hostName) {
+    final rows = <Widget>[];
+    for (var i = 0; i < players.length; i++) {
+      final player = players[i];
+      if (i > 0) rows.add(const SizedBox(height: 8));
+      rows.add(
+        PlayerTile(
+          key: ValueKey(player),
+          name: player,
+          isHost: player == hostName,
+          isYou: player == widget.playerName,
+          connected: lobby.connected[player] ?? true,
+          index: i,
+        ),
+      );
+    }
+
+    final openSeats = (_minimumPlayers - players.length).clamp(0, _minimumPlayers);
+    for (var i = 0; i < openSeats; i++) {
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 8));
+      rows.add(const LobbyOpenSeat());
+    }
+    return rows;
+  }
+
+  Widget _hostControls(int playerCount) {
+    final missing = _minimumPlayers - playerCount;
+
+    Widget start = HextechButton(
+      label: 'Start game',
+      busy: _isStarting,
+      onPressed: playerCount >= _minimumPlayers && !_isStarting ? _startGame : null,
+      disabledReason: missing > 0
+          ? 'Need $missing more summoner${missing == 1 ? '' : 's'}'
+          : null,
+    );
+
+    if (_startShimmer > 0 && !Motion.reduced(context)) {
+      start = start
+          .animate(key: ValueKey('start-shimmer-$_startShimmer'))
+          .shimmer(duration: 1200.ms, color: HextechColors.goldBright);
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HextechPanel(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          child: LobbyPoolToggles(
+            useChampions: useChampions,
+            useItems: useItems,
+            onChanged: (champions, items) => setState(() {
+              useChampions = champions;
+              useItems = items;
+            }),
+          ),
+        ),
+        const SizedBox(height: 16),
+        start,
+      ],
     );
   }
 }
