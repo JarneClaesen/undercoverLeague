@@ -24,8 +24,10 @@ const (
 	currentKey = "catalog:current"
 	// The three per-patch Data Dragon files the smaller packs come from
 	// are cached under fixed keys with the patch they belong to, so a
-	// refresh on an unchanged patch is a single versions request.
-	championsKey = "raw:championFull"
+	// refresh on an unchanged patch is a single versions request. The
+	// cache holds the parsed struct, so a key must be bumped whenever a
+	// field is added to it: v2 picked up key, partype, info and stats.
+	championsKey = "raw:championFull:v2"
 	spellsKey    = "raw:summoner"
 	runesKey     = "raw:runes"
 	// The Meraki play-rate feed is not tied to a Data Dragon patch, so it
