@@ -28,6 +28,10 @@ const (
 	championsKey = "raw:championFull"
 	spellsKey    = "raw:summoner"
 	runesKey     = "raw:runes"
+	// The Meraki play-rate feed is not tied to a Data Dragon patch, so it
+	// is fetched on every refresh and the last good copy kept here for
+	// when Meraki is down.
+	ratesKey = "raw:championrates"
 )
 
 // itemsKey names a season's item snapshot. The v2 suffix retired the
@@ -67,9 +71,10 @@ type Service struct {
 }
 
 type Status struct {
-	Source    string    `json:"source"`
-	Patch     string    `json:"patch"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Source     string    `json:"source"`
+	Patch      string    `json:"patch"`
+	LanesPatch string    `json:"lanesPatch,omitempty"` // Meraki patch the champion lanes come from, "" when none
+	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
 func New(fetch *Fetcher, st Store, overridesPath string, log *slog.Logger) *Service {
@@ -104,8 +109,10 @@ func (s *Service) Bootstrap() *game.Catalog {
 
 // Refresh rebuilds the catalog from Data Dragon. Past seasons' snapshots
 // come from the cache when present (a finished patch never changes); the
-// current season and the champion list are always fetched. On error the
-// previous catalog stays current.
+// current season and the champion list are always fetched, as is the
+// Meraki play-rate feed the lanes come from, which is the one fetch that
+// may fail: the cached copy (or no lanes at all) is used instead. On
+// error the previous catalog stays current.
 func (s *Service) Refresh(ctx context.Context) (*game.Catalog, error) {
 	versions, err := s.fetch.Versions(ctx)
 	if err != nil {
@@ -165,7 +172,15 @@ func (s *Service) Refresh(ctx context.Context) (*game.Catalog, error) {
 		seasonStore = s.store
 	}
 	resolver := newSeasonResolver(ov.Champions, seasonStore, current, s.log)
-	champs := importChampions(s.fetch.Base, rawChamps, resolver.season, ov.Champions.region)
+	rates := s.championRates(ctx)
+	laneOf := laneTable(rates, rawChamps)
+	lanes := func(id string) []string {
+		if l, ok := ov.Champions.lanes(id); ok {
+			return l
+		}
+		return laneOf[id]
+	}
+	champs := importChampions(s.fetch.Base, rawChamps, resolver.season, ov.Champions.region, lanes)
 	if len(champs) == 0 {
 		return nil, fmt.Errorf("champions %s: nothing imported", latest)
 	}
@@ -178,11 +193,35 @@ func (s *Service) Refresh(ctx context.Context) (*game.Catalog, error) {
 	}
 
 	c := Build(latest, snaps, champs, packs, ov)
+	c.LanesPatch = rates.Patch
 	s.saveJSON(currentKey, c)
 	s.set(c, "ddragon", time.Now())
-	s.log.Info("catalog: refreshed", "patch", latest, "champions", len(c.Champions), "items", len(c.Items),
+	s.log.Info("catalog: refreshed", "patch", latest, "lanesPatch", rates.Patch, "champions", len(c.Champions), "items", len(c.Items),
 		"spells", len(c.Spells), "runes", len(c.Runes), "abilities", len(c.Abilities), "skinLines", len(c.SkinLines), "seasons", seasons)
 	return c, nil
+}
+
+// championRates fetches the Meraki play-rate feed and caches it. When the
+// fetch fails the last cached copy is used, and without one the zero
+// value, which gives no champion any lane: a Meraki outage never fails a
+// Data Dragon refresh.
+func (s *Service) championRates(ctx context.Context) rawChampionRates {
+	rates, err := s.fetch.ChampionRates(ctx)
+	if err == nil {
+		s.saveJSON(ratesKey, rates)
+		return rates
+	}
+	if s.store != nil {
+		if b, _, lerr := s.store.LoadBlob(ratesKey); lerr == nil && b != nil {
+			var cached rawChampionRates
+			if json.Unmarshal(b, &cached) == nil && len(cached.Data) > 0 {
+				s.log.Warn("catalog: champion lanes: fetch failed, using cached feed", "err", err, "patch", cached.Patch)
+				return cached
+			}
+		}
+	}
+	s.log.Warn("catalog: champion lanes: fetch failed and nothing cached, importing without lanes", "err", err)
+	return rawChampionRates{}
 }
 
 // fetchVersioned returns the cached copy of a per-patch file when it is
@@ -244,7 +283,7 @@ func (s *Service) Status() Status {
 	defer s.mu.Unlock()
 	st := Status{Source: s.source, UpdatedAt: s.updatedAt}
 	if s.current != nil {
-		st.Patch = s.current.Patch
+		st.Patch, st.LanesPatch = s.current.Patch, s.current.LanesPatch
 	}
 	return st
 }

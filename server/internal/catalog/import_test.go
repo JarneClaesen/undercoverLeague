@@ -156,33 +156,33 @@ func TestImportItems(t *testing.T) {
 	}
 }
 
-// championsFull is a trimmed championFull.json: tags, partype, info,
+// championsFull is a trimmed championFull.json: key, tags, partype, info,
 // stats, spells, passive and skins in the shapes the importer reads. Skin
 // names cover the forms the line heuristic must handle; info and stats are
 // the real values of patch 16.18 (Newbie's zeros are what Riot ships for
 // Akshan, Rell, Seraphine and Vex).
 const championsFull = `{"data":{
- "Ahri":{"id":"Ahri","name":"Ahri","tags":["Mage","Assassin"],"partype":"Mana",
+ "Ahri":{"id":"Ahri","key":"103","name":"Ahri","tags":["Mage","Assassin"],"partype":"Mana",
    "info":{"attack":3,"defense":4,"magic":8,"difficulty":5},"stats":{"attackrange":550},
    "passive":{"name":"Essence Theft","image":{"full":"Ahri_SoulEater2.png"}},
    "spells":[{"name":"Orb of Deception","image":{"full":"AhriQ.png"}},{"name":"Fox-Fire","image":{"full":"AhriW.png"}},{"name":"Charm","image":{"full":"AhriE.png"}},{"name":"Spirit Rush","image":{"full":"AhriR.png"}}],
    "skins":[{"num":0,"name":"default"},{"num":1,"name":"Dynasty Ahri"},{"num":4,"name":"Star Guardian Ahri"},{"num":7,"name":"K/DA Ahri"},{"num":8,"name":"Prestige K/DA Ahri"},{"num":9,"name":"K/DA Ahri (2022)"},{"num":10,"name":"Ahri Snow Day"},{"num":11,"name":"Ahri's Fox Party"}]},
- "MonkeyKing":{"id":"MonkeyKing","name":"Wukong","tags":["Fighter","Tank"],"partype":"Mana",
+ "MonkeyKing":{"id":"MonkeyKing","key":"62","name":"Wukong","tags":["Fighter","Tank"],"partype":"Mana",
    "info":{"attack":8,"defense":5,"magic":2,"difficulty":3},"stats":{"attackrange":175},
    "passive":{"name":"Stone Skin","image":{"full":"MonkeyKingStoneSkin.png"}},
    "spells":[{"name":"Crushing Blow","image":{"full":"MonkeyKingDoubleAttack.png"}},{"name":"Warrior Trickster","image":{"full":"MonkeyKingDecoy.png"}},{"name":"Nimbus Strike","image":{"full":"MonkeyKingNimbus.png"}},{"name":"Cyclone","image":{"full":"MonkeyKingSpinToWin.png"}}],
    "skins":[{"num":0,"name":"default"},{"num":3,"name":"Star Guardian Wukong"},{"num":6,"name":"Wukong Snow Day (Ruby)"},{"num":8,"name":"Radiant Wukong"}]},
- "MasterYi":{"id":"MasterYi","name":"Master Yi","tags":["Assassin","Fighter"],"partype":"Mana",
+ "MasterYi":{"id":"MasterYi","key":"11","name":"Master Yi","tags":["Assassin","Fighter"],"partype":"Mana",
    "info":{"attack":10,"defense":4,"magic":2,"difficulty":4},"stats":{"attackrange":125},
    "passive":{"name":"Double Strike","image":{"full":"MasterYi_Passive1.png"}},
    "spells":[{"name":"Alpha Strike","image":{"full":"AlphaStrike.png"}},{"name":"Meditate","image":{"full":"Meditate.png"}},{"name":"Wuju Style","image":{"full":"WujuStyle.png"}},{"name":"Highlander","image":{"full":"Highlander.png"}}],
    "skins":[{"num":0,"name":"default"},{"num":5,"name":"PROJECT: Yi"},{"num":9,"name":"Snow Man Yi"},{"num":12,"name":"K/DA Master Yi"}]},
- "Blitzcrank":{"id":"Blitzcrank","name":"Blitzcrank","tags":["Tank","Support"],"partype":"Mana",
+ "Blitzcrank":{"id":"Blitzcrank","key":"53","name":"Blitzcrank","tags":["Tank","Support"],"partype":"Mana",
    "info":{"attack":4,"defense":8,"magic":5,"difficulty":4},"stats":{"attackrange":125},
    "passive":{"name":"Mana Barrier","image":{"full":"Blitzcrank_ManaBarrier.png"}},
    "spells":[{"name":"Rocket Grab","image":{"full":"RocketGrab.png"}},{"name":"Overdrive","image":{"full":"Overdrive.png"}},{"name":"Power Fist","image":{"full":"PowerFist.png"}},{"name":"Static Field","image":{"full":"StaticField.png"}}],
    "skins":[{"num":0,"name":"default"},{"num":2,"name":"Beezcrank"},{"num":3,"name":"PROJECT: Blitzcrank"},{"num":4,"name":"Blitzcrank"}]},
- "Newbie":{"id":"Newbie","name":"Newbie","tags":["Marksman"],"partype":"Blood Well","info":{"attack":0,"defense":0,"magic":0,"difficulty":0},"stats":{"attackrange":300},"passive":{"name":"","image":{"full":""}},"spells":[],"skins":[{"num":0,"name":"default"}]},
+ "Newbie":{"id":"Newbie","key":"999","name":"Newbie","tags":["Marksman"],"partype":"Blood Well","info":{"attack":0,"defense":0,"magic":0,"difficulty":0},"stats":{"attackrange":300},"passive":{"name":"","image":{"full":""}},"spells":[],"skins":[{"num":0,"name":"default"}]},
  "Broken":{"id":"","name":"x","tags":[],"skins":[]}
 }}`
 
@@ -203,6 +203,27 @@ const runesReforged = `[
    {"runes":[{"name":"Electrocute","icon":"perk-images/Styles/Domination/Electrocute/Electrocute.png"}]},
    {"runes":[{"name":"Cheap Shot","icon":"perk-images/Styles/Domination/CheapShot/CheapShot.png"},{"name":"","icon":"x.png"}]}]}
 ]`
+
+// championRates is a trimmed Meraki championrates.json keyed by numeric
+// champion key: Ahri mid and (barely) support, Wukong top and jungle,
+// Master Yi jungle only, Blitzcrank support only; 66615 is one of the
+// non-champion keys the feed carries and Newbie (999) is missing from it.
+const championRates = `{"patch":"16.3","data":{
+ "103":{"TOP":{"playRate":0},"JUNGLE":{"playRate":0},"MIDDLE":{"playRate":4.7},"BOTTOM":{"playRate":0},"UTILITY":{"playRate":0.012}},
+ "62":{"TOP":{"playRate":2.1},"JUNGLE":{"playRate":3.9},"MIDDLE":{"playRate":0},"BOTTOM":{"playRate":0},"UTILITY":{"playRate":0}},
+ "11":{"TOP":{"playRate":0},"JUNGLE":{"playRate":5.2},"MIDDLE":{"playRate":0},"BOTTOM":{"playRate":0},"UTILITY":{"playRate":0}},
+ "53":{"TOP":{"playRate":0},"JUNGLE":{"playRate":0},"MIDDLE":{"playRate":0},"BOTTOM":{"playRate":0},"UTILITY":{"playRate":6.3}},
+ "66615":{"TOP":{"playRate":1},"JUNGLE":{"playRate":1},"MIDDLE":{"playRate":1},"BOTTOM":{"playRate":1},"UTILITY":{"playRate":1}}
+}}`
+
+func rawRates(t *testing.T) rawChampionRates {
+	t.Helper()
+	var r rawChampionRates
+	if err := json.Unmarshal([]byte(championRates), &r); err != nil {
+		t.Fatal(err)
+	}
+	return r
+}
 
 func rawChampionsFull(t *testing.T) map[string]rawChampionFull {
 	t.Helper()
@@ -236,7 +257,8 @@ func testSeason(id string) int {
 }
 
 func TestImportChampions(t *testing.T) {
-	got := importChampions("https://dd", rawChampionsFull(t), testSeason, ChampionOverrides{Regions: map[string]string{"newbie": "Void"}}.region)
+	lanes := laneTable(rawRates(t), rawChampionsFull(t))
+	got := importChampions("https://dd", rawChampionsFull(t), testSeason, ChampionOverrides{Regions: map[string]string{"newbie": "Void"}}.region, func(id string) []string { return lanes[id] })
 	if !slices.Equal(champNames(got), []string{"Ahri", "Blitzcrank", "Master Yi", "Newbie", "Wukong"}) {
 		t.Fatalf("got %v", champNames(got))
 	}
@@ -263,6 +285,62 @@ func TestImportChampions(t *testing.T) {
 	// ratings leave damage and difficulty unknown.
 	if newbie.Range != game.RangeRanged || newbie.Resource != game.ResourceOther || newbie.Damage != "" || newbie.Difficulty != "" {
 		t.Errorf("Newbie buckets %+v", newbie)
+	}
+	// Lanes from the play-rate feed; Newbie is not in it.
+	if !slices.Equal(ahri.Lanes, []string{"mid", "support"}) || !slices.Equal(wukong.Lanes, []string{"top", "jungle"}) || newbie.Lanes != nil {
+		t.Errorf("lanes: Ahri %v Wukong %v Newbie %v", ahri.Lanes, wukong.Lanes, newbie.Lanes)
+	}
+	// Without a feed nobody has lanes.
+	for _, ch := range importChampions("https://dd", rawChampionsFull(t), testSeason, ChampionOverrides{}.region, nil) {
+		if ch.Lanes != nil {
+			t.Errorf("%s has lanes without a feed: %v", ch.Name, ch.Lanes)
+		}
+	}
+}
+
+func TestLaneTable(t *testing.T) {
+	rates := rawRates(t)
+	if rates.Patch != "16.3" {
+		t.Errorf("patch %q", rates.Patch)
+	}
+	got := laneTable(rates, rawChampionsFull(t))
+	want := map[string][]string{
+		"Ahri":       {"mid", "support"}, // 0.012 is still > 0
+		"MonkeyKing": {"top", "jungle"},
+		"MasterYi":   {"jungle"},
+		"Blitzcrank": {"support"},
+	}
+	if len(got) != len(want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	for id, lanes := range want {
+		if !slices.Equal(got[id], lanes) {
+			t.Errorf("%s: got %v, want %v", id, got[id], lanes)
+		}
+	}
+	// Feed keys that are not a champion are ignored, a champion missing
+	// from the feed has no entry, and a champion with only zero rates none
+	// either.
+	if _, ok := got["66615"]; ok {
+		t.Error("non-champion key imported")
+	}
+	if _, ok := got["Newbie"]; ok {
+		t.Error("champion missing from the feed got lanes")
+	}
+	rates.Data["999"] = map[string]rawRate{"TOP": {0}, "JUNGLE": {0}, "MIDDLE": {0}, "BOTTOM": {0}, "UTILITY": {0}}
+	if got := laneTable(rates, rawChampionsFull(t)); got["Newbie"] != nil {
+		t.Errorf("all-zero rates gave lanes %v", got["Newbie"])
+	}
+	for _, lanes := range got {
+		for _, l := range lanes {
+			if !game.ValidLane(l) {
+				t.Errorf("lane %q outside the enum", l)
+			}
+		}
+	}
+	// An empty feed is an empty table.
+	if got := laneTable(rawChampionRates{}, rawChampionsFull(t)); len(got) != 0 {
+		t.Errorf("empty feed gave %v", got)
 	}
 }
 
@@ -314,7 +392,7 @@ func TestClassifyChampion(t *testing.T) {
 
 func TestImportAbilities(t *testing.T) {
 	raw := rawChampionsFull(t)
-	champs := importChampions("https://dd", raw, testSeason, ChampionOverrides{}.region)
+	champs := importChampions("https://dd", raw, testSeason, ChampionOverrides{}.region, nil)
 	got := importAbilities("https://dd", "16.18.1", raw, champs)
 	byName := map[string]game.Entry{}
 	for _, e := range got {
@@ -579,13 +657,28 @@ func TestLoadOverrides(t *testing.T) {
 	if _, err := LoadOverrides(bad); err == nil {
 		t.Error("unknown region accepted")
 	}
-	good := writeTemp(t, `{"items":{"exclude":["A"]},"champions":{"seasons":{"Mel":15},"regions":{"Zaahen":"Shurima"}},"skinLines":{"exclude":["Count"]}}`)
+	bad = writeTemp(t, `{"champions":{"lanes":{"Teemo":["top","river"]}}}`)
+	if _, err := LoadOverrides(bad); err == nil {
+		t.Error("unknown lane accepted")
+	}
+	good := writeTemp(t, `{"items":{"exclude":["A"]},"champions":{"seasons":{"Mel":15},"regions":{"Zaahen":"Shurima"},"lanes":{"Teemo":["Support","top","TOP"],"Nobody":[]}},"skinLines":{"exclude":["Count"]}}`)
 	ov, err := LoadOverrides(good)
 	if err != nil || !ov.Items.excluded("a") || ov.Champions.Seasons["Mel"] != 15 || !ov.SkinLines.excluded("count") {
 		t.Errorf("good file: %+v %v", ov, err)
 	}
 	if ov.Champions.region("zaahen") != "Shurima" || ov.Champions.region("Ahri") != "Ionia" || ov.Champions.region("Nobody") != "" {
 		t.Errorf("region resolution %+v", ov.Champions)
+	}
+	// Lane overrides come back canonical (spelling, order, deduped); an
+	// empty list is an override too (no lane), a missing id is not.
+	if l, ok := ov.Champions.lanes("teemo"); !ok || !slices.Equal(l, []string{"top", "support"}) {
+		t.Errorf("Teemo lanes %v %v", l, ok)
+	}
+	if l, ok := ov.Champions.lanes("Nobody"); !ok || l == nil || len(l) != 0 {
+		t.Errorf("Nobody lanes %#v %v", l, ok)
+	}
+	if l, ok := ov.Champions.lanes("Ahri"); ok || l != nil {
+		t.Errorf("Ahri lanes %v %v", l, ok)
 	}
 }
 

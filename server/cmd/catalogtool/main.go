@@ -5,7 +5,8 @@
 //
 // -seasons scrapes release dates from the LoL wiki's ChampionData module
 // and cross-checks the ids against Data Dragon; -dump runs a full refresh
-// (without a database, so nothing is cached) and prints the catalog.
+// (without a database, so nothing is cached; lanes come from Meraki) and
+// prints the catalog.
 package main
 
 import (
@@ -32,6 +33,7 @@ func main() {
 	dump := flag.Bool("dump", false, "print fallback.json")
 	overrides := flag.String("overrides", "deploy/catalog_overrides.json", "overrides file used by -dump")
 	base := flag.String("ddragon", catalog.DefaultBase, "Data Dragon base URL")
+	meraki := flag.String("meraki", catalog.DefaultMerakiBase, "Meraki Analytics base URL (champion lanes, used by -dump)")
 	flag.Parse()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -41,7 +43,7 @@ func main() {
 	case *seasons:
 		err = printSeasons(ctx, *base)
 	case *dump:
-		err = printDump(ctx, *base, *overrides)
+		err = printDump(ctx, *base, *meraki, *overrides)
 	default:
 		flag.Usage()
 		os.Exit(2)
@@ -97,7 +99,7 @@ func printSeasons(ctx context.Context, base string) error {
 	}
 
 	// Cross-check against Data Dragon so a renamed apiname is noticed.
-	f := catalog.NewFetcher(base)
+	f := catalog.NewFetcher(base, "")
 	versions, err := f.Versions(ctx)
 	if err != nil {
 		return err
@@ -124,9 +126,9 @@ func printSeasons(ctx context.Context, base string) error {
 	return printJSON(out)
 }
 
-func printDump(ctx context.Context, base, overrides string) error {
+func printDump(ctx context.Context, base, meraki, overrides string) error {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	svc := catalog.New(catalog.NewFetcher(base), nil, overrides, log)
+	svc := catalog.New(catalog.NewFetcher(base, meraki), nil, overrides, log)
 	c, err := svc.Refresh(ctx)
 	if err != nil {
 		return err

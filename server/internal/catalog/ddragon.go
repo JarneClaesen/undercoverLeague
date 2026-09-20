@@ -13,20 +13,32 @@ import (
 	"time"
 )
 
-const DefaultBase = "https://ddragon.leagueoflegends.com"
+const (
+	DefaultBase = "https://ddragon.leagueoflegends.com"
+	// DefaultMerakiBase hosts the per-position play rates the champion
+	// lanes come from (Data Dragon has no position data).
+	DefaultMerakiBase = "https://cdn.merakianalytics.com"
 
-// Fetcher is the thin HTTP client for Data Dragon. Base has no trailing
-// slash; tests point it at an httptest server.
+	championRatesPath = "/riot/lol/resources/latest/en-US/championrates.json"
+)
+
+// Fetcher is the thin HTTP client for Data Dragon and the Meraki play-rate
+// feed. Bases have no trailing slash; tests point them at an httptest
+// server.
 type Fetcher struct {
-	Base   string
+	Base   string // Data Dragon
+	Meraki string // Meraki Analytics
 	Client *http.Client
 }
 
-func NewFetcher(base string) *Fetcher {
+func NewFetcher(base, meraki string) *Fetcher {
 	if base == "" {
 		base = DefaultBase
 	}
-	return &Fetcher{Base: base, Client: &http.Client{Timeout: 30 * time.Second}}
+	if meraki == "" {
+		meraki = DefaultMerakiBase
+	}
+	return &Fetcher{Base: base, Meraki: meraki, Client: &http.Client{Timeout: 30 * time.Second}}
 }
 
 // Versions lists every patch, newest first, e.g. ["16.18.1", "16.17.1", ...].
@@ -45,6 +57,7 @@ type rawChampion struct {
 // a single file.
 type rawChampionFull struct {
 	ID      string     `json:"id"`
+	Key     string     `json:"key"` // numeric champion id as a string, "266"; keys the play-rate feed
 	Name    string     `json:"name"`
 	Tags    []string   `json:"tags"`    // Fighter, Mage, ... primary first
 	Partype string     `json:"partype"` // resource bar: Mana, Energy, None, Fury, ...
@@ -156,11 +169,42 @@ func (f *Fetcher) Runes(ctx context.Context, version string) ([]rawRuneTree, err
 	return trees, err
 }
 
+// rawChampionRates is Meraki's championrates.json: per numeric champion
+// key, the share of that position's picks the champion has, exactly 0 for
+// positions Riot does not recognise for it. Patch is Meraki's own
+// numbering ("16.3"), not a Data Dragon version. Some keys are not
+// champions at all; the importer ignores anything not in championFull.
+type rawChampionRates struct {
+	Patch string                        `json:"patch"`
+	Data  map[string]map[string]rawRate `json:"data"` // key -> TOP | JUNGLE | MIDDLE | BOTTOM | UTILITY -> rate
+}
+
+type rawRate struct {
+	PlayRate float64 `json:"playRate"`
+}
+
+// ChampionRates fetches the play-rate feed from the Meraki base.
+func (f *Fetcher) ChampionRates(ctx context.Context) (rawChampionRates, error) {
+	var body rawChampionRates
+	if err := f.getURL(ctx, f.Meraki+championRatesPath, &body); err != nil {
+		return rawChampionRates{}, err
+	}
+	if len(body.Data) == 0 {
+		return rawChampionRates{}, fmt.Errorf("GET %s: no champions in feed", championRatesPath)
+	}
+	return body, nil
+}
+
 func (f *Fetcher) getJSON(ctx context.Context, path string, v any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, f.Base+path, nil)
+	return f.getURL(ctx, f.Base+path, v)
+}
+
+func (f *Fetcher) getURL(ctx context.Context, url string, v any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
+	path := req.URL.Path
 	res, err := f.Client.Do(req)
 	if err != nil {
 		return err

@@ -1,5 +1,6 @@
 {
   "patch": "16.18.1",
+  "lanesPatch": "16.3",
   "champions": [
     {
       "name": "Aatrox",
@@ -13,7 +14,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Ahri",
@@ -28,7 +32,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Akali",
@@ -42,7 +49,11 @@
       "range": "melee",
       "resource": "energy",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top",
+        "mid"
+      ]
     },
     {
       "name": "Akshan",
@@ -55,7 +66,10 @@
       "region": "Shurima",
       "id": "Akshan",
       "range": "ranged",
-      "resource": "mana"
+      "resource": "mana",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Alistar",
@@ -70,7 +84,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Ambessa",
@@ -85,7 +102,11 @@
       "range": "melee",
       "resource": "energy",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top",
+        "jungle"
+      ]
     },
     {
       "name": "Amumu",
@@ -100,7 +121,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Anivia",
@@ -114,7 +138,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Annie",
@@ -129,7 +156,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Aphelios",
@@ -143,7 +173,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Ashe",
@@ -158,7 +191,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Aurelion Sol",
@@ -172,7 +208,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Aurora",
@@ -187,7 +226,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Azir",
@@ -202,7 +244,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Bard",
@@ -217,7 +262,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Bel'Veth",
@@ -231,7 +279,10 @@
       "range": "melee",
       "resource": "none",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Blitzcrank",
@@ -246,7 +297,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Brand",
@@ -261,7 +315,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Braum",
@@ -276,7 +333,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Briar",
@@ -291,7 +351,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Caitlyn",
@@ -305,7 +368,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Camille",
@@ -320,7 +386,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Cassiopeia",
@@ -334,7 +403,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Cho'Gath",
@@ -349,7 +421,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Corki",
@@ -364,7 +439,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Darius",
@@ -379,7 +457,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Diana",
@@ -394,7 +475,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle",
+        "mid"
+      ]
     },
     {
       "name": "Dr. Mundo",
@@ -409,7 +494,11 @@
       "range": "melee",
       "resource": "none",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top",
+        "jungle"
+      ]
     },
     {
       "name": "Draven",
@@ -423,7 +512,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Ekko",
@@ -438,7 +530,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle",
+        "mid"
+      ]
     },
     {
       "name": "Elise",
@@ -453,7 +549,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Evelynn",
@@ -468,7 +567,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Ezreal",
@@ -483,7 +585,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Fiddlesticks",
@@ -498,7 +603,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Fiora",
@@ -513,7 +621,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Fizz",
@@ -528,7 +639,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Galio",
@@ -543,7 +657,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Gangplank",
@@ -557,7 +674,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Garen",
@@ -572,7 +692,10 @@
       "range": "melee",
       "resource": "none",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Gnar",
@@ -587,7 +710,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Gragas",
@@ -602,7 +728,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Graves",
@@ -616,7 +745,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Gwen",
@@ -630,7 +762,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top",
+        "jungle"
+      ]
     },
     {
       "name": "Hecarim",
@@ -645,7 +781,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Heimerdinger",
@@ -660,7 +799,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Hwei",
@@ -675,7 +817,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Illaoi",
@@ -690,7 +835,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Irelia",
@@ -705,7 +853,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top",
+        "mid"
+      ]
     },
     {
       "name": "Ivern",
@@ -720,7 +872,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Janna",
@@ -735,7 +890,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Jarvan IV",
@@ -750,7 +908,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Jax",
@@ -764,7 +925,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top",
+        "jungle"
+      ]
     },
     {
       "name": "Jayce",
@@ -779,7 +944,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top",
+        "jungle"
+      ]
     },
     {
       "name": "Jhin",
@@ -794,7 +963,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Jinx",
@@ -808,7 +980,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "K'Sante",
@@ -823,7 +998,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Kai'Sa",
@@ -838,7 +1016,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Kalista",
@@ -852,7 +1033,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Karma",
@@ -867,7 +1051,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Karthus",
@@ -881,7 +1068,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Kassadin",
@@ -896,7 +1086,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Katarina",
@@ -911,7 +1104,10 @@
       "range": "melee",
       "resource": "none",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Kayle",
@@ -926,7 +1122,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Kayn",
@@ -941,7 +1140,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Kennen",
@@ -955,7 +1157,10 @@
       "range": "ranged",
       "resource": "energy",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Kha'Zix",
@@ -969,7 +1174,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Kindred",
@@ -983,7 +1191,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Kled",
@@ -997,7 +1208,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Kog'Maw",
@@ -1012,7 +1226,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "LeBlanc",
@@ -1027,7 +1244,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Lee Sin",
@@ -1042,7 +1262,10 @@
       "range": "melee",
       "resource": "energy",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Leona",
@@ -1057,7 +1280,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Lillia",
@@ -1072,7 +1298,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Lissandra",
@@ -1086,7 +1315,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Locke",
@@ -1116,7 +1348,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Lulu",
@@ -1131,7 +1366,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Lux",
@@ -1146,7 +1384,11 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid",
+        "support"
+      ]
     },
     {
       "name": "Malphite",
@@ -1161,7 +1403,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "top",
+        "jungle"
+      ]
     },
     {
       "name": "Malzahar",
@@ -1175,7 +1421,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Maokai",
@@ -1190,7 +1439,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Master Yi",
@@ -1205,7 +1457,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Mel",
@@ -1220,7 +1475,11 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid",
+        "support"
+      ]
     },
     {
       "name": "Milio",
@@ -1235,7 +1494,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Miss Fortune",
@@ -1250,7 +1512,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Mordekaiser",
@@ -1265,7 +1530,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Morgana",
@@ -1280,7 +1548,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Naafiri",
@@ -1295,7 +1566,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Nami",
@@ -1310,7 +1584,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Nasus",
@@ -1325,7 +1602,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Nautilus",
@@ -1340,7 +1620,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Neeko",
@@ -1355,7 +1638,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Nidalee",
@@ -1370,7 +1656,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Nilah",
@@ -1385,7 +1674,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Nocturne",
@@ -1400,7 +1692,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Nunu \u0026 Willump",
@@ -1415,7 +1710,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Olaf",
@@ -1430,7 +1728,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Orianna",
@@ -1445,7 +1746,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Ornn",
@@ -1459,7 +1763,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Pantheon",
@@ -1474,7 +1781,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Poppy",
@@ -1489,7 +1799,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Pyke",
@@ -1504,7 +1817,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Qiyana",
@@ -1518,7 +1834,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle",
+        "mid"
+      ]
     },
     {
       "name": "Quinn",
@@ -1533,7 +1853,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Rakan",
@@ -1547,7 +1870,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Rammus",
@@ -1561,7 +1887,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Rek'Sai",
@@ -1576,7 +1905,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Rell",
@@ -1589,7 +1921,10 @@
       "region": "Noxus",
       "id": "Rell",
       "range": "melee",
-      "resource": "mana"
+      "resource": "mana",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Renata Glasc",
@@ -1604,7 +1939,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Renekton",
@@ -1619,7 +1957,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Rengar",
@@ -1634,7 +1975,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Riven",
@@ -1649,7 +1993,10 @@
       "range": "melee",
       "resource": "none",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Rumble",
@@ -1664,7 +2011,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Ryze",
@@ -1678,7 +2028,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Samira",
@@ -1693,7 +2046,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Sejuani",
@@ -1707,7 +2063,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Senna",
@@ -1722,7 +2081,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Seraphine",
@@ -1735,7 +2097,10 @@
       "region": "Piltover",
       "id": "Seraphine",
       "range": "ranged",
-      "resource": "mana"
+      "resource": "mana",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Sett",
@@ -1750,7 +2115,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Shaco",
@@ -1764,7 +2132,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Shen",
@@ -1778,7 +2149,10 @@
       "range": "melee",
       "resource": "energy",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Shyvana",
@@ -1793,7 +2167,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Singed",
@@ -1808,7 +2185,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Sion",
@@ -1823,7 +2203,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Sivir",
@@ -1837,7 +2220,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Skarner",
@@ -1852,7 +2238,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Smolder",
@@ -1867,7 +2256,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Sona",
@@ -1882,7 +2274,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Soraka",
@@ -1897,7 +2292,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Swain",
@@ -1912,7 +2310,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Sylas",
@@ -1927,7 +2328,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle",
+        "mid"
+      ]
     },
     {
       "name": "Syndra",
@@ -1941,7 +2346,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Tahm Kench",
@@ -1956,7 +2364,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top",
+        "support"
+      ]
     },
     {
       "name": "Taliyah",
@@ -1971,7 +2383,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Talon",
@@ -1985,7 +2400,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Taric",
@@ -2000,7 +2418,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Teemo",
@@ -2015,7 +2436,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Thresh",
@@ -2030,7 +2454,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Tristana",
@@ -2045,7 +2472,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Trundle",
@@ -2060,7 +2490,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top",
+        "jungle"
+      ]
     },
     {
       "name": "Tryndamere",
@@ -2075,7 +2509,10 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Twisted Fate",
@@ -2090,7 +2527,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Twitch",
@@ -2105,7 +2545,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Udyr",
@@ -2120,7 +2563,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Urgot",
@@ -2135,7 +2581,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Varus",
@@ -2150,7 +2599,11 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "top",
+        "bot"
+      ]
     },
     {
       "name": "Vayne",
@@ -2165,7 +2618,11 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top",
+        "bot"
+      ]
     },
     {
       "name": "Veigar",
@@ -2179,7 +2636,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Vel'Koz",
@@ -2194,7 +2654,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Vex",
@@ -2206,7 +2669,10 @@
       "region": "Shadow Isles",
       "id": "Vex",
       "range": "ranged",
-      "resource": "mana"
+      "resource": "mana",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Vi",
@@ -2221,7 +2687,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Viego",
@@ -2236,7 +2705,10 @@
       "range": "melee",
       "resource": "none",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Viktor",
@@ -2250,7 +2722,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Vladimir",
@@ -2265,7 +2740,11 @@
       "range": "ranged",
       "resource": "other",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top",
+        "mid"
+      ]
     },
     {
       "name": "Volibear",
@@ -2280,7 +2759,11 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "top",
+        "jungle"
+      ]
     },
     {
       "name": "Warwick",
@@ -2295,7 +2778,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Wukong",
@@ -2310,7 +2796,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Xayah",
@@ -2324,7 +2813,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Xerath",
@@ -2339,7 +2831,11 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "mid",
+        "support"
+      ]
     },
     {
       "name": "Xin Zhao",
@@ -2354,7 +2850,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Yasuo",
@@ -2369,7 +2868,11 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top",
+        "mid"
+      ]
     },
     {
       "name": "Yone",
@@ -2384,7 +2887,11 @@
       "range": "melee",
       "resource": "other",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "top",
+        "mid"
+      ]
     },
     {
       "name": "Yorick",
@@ -2399,7 +2906,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "mixed",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Yunara",
@@ -2413,7 +2923,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Yuumi",
@@ -2428,7 +2941,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Zaahen",
@@ -2442,7 +2958,10 @@
       "range": "melee",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "lanes": [
+        "top"
+      ]
     },
     {
       "name": "Zac",
@@ -2457,7 +2976,10 @@
       "range": "melee",
       "resource": "none",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle"
+      ]
     },
     {
       "name": "Zed",
@@ -2471,7 +2993,11 @@
       "range": "melee",
       "resource": "energy",
       "damage": "physical",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "jungle",
+        "mid"
+      ]
     },
     {
       "name": "Zeri",
@@ -2485,7 +3011,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "physical",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Ziggs",
@@ -2499,7 +3028,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "bot"
+      ]
     },
     {
       "name": "Zilean",
@@ -2514,7 +3046,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "support"
+      ]
     },
     {
       "name": "Zoe",
@@ -2528,7 +3063,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "lanes": [
+        "mid"
+      ]
     },
     {
       "name": "Zyra",
@@ -2543,7 +3081,10 @@
       "range": "ranged",
       "resource": "mana",
       "damage": "magic",
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "lanes": [
+        "support"
+      ]
     }
   ],
   "items": [

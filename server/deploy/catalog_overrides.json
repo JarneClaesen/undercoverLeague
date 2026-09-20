@@ -29,7 +29,8 @@
   "champions": {
     "exclude": [],
     "seasons": {},
-    "regions": {}
+    "regions": {},
+    "lanes": {}
   },
   "skinLines": {
     "exclude": ["Count", "King", "Lord", "Super"]

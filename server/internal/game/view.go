@@ -53,15 +53,18 @@ type View struct {
 	// catalog so clients always see concrete season bounds and an explicit
 	// tier list.
 	Settings Settings `json:"settings"`
-	// PoolSize, SeasonRange, Classes, Regions, Resources and DailyTheme are
-	// only sent in the lobby phase, where the host is choosing; they
-	// describe the catalog, not the game. Range, damage and difficulty are
-	// fixed enums the client knows; resources may lack "energy".
+	// PoolSize, SeasonRange, Classes, Regions, Resources, Lanes and
+	// DailyTheme are only sent in the lobby phase, where the host is
+	// choosing; they describe the catalog, not the game. Range, damage and
+	// difficulty are fixed enums the client knows; resources may lack
+	// "energy" and lanes are empty when no play rates were imported (the
+	// client then offers no lane filter).
 	PoolSize    *PoolSize    `json:"poolSize,omitempty"`
 	SeasonRange *SeasonRange `json:"seasonRange,omitempty"`
 	Classes     []string     `json:"classes,omitempty"`
 	Regions     []string     `json:"regions,omitempty"`
 	Resources   []string     `json:"resources,omitempty"`
+	Lanes       []string     `json:"lanes,omitempty"`
 	DailyTheme  *Theme       `json:"dailyTheme,omitempty"`
 
 	// Lobby-lifetime records, visible to everyone at all times.
@@ -77,7 +80,8 @@ type View struct {
 
 // ViewFor projects the lobby for one player. c may be nil (no catalog yet):
 // the settings are then passed through unnormalized and no pool size,
-// classes, regions, resources or daily theme are sent. now picks the daily theme.
+// classes, regions, resources, lanes or daily theme are sent. now picks
+// the daily theme.
 func (l *Lobby) ViewFor(player string, connected map[string]bool, c *Catalog, now time.Time) View {
 	v := View{
 		ID:                 l.ID,
@@ -121,6 +125,7 @@ func (l *Lobby) ViewFor(player string, connected map[string]bool, c *Catalog, no
 		v.Classes = c.Classes()
 		v.Regions = c.Regions()
 		v.Resources = c.Resources()
+		v.Lanes = c.Lanes()
 		if theme := c.DailyTheme(now); theme.ID != "" {
 			v.DailyTheme = &theme
 		}

@@ -26,6 +26,9 @@ func TestFilterValidate(t *testing.T) {
 		{"unknown class", Filter{Packs: items, ChampClasses: []string{"Bruiser"}}, "invalid"},
 		{"regions", Filter{Packs: items, ChampRegions: []string{"Shadow Isles", "void"}}, ""},
 		{"unknown region", Filter{Packs: items, ChampRegions: []string{"Camavor"}}, "invalid"},
+		{"lanes", Filter{Packs: items, ChampLanes: []string{"top", "Jungle", "MID", "bot", "support"}}, ""},
+		{"unknown lane", Filter{Packs: items, ChampLanes: []string{"river"}}, "invalid"},
+		{"full lane names are not the enum", Filter{Packs: items, ChampLanes: []string{"middle"}}, "invalid"},
 		{"ranges", Filter{Packs: items, ChampRanges: []string{"melee", "Ranged"}}, ""},
 		{"unknown range", Filter{Packs: items, ChampRanges: []string{"artillery"}}, "invalid"},
 		{"resources", Filter{Packs: items, ChampResources: []string{"mana", "energy", "none", "other"}}, ""},
@@ -53,7 +56,7 @@ func TestFilterNormalized(t *testing.T) {
 		t.Errorf("nil tiers should mean all, got %v", n.ItemTiers)
 	}
 	for name, list := range map[string][]string{
-		"classes": n.ChampClasses, "regions": n.ChampRegions, "ranges": n.ChampRanges,
+		"classes": n.ChampClasses, "regions": n.ChampRegions, "lanes": n.ChampLanes, "ranges": n.ChampRanges,
 		"resources": n.ChampResources, "damage": n.ChampDamage, "difficulty": n.ChampDifficulty,
 	} {
 		if list == nil || len(list) != 0 {
@@ -98,14 +101,18 @@ func TestFilterNormalized(t *testing.T) {
 	if !slices.Equal(n.ChampClasses, []string{"Mage", "Tank"}) || !slices.Equal(n.ChampRegions, []string{"Ionia", "Shadow Isles", "Zaun"}) {
 		t.Errorf("classes %v regions %v", n.ChampClasses, n.ChampRegions)
 	}
-	// So are the four bucket lists.
+	// So are the four bucket lists and the lanes.
 	n = Filter{Packs: AllPacks,
 		ChampRanges: []string{"Ranged", "melee", "ranged", "x"}, ChampResources: []string{"other", "MANA", "mana"},
 		ChampDamage: []string{"mixed", "physical", "Physical"}, ChampDifficulty: []string{"hard", "EASY", "x"},
+		ChampLanes: []string{"Support", "TOP", "top", "mid", "x"},
 	}.Normalized(c)
 	if !slices.Equal(n.ChampRanges, []string{"melee", "ranged"}) || !slices.Equal(n.ChampResources, []string{"mana", "other"}) ||
 		!slices.Equal(n.ChampDamage, []string{"physical", "mixed"}) || !slices.Equal(n.ChampDifficulty, []string{"easy", "hard"}) {
 		t.Errorf("ranges %v resources %v damage %v difficulty %v", n.ChampRanges, n.ChampResources, n.ChampDamage, n.ChampDifficulty)
+	}
+	if !slices.Equal(n.ChampLanes, []string{"top", "mid", "support"}) {
+		t.Errorf("lanes %v", n.ChampLanes)
 	}
 
 	// Without a catalog nothing can be filled in but nothing breaks either.
@@ -121,7 +128,7 @@ func TestFilterJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `{"packs":["champions","items"],"champSeasons":[1,16],"itemSeasons":[3,16],"itemTiers":["starter","consumable","boots","component","legendary"],"champClasses":[],"champRegions":[],"champRanges":[],"champResources":[],"champDamage":[],"champDifficulty":[]}`
+	want := `{"packs":["champions","items"],"champSeasons":[1,16],"itemSeasons":[3,16],"itemTiers":["starter","consumable","boots","component","legendary"],"champClasses":[],"champRegions":[],"champLanes":[],"champRanges":[],"champResources":[],"champDamage":[],"champDifficulty":[]}`
 	if string(b) != want {
 		t.Errorf("got  %s\nwant %s", b, want)
 	}
@@ -154,10 +161,10 @@ func TestFilterJSON(t *testing.T) {
 			t.Errorf("partial filter parsed as %+v", f)
 		}
 		if tc.name == "row from before the bucket filters" {
-			if f.ChampRanges != nil || f.ChampResources != nil || f.ChampDamage != nil || f.ChampDifficulty != nil || !slices.Equal(f.ChampClasses, []string{"Mage"}) {
+			if f.ChampLanes != nil || f.ChampRanges != nil || f.ChampResources != nil || f.ChampDamage != nil || f.ChampDifficulty != nil || !slices.Equal(f.ChampClasses, []string{"Mage"}) {
 				t.Errorf("old row parsed as %+v", f)
 			}
-			if n := f.Normalized(testCatalog()); len(n.ChampRanges)+len(n.ChampResources)+len(n.ChampDamage)+len(n.ChampDifficulty) != 0 || n.ChampRanges == nil {
+			if n := f.Normalized(testCatalog()); len(n.ChampLanes)+len(n.ChampRanges)+len(n.ChampResources)+len(n.ChampDamage)+len(n.ChampDifficulty) != 0 || n.ChampRanges == nil || n.ChampLanes == nil {
 				t.Errorf("old row normalized as %+v", n)
 			}
 		}
@@ -165,7 +172,7 @@ func TestFilterJSON(t *testing.T) {
 	// Legacy keys never come back out.
 	var f Filter
 	json.Unmarshal([]byte(`{"useChampions":true,"useItems":false}`), &f)
-	if b, _ := json.Marshal(f); string(b) != `{"packs":["champions"],"champSeasons":[0,0],"itemSeasons":[0,0],"itemTiers":null,"champClasses":null,"champRegions":null,"champRanges":null,"champResources":null,"champDamage":null,"champDifficulty":null}` {
+	if b, _ := json.Marshal(f); string(b) != `{"packs":["champions"],"champSeasons":[0,0],"itemSeasons":[0,0],"itemTiers":null,"champClasses":null,"champRegions":null,"champLanes":null,"champRanges":null,"champResources":null,"champDamage":null,"champDifficulty":null}` {
 		t.Errorf("legacy round trip: %s", b)
 	}
 	if err := json.Unmarshal([]byte(`{"packs":"champions"}`), &f); err == nil {

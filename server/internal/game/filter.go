@@ -12,8 +12,8 @@ import (
 // in from the catalog by Normalized, so a lobby saved before filters
 // existed keeps drawing from everything. A nil ItemTiers means every tier;
 // an empty non-nil slice means none. The champion lists (classes, regions,
-// ranges, resources, damage, difficulty) are the opposite: nil or empty
-// means every value. Seasons apply to champions and items; every champion
+// lanes, ranges, resources, damage, difficulty) are the opposite: nil or
+// empty means every value. Seasons apply to champions and items; every champion
 // filter also reaches the abilities pack through the champion each ability
 // belongs to.
 type Filter struct {
@@ -23,6 +23,7 @@ type Filter struct {
 	ItemTiers       []Tier   `json:"itemTiers"`
 	ChampClasses    []string `json:"champClasses"`    // Data Dragon tags, see AllClasses
 	ChampRegions    []string `json:"champRegions"`    // see AllRegions
+	ChampLanes      []string `json:"champLanes"`      // see AllLanes
 	ChampRanges     []string `json:"champRanges"`     // see AllRanges
 	ChampResources  []string `json:"champResources"`  // see AllResources
 	ChampDamage     []string `json:"champDamage"`     // see AllDamages
@@ -100,6 +101,7 @@ func (f Filter) Validate() error {
 		list, all []string
 		what      string
 	}{
+		{f.ChampLanes, AllLanes, "lane"},
 		{f.ChampRanges, AllRanges, "range"},
 		{f.ChampResources, AllResources, "resource"},
 		{f.ChampDamage, AllDamages, "damage type"},
@@ -140,6 +142,7 @@ func (f Filter) Normalized(c *Catalog) Filter {
 	}
 	out.ChampClasses = canonicalFold(f.ChampClasses, AllClasses)
 	out.ChampRegions = canonicalFold(f.ChampRegions, AllRegions)
+	out.ChampLanes = canonicalFold(f.ChampLanes, AllLanes)
 	out.ChampRanges = canonicalFold(f.ChampRanges, AllRanges)
 	out.ChampResources = canonicalFold(f.ChampResources, AllResources)
 	out.ChampDamage = canonicalFold(f.ChampDamage, AllDamages)

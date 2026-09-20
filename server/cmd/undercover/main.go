@@ -59,6 +59,7 @@ func main() {
 	}
 	overrides := env("UNDERCOVER_CATALOG_OVERRIDES", "/config/catalog_overrides.json")
 	ddragon := env("UNDERCOVER_DDRAGON", catalog.DefaultBase)
+	meraki := env("UNDERCOVER_MERAKI", catalog.DefaultMerakiBase)
 
 	st, err := store.Open(dbPath)
 	if err != nil {
@@ -70,7 +71,7 @@ func main() {
 	// The hub gets a catalog before it serves anything: the last one this
 	// server built, else the embedded fallback. Data Dragon is only ever
 	// consulted in the background.
-	cat := catalog.New(catalog.NewFetcher(ddragon), st, overrides, log)
+	cat := catalog.New(catalog.NewFetcher(ddragon, meraki), st, overrides, log)
 	h := hub.New(st, grace, log, cat.Bootstrap())
 
 	mux := http.NewServeMux()
@@ -81,7 +82,7 @@ func main() {
 			return
 		}
 		cs := cat.Status()
-		fmt.Fprintf(w, "ok catalog=%s source=%s\n", cs.Patch, cs.Source)
+		fmt.Fprintf(w, "ok catalog=%s source=%s lanes=%s\n", cs.Patch, cs.Source, cs.LanesPatch)
 	})
 	mux.HandleFunc("GET /catalog", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

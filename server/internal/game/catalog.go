@@ -103,6 +103,40 @@ func ValidResource(s string) bool   { return containsFold(AllResources, s) }
 func ValidDamage(s string) bool     { return containsFold(AllDamages, s) }
 func ValidDifficulty(s string) bool { return containsFold(AllDifficulties, s) }
 
+// Lanes are the positions a champion is actually played in, from Riot's
+// per-position play rates (imported via Meraki Analytics, see
+// catalog.laneTable). A champion has every lane with a non-zero rate, so
+// most have one or two; one missing from the feed has none and matches no
+// lane filter, like a champion whose region is unknown.
+const (
+	LaneTop     = "top"
+	LaneJungle  = "jungle"
+	LaneMid     = "mid"
+	LaneBot     = "bot"
+	LaneSupport = "support"
+)
+
+var AllLanes = []string{LaneTop, LaneJungle, LaneMid, LaneBot, LaneSupport}
+
+func ValidLane(s string) bool { return containsFold(AllLanes, s) }
+
+// LaneLabel is the lane's name in titles: Top, Jungle, Mid, Bot, Support.
+func LaneLabel(lane string) string {
+	switch strings.ToLower(lane) {
+	case LaneTop:
+		return "Top"
+	case LaneJungle:
+		return "Jungle"
+	case LaneMid:
+		return "Mid"
+	case LaneBot:
+		return "Bot"
+	case LaneSupport:
+		return "Support"
+	}
+	return lane
+}
+
 // SeasonSet is a bitmask of seasons (bit s = season s). Seasons are numbered
 // by year: S1 = 2011 ... S16 = 2026, which is also the Data Dragon major
 // version from S3 on.
@@ -151,6 +185,10 @@ type Champion struct {
 	Resource   string `json:"resource,omitempty"`
 	Damage     string `json:"damage,omitempty"`
 	Difficulty string `json:"difficulty,omitempty"`
+
+	// Lanes the champion is played in, a subset of AllLanes in that order;
+	// nil when the play-rate feed did not know the champion.
+	Lanes []string `json:"lanes,omitempty"`
 }
 
 type Item struct {
@@ -182,14 +220,18 @@ type Word struct {
 // Catalog is the full word pool. It is built by the catalog package,
 // published to the hub as an immutable value and never mutated afterwards.
 type Catalog struct {
-	Patch     string     `json:"patch"`
-	Champions []Champion `json:"champions"`
-	Items     []Item     `json:"items"`
-	Spells    []Entry    `json:"spells,omitempty"`    // Group ""
-	Runes     []Entry    `json:"runes,omitempty"`     // Group "<tree>/keystone" or "<tree>/<row>"
-	Abilities []Entry    `json:"abilities,omitempty"` // Group = champion name
-	SkinLines []Entry    `json:"skinLines,omitempty"` // Group ""
-	Monsters  []Entry    `json:"monsters,omitempty"`  // Group epic | drake | camp | lane
+	Patch string `json:"patch"`
+	// LanesPatch is the patch of the play-rate feed the champion lanes
+	// came from (Meraki numbers patches differently from Data Dragon),
+	// "" when no lanes were imported.
+	LanesPatch string     `json:"lanesPatch,omitempty"`
+	Champions  []Champion `json:"champions"`
+	Items      []Item     `json:"items"`
+	Spells     []Entry    `json:"spells,omitempty"`    // Group ""
+	Runes      []Entry    `json:"runes,omitempty"`     // Group "<tree>/keystone" or "<tree>/<row>"
+	Abilities  []Entry    `json:"abilities,omitempty"` // Group = champion name
+	SkinLines  []Entry    `json:"skinLines,omitempty"` // Group ""
+	Monsters   []Entry    `json:"monsters,omitempty"`  // Group epic | drake | camp | lane
 }
 
 // ChampSeasonRange is the span of champion release seasons, (0, 0) when empty.
@@ -259,6 +301,25 @@ func (c *Catalog) Resources() []string {
 	return out
 }
 
+// Lanes lists the lanes any champion is played in, in AllLanes order:
+// empty when the play-rate feed was never reached, in which case the
+// client offers no lane filter (every lane would empty the pool).
+func (c *Catalog) Lanes() []string {
+	set := map[string]bool{}
+	for _, ch := range c.Champions {
+		for _, l := range ch.Lanes {
+			set[l] = true
+		}
+	}
+	out := []string{}
+	for _, l := range AllLanes {
+		if set[l] {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
 func sortedKeys(set map[string]bool) []string {
 	out := make([]string, 0, len(set))
 	for k := range set {
@@ -269,8 +330,8 @@ func sortedKeys(set map[string]bool) []string {
 }
 
 // FilterChampions returns the champions matching f's seasons, classes,
-// regions, range, resource, damage and difficulty (whether or not the
-// champions pack is enabled).
+// regions, lanes, range, resource, damage and difficulty (whether or not
+// the champions pack is enabled).
 func (c *Catalog) FilterChampions(f Filter) []Champion {
 	var out []Champion
 	for _, ch := range c.Champions {
@@ -289,6 +350,9 @@ func (c *Catalog) champMatches(ch Champion, f Filter) bool {
 		return false
 	}
 	if len(f.ChampRegions) > 0 && !containsFold(f.ChampRegions, ch.Region) {
+		return false
+	}
+	if len(f.ChampLanes) > 0 && !slices.ContainsFunc(ch.Lanes, func(l string) bool { return containsFold(f.ChampLanes, l) }) {
 		return false
 	}
 	// The buckets: an unknown ("") damage or difficulty matches nothing
@@ -598,22 +662,26 @@ type Theme struct {
 	Filter      Filter `json:"filter"`
 }
 
-// minRegionChampions is how many champions a region (or the energy
-// resource) needs for its own day.
+// minRegionChampions is how many champions a region (or a lane, or the
+// energy resource) needs for its own day.
 const minRegionChampions = 5
 
 // Themes lists every theme this catalog can play: one per region with
 // enough champions, one per class, one per range/resource/damage/
-// difficulty bucket worth a day, and the fixed ones below. Themes whose
-// packs would be empty (an old fallback without them) are left out so the
-// daily pick can always start a game.
+// difficulty bucket worth a day, one per lane with enough champions, and
+// the fixed ones below. Themes whose packs would be empty (an old fallback
+// without them) are left out so the daily pick can always start a game.
 func (c *Catalog) Themes() []Theme {
 	var out []Theme
 	byRegion := map[string]int{}
+	byLane := map[string]int{}
 	energy := 0
 	for _, ch := range c.Champions {
 		if ch.Region != "" {
 			byRegion[ch.Region]++
+		}
+		for _, l := range ch.Lanes {
+			byLane[l]++
 		}
 		if ch.Resource == ResourceEnergy {
 			energy++
@@ -670,6 +738,24 @@ func (c *Catalog) Themes() []Theme {
 			Filter: Filter{Packs: champs, ChampDifficulty: []string{DifficultyEasy}}},
 		Theme{ID: "hard", Title: "Hard mode", Description: "Only the hardest champions to master, and their abilities.",
 			Filter: Filter{Packs: champs, ChampDifficulty: []string{DifficultyHard}}},
+	)
+	// One day per lane: "Jungle day" is taken by the monsters pack, so the
+	// jungle's is named after its players.
+	for _, l := range AllLanes {
+		if byLane[l] < minRegionChampions {
+			continue
+		}
+		title, desc := LaneLabel(l)+" lane day", "Only champions played "+l+" and their abilities."
+		switch l {
+		case LaneJungle:
+			title, desc = "Jungler day", "Only junglers and their abilities."
+		case LaneSupport:
+			title, desc = "Support day", "Only supports and their abilities."
+		}
+		out = append(out, Theme{ID: "lane-" + l, Title: title, Description: desc,
+			Filter: Filter{Packs: champs, ChampLanes: []string{l}}})
+	}
+	out = append(out,
 		Theme{ID: "og", Title: "OG", Description: "Only champions released in Seasons 1 to 3.",
 			Filter: Filter{Packs: []Pack{PackChampions}, ChampSeasons: [2]int{1, 3}}},
 		Theme{ID: "fresh", Title: "Fresh", Description: freshDesc,

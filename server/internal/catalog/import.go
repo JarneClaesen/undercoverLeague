@@ -123,9 +123,10 @@ func classifyTier(it rawItem) game.Tier {
 	}
 }
 
-// importChampions turns championFull.json into catalog entries. season
-// and region resolve a Data Dragon id.
-func importChampions(base string, raw map[string]rawChampionFull, season func(id string) int, region func(id string) string) []game.Champion {
+// importChampions turns championFull.json into catalog entries. season,
+// region and lanes resolve a Data Dragon id; lanes may be nil (no
+// play-rate feed), which leaves every champion without lanes.
+func importChampions(base string, raw map[string]rawChampionFull, season func(id string) int, region func(id string) string, lanes func(id string) []string) []game.Champion {
 	out := make([]game.Champion, 0, len(raw))
 	for _, ch := range raw {
 		name := strings.TrimSpace(ch.Name)
@@ -137,9 +138,50 @@ func importChampions(base string, raw map[string]rawChampionFull, season func(id
 			Tags: slices.Clone(ch.Tags), Region: region(ch.ID), ID: ch.ID,
 		}
 		c.Range, c.Resource, c.Damage, c.Difficulty = classifyChampion(ch)
+		if lanes != nil {
+			c.Lanes = lanes(ch.ID)
+		}
 		out = append(out, c)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
+}
+
+// merakiLanes maps each lane to its key in the play-rate feed, in
+// game.AllLanes order.
+var merakiLanes = []struct{ lane, key string }{
+	{game.LaneTop, "TOP"}, {game.LaneJungle, "JUNGLE"}, {game.LaneMid, "MIDDLE"}, {game.LaneBot, "BOTTOM"}, {game.LaneSupport, "UTILITY"},
+}
+
+// laneTable turns the play-rate feed into Data Dragon id -> lanes: a
+// champion is played in every position with a non-zero play rate (Riot
+// reports exactly 0 for the positions it does not recognise for a
+// champion, so any positive share counts). Feed keys that are not a
+// champion in championFull are ignored; a champion the feed lacks has no
+// entry, so it matches no lane filter.
+func laneTable(rates rawChampionRates, raw map[string]rawChampionFull) map[string][]string {
+	byKey := map[string]string{}
+	for id, ch := range raw {
+		if k := strings.TrimSpace(ch.Key); k != "" && ch.ID != "" {
+			byKey[k] = id
+		}
+	}
+	out := map[string][]string{}
+	for key, positions := range rates.Data {
+		id, ok := byKey[strings.TrimSpace(key)]
+		if !ok {
+			continue
+		}
+		var lanes []string
+		for _, m := range merakiLanes {
+			if positions[m.key].PlayRate > 0 {
+				lanes = append(lanes, m.lane)
+			}
+		}
+		if len(lanes) > 0 {
+			out[id] = lanes
+		}
+	}
 	return out
 }
 

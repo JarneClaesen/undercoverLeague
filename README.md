@@ -15,7 +15,7 @@ talking over a WebSocket to a small Go server.
 |---|---|
 | `lib/` | Flutter app. `services/game_connection.dart` owns the socket; `services/lobby_service.dart` sends commands; screens render `models/lobby.dart`. `theme/` holds the Hextech design tokens (colours, type, motion) and `widgets/` the shared Hextech components; fonts are bundled under `assets/fonts/` (OFL). |
 | `server/internal/game` | Game rules (pure, table-tested): settings, roles, turns, timer, last guess, scoring and achievements; the `Catalog` value type, the host's `Filter` and the daily theme. |
-| `server/internal/catalog` | Builds the word pool from Riot's Data Dragon: champions with release seasons, classes and regions, one item snapshot per season, tiers, summoner spells, runes, abilities and skin lines, plus a static monsters list; cached in SQLite, embedded `fallback.json` for offline boots, `champion_seasons.json` and `champion_regions.json` static tables. |
+| `server/internal/catalog` | Builds the word pool from Riot's Data Dragon: champions with release seasons, classes, regions and lanes (the last from Meraki's play rates), one item snapshot per season, tiers, summoner spells, runes, abilities and skin lines, plus a static monsters list; cached in SQLite, embedded `fallback.json` for offline boots, `champion_seasons.json` and `champion_regions.json` static tables. |
 | `server/internal/hub` | Live lobbies: who is connected, disconnect grace, persistence, per-player broadcasts. |
 | `server/internal/ws` | WebSocket transport and message shapes. |
 | `server/cmd/undercover` | The server binary: `/ws`, `/healthz`, `/catalog` (the current pool as JSON), `/daily` (today's theme), and the Flutter web build at `/`. |
@@ -53,10 +53,11 @@ fetched by the server at start and every 12 h, so a new champion shows up
 without an app release; the monsters pack is a static list. Pictures are
 Data Dragon URLs (loading-screen art for champions, versioned item icons,
 so removed items keep theirs). The host picks the packs and filters the
-pool per lobby: champions by release season, class, region, range
-(melee / ranged), resource (mana / energy / manaless / fury & other),
-damage type (physical / magic / mixed) and difficulty (easy / medium /
-hard) — all of which also narrow the abilities pack — and items by the
+pool per lobby: champions by release season, class, region, lane (top /
+jungle / mid / bot / support), range (melee / ranged), resource (mana /
+energy / manaless / fury & other), damage type (physical / magic / mixed)
+and difficulty (easy / medium / hard) — all of which also narrow the
+abilities pack — and items by the
 seasons they were in the Summoner's Rift shop (S3 = 2013 is the oldest
 Data Dragon has) and by tier (starter, consumables & trinkets, boots,
 components, legendary). The four champion buckets come straight from
@@ -64,7 +65,15 @@ components, legendary). The four champion buckets come straight from
 ranged), resource from `partype`, damage from Riot's attack vs. magic
 ratings (a lead of 3 or more decides, else mixed) and difficulty from
 its 1–10 rating (1–3, 4–6, 7–10); the handful of champions Riot ships
-without ratings have no damage or difficulty bucket.
+without ratings have no damage or difficulty bucket. Lanes are the
+positions Riot recognises for a champion, read from Meraki Analytics'
+[`championrates.json`](https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/championrates.json)
+(every position with a non-zero play rate; the base URL is
+`UNDERCOVER_MERAKI`, default `https://cdn.merakianalytics.com`).
+The feed is fetched at every refresh and cached; when Meraki is down the
+cached copy is used, and without one champions simply have no lanes and
+the lobby offers no lane filter. A champion the feed does not know yet
+(one released after Meraki's last patch) has no lane either.
 Everyone in the lobby sees the settings and the resulting counts; the
 host's last choice is remembered on the device. Each day `/daily` (and
 the lobby view) offers a themed preset picked from the catalog by date.
@@ -76,7 +85,8 @@ transformed items like Muramana as unpurchasable), so
 (name, icon, tier, `[from, to]` seasons), `items.tiers` (name → tier),
 `champions.exclude` (display names), `champions.seasons` (Data Dragon
 id → season), `champions.regions` (id → region, on top of
-`champion_regions.json`) and `skinLines.exclude`. Names match
+`champion_regions.json`), `champions.lanes` (id → list of lanes, replacing
+what the play rates say; `[]` = none) and `skinLines.exclude`. Names match
 case-insensitively. Check the result at
 `/catalog`; the file is re-read on every refresh, and `SKIP_WEB=1 sh
 server/deploy/deploy.sh` ships an edit. Champions missing from
@@ -112,9 +122,10 @@ Server settings (env): `UNDERCOVER_ADDR` (`:8080`), `UNDERCOVER_DB`
 (`/data/undercover.db`), `UNDERCOVER_GRACE` (`45s`), `UNDERCOVER_WEB_DIR` (`/web`),
 `UNDERCOVER_CATALOG_REFRESH` (`12h`; `0` never fetches, handy offline),
 `UNDERCOVER_CATALOG_OVERRIDES` (`/config/catalog_overrides.json`; locally
-pass `deploy/catalog_overrides.json`), `UNDERCOVER_DDRAGON` (base URL).
-`/healthz` reports the catalog's patch and where it came from
-(`embedded`, `cache` or `ddragon`).
+pass `deploy/catalog_overrides.json`), `UNDERCOVER_DDRAGON` and
+`UNDERCOVER_MERAKI` (base URLs). `/healthz` reports the catalog's patch,
+where it came from (`embedded`, `cache` or `ddragon`) and the Meraki
+patch the lanes come from (empty when there are none).
 
 ## Deploying
 

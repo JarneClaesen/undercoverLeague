@@ -6,7 +6,12 @@ import 'package:undercoverleague/widgets/lobby_filters.dart';
 
 /// Hosts the filters over [settings] with animations off, feeding every
 /// change straight back in so the chips reflect the last commit.
-Widget _host(GameSettings settings, ValueChanged<GameSettings> onChanged, {List<String> resources = const []}) {
+Widget _host(
+  GameSettings settings,
+  ValueChanged<GameSettings> onChanged, {
+  List<String> resources = const [],
+  List<String> lanes = const [],
+}) {
   return MaterialApp(
     theme: hextechTheme(),
     home: Builder(
@@ -21,6 +26,7 @@ Widget _host(GameSettings settings, ValueChanged<GameSettings> onChanged, {List<
               classes: const ['Assassin', 'Mage'],
               regions: const ['Ionia', 'Shurima'],
               resources: resources,
+              lanes: lanes,
               onChanged: onChanged,
             ),
           ),
@@ -95,6 +101,54 @@ void main() {
     await tester.pump();
     expect(changed!.champRanges, isEmpty);
     expect(changed!.champDamage, {'magic'});
+  });
+
+  testWidgets('the lane row follows the catalog, toggles lanes and counts in the header', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    const settings = GameSettings(champLanes: {ChampionLane.top});
+    GameSettings? changed;
+    await tester.pumpWidget(_host(settings, (s) => changed = s, lanes: const ['top', 'jungle', 'mid', 'support']));
+    await tester.pump();
+
+    expect(find.text('1 ACTIVE'), findsOneWidget);
+    await tester.tap(find.text('CHAMPION FILTERS'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Lane ·'), findsOneWidget);
+    // Only the lanes the catalog has: nobody is played bot in this one.
+    for (final chip in ['TOP', 'JUNGLE', 'MID', 'SUPPORT']) {
+      expect(find.text(chip), findsOneWidget, reason: chip);
+    }
+    expect(find.text('BOT'), findsNothing);
+
+    await tester.tap(find.text('JUNGLE'));
+    await tester.pump();
+    expect(changed!.champLanes, {'top', 'jungle'});
+    expect(changed!.champClasses, isEmpty);
+
+    // Toggling off is a commit too, and leaves the other filters alone.
+    await tester.tap(find.text('TOP'));
+    await tester.pump();
+    expect(changed!.champLanes, isEmpty);
+    expect(changed!.champRanges, isEmpty);
+  });
+
+  testWidgets('without a lanes list the lane row is hidden', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_host(const GameSettings(), (_) {}, resources: const ['mana']));
+    await tester.tap(find.text('CHAMPION FILTERS'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Lane ·'), findsNothing);
+    expect(find.text('TOP'), findsNothing);
+    expect(find.textContaining('Resource ·'), findsOneWidget);
+    expect(find.textContaining('Range ·'), findsOneWidget);
   });
 
   testWidgets('without a resources list the resource row is hidden and the rest stays', (tester) async {

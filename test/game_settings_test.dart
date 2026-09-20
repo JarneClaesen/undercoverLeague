@@ -15,6 +15,7 @@ void main() {
       itemTiers: {ItemTier.legendary, ItemTier.boots},
       champClasses: {'Tank', 'Mage'},
       champRegions: {'Shurima'},
+      champLanes: {ChampionLane.support, ChampionLane.top},
       champRanges: {ChampionRange.ranged, ChampionRange.melee},
       champResources: {ChampionResource.other, ChampionResource.energy},
       champDamage: {ChampionDamage.mixed},
@@ -36,6 +37,7 @@ void main() {
       'itemTiers': ['boots', 'legendary'],
       'champClasses': ['Mage', 'Tank'],
       'champRegions': ['Shurima'],
+      'champLanes': ['top', 'support'],
       'champRanges': ['melee', 'ranged'],
       'champResources': ['energy', 'other'],
       'champDamage': ['mixed'],
@@ -64,11 +66,15 @@ void main() {
     expect(d.rotateHost, isFalse);
     expect(d.champClasses, isEmpty);
     expect(d.champRegions, isEmpty);
+    expect(d.champLanes, isEmpty);
     expect(d.champRanges, isEmpty);
     expect(d.champResources, isEmpty);
     expect(d.champDamage, isEmpty);
     expect(d.champDifficulty, isEmpty);
     expect(d.activeChampionFilters, 0);
+    expect(ChampionLane.all, ['top', 'jungle', 'mid', 'bot', 'support']);
+    expect(ChampionLane.label('bot'), 'Bot');
+    expect(ChampionLane.label('support'), 'Support');
     expect(ChampionRange.all, ['melee', 'ranged']);
     expect(ChampionResource.all, ['mana', 'energy', 'none', 'other']);
     expect(ChampionDamage.all, ['physical', 'magic', 'mixed']);
@@ -78,6 +84,7 @@ void main() {
     // A row saved before the bucket filters existed loads with them open.
     final old = GameSettings.fromJson({'packs': ['champions'], 'champClasses': ['Mage']});
     expect(old.champClasses, {'Mage'});
+    expect(old.champLanes, isEmpty);
     expect(old.champRanges, isEmpty);
     expect(old.champDifficulty, isEmpty);
     expect(WordPack.all, ['champions', 'items', 'spells', 'runes', 'abilities', 'skinlines', 'monsters']);
@@ -282,6 +289,7 @@ void main() {
       'classes': ['Assassin', 'Mage'],
       'regions': ['Ionia', 'Shurima'],
       'resources': ['mana', 'none'],
+      'lanes': ['top', 'mid', 'support'],
       'dailyTheme': {
         'id': 'shurima',
         'title': 'Shurima Day',
@@ -332,6 +340,8 @@ void main() {
     expect(lobby.classes, ['Assassin', 'Mage']);
     expect(lobby.regions, ['Ionia', 'Shurima']);
     expect(lobby.resources, ['mana', 'none']);
+    expect(lobby.lanes, ['top', 'mid', 'support']);
+    expect(Lobby.fromJson({}).lanes, isEmpty);
     expect(Lobby.fromJson({}).resources, isEmpty);
     expect(lobby.dailyTheme!.title, 'Shurima Day');
     expect(lobby.dailyTheme!.filter.packs, {'champions', 'abilities'});
@@ -381,6 +391,30 @@ void main() {
         ),
       ),
       'Champions S1–S16 (Mage, melee, hard)',
+    );
+    // Lanes sit between regions and the buckets, in the server's order.
+    expect(
+      LobbyFiltersSummary.describe(
+        const GameSettings(
+          packs: {WordPack.champions},
+          champSeasons: (1, 16),
+          champClasses: {'Mage'},
+          champLanes: {ChampionLane.jungle, ChampionLane.top},
+        ),
+      ),
+      'Champions S1–S16 (Mage, top/jungle)',
+    );
+    expect(
+      LobbyFiltersSummary.describe(
+        const GameSettings(
+          packs: {WordPack.champions},
+          champSeasons: (1, 16),
+          champRegions: {'Ionia'},
+          champLanes: {ChampionLane.support},
+          champRanges: {ChampionRange.ranged},
+        ),
+      ),
+      'Champions S1–S16 (Ionia, support, ranged)',
     );
     expect(
       LobbyFiltersSummary.describe(

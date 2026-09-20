@@ -9,20 +9,22 @@ import (
 // Export is the human-readable shape served at GET /catalog for checking
 // what the filters can draw from and tuning the overrides file.
 type Export struct {
-	Patch     string           `json:"patch"`
-	Source    string           `json:"source"`
-	UpdatedAt *time.Time       `json:"updatedAt"`
-	Seasons   game.SeasonRange `json:"seasons"`
-	Classes   []string         `json:"classes"`
-	Regions   []string         `json:"regions"`
-	Resources []string         `json:"resources"` // resource buckets present; the other three enums are fixed
-	Champions []game.Champion  `json:"champions"` // each with range, resource, damage and difficulty
-	Items     []ExportItem     `json:"items"`
-	Spells    []game.Entry     `json:"spells"`
-	Runes     []game.Entry     `json:"runes"`
-	Abilities []game.Entry     `json:"abilities"`
-	SkinLines []game.Entry     `json:"skinLines"`
-	Monsters  []game.Entry     `json:"monsters"`
+	Patch      string           `json:"patch"`
+	LanesPatch string           `json:"lanesPatch"` // Meraki patch the lanes come from, "" when none
+	Source     string           `json:"source"`
+	UpdatedAt  *time.Time       `json:"updatedAt"`
+	Seasons    game.SeasonRange `json:"seasons"`
+	Classes    []string         `json:"classes"`
+	Regions    []string         `json:"regions"`
+	Resources  []string         `json:"resources"` // resource buckets present; the other three enums are fixed
+	Lanes      []string         `json:"lanes"`     // lanes any champion is played in
+	Champions  []game.Champion  `json:"champions"` // each with range, resource, damage, difficulty and lanes
+	Items      []ExportItem     `json:"items"`
+	Spells     []game.Entry     `json:"spells"`
+	Runes      []game.Entry     `json:"runes"`
+	Abilities  []game.Entry     `json:"abilities"`
+	SkinLines  []game.Entry     `json:"skinLines"`
+	Monsters   []game.Entry     `json:"monsters"`
 }
 
 type ExportItem struct {
@@ -39,7 +41,7 @@ func (s *Service) Export() Export {
 	c := s.Current()
 	st := s.Status()
 	e := Export{
-		Patch: st.Patch, Source: st.Source, Classes: []string{}, Regions: []string{}, Resources: []string{},
+		Patch: st.Patch, LanesPatch: st.LanesPatch, Source: st.Source, Classes: []string{}, Regions: []string{}, Resources: []string{}, Lanes: []string{},
 		Champions: []game.Champion{}, Items: []ExportItem{},
 		Spells: []game.Entry{}, Runes: []game.Entry{}, Abilities: []game.Entry{}, SkinLines: []game.Entry{}, Monsters: []game.Entry{},
 	}
@@ -51,7 +53,7 @@ func (s *Service) Export() Export {
 		return e
 	}
 	e.Seasons = c.SeasonRange()
-	e.Classes, e.Regions, e.Resources = c.Classes(), c.Regions(), c.Resources()
+	e.Classes, e.Regions, e.Resources, e.Lanes = c.Classes(), c.Regions(), c.Resources(), c.Lanes()
 	e.Champions = c.Champions
 	for _, it := range c.Items {
 		e.Items = append(e.Items, ExportItem{Name: it.Name, Icon: it.Icon, Seasons: it.Seasons.Seasons(), Tier: it.Tier, From: it.From, Into: it.Into, Gold: it.Gold})

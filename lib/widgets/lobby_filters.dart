@@ -21,12 +21,13 @@ class LobbyFilters extends StatefulWidget {
   final SeasonRange? seasonRange;
   final PoolSize? poolSize;
 
-  /// Classes, regions and resource buckets present in the catalog (from
-  /// the lobby view); empty hides the matching chips. Range, damage and
-  /// difficulty are fixed lists.
+  /// Classes, regions, resource buckets and lanes present in the catalog
+  /// (from the lobby view); empty hides the matching chips. Range, damage
+  /// and difficulty are fixed lists.
   final List<String> classes;
   final List<String> regions;
   final List<String> resources;
+  final List<String> lanes;
   final ValueChanged<GameSettings> onChanged;
 
   const LobbyFilters({
@@ -37,6 +38,7 @@ class LobbyFilters extends StatefulWidget {
     this.classes = const [],
     this.regions = const [],
     this.resources = const [],
+    this.lanes = const [],
     required this.onChanged,
   });
 
@@ -178,6 +180,14 @@ class _LobbyFiltersState extends State<LobbyFilters> {
                           values: widget.regions,
                           selected: s.champRegions,
                           onToggled: (r, on) => _commit(s.copyWith(champRegions: _toggled(s.champRegions, r, on))),
+                        ),
+                      if (widget.lanes.isNotEmpty)
+                        _ChipRow(
+                          hint: 'Lane · where the champion is played',
+                          values: widget.lanes,
+                          label: ChampionLane.label,
+                          selected: s.champLanes,
+                          onToggled: (v, on) => _commit(s.copyWith(champLanes: _toggled(s.champLanes, v, on))),
                         ),
                       _ChipRow(
                         hint: 'Range · melee, ranged or both',
@@ -441,6 +451,7 @@ class LobbyFiltersSummary extends StatelessWidget {
     final champExtras = <String>[
       if (s.champClasses.isNotEmpty) (s.champClasses.toList()..sort()).join('/'),
       if (s.champRegions.isNotEmpty) (s.champRegions.toList()..sort()).join('/'),
+      if (s.champLanes.isNotEmpty) buckets(ChampionLane.all, s.champLanes, ChampionLane.label),
       if (s.champRanges.isNotEmpty) buckets(ChampionRange.all, s.champRanges, ChampionRange.label),
       if (s.champResources.isNotEmpty) buckets(ChampionResource.all, s.champResources, ChampionResource.label),
       if (s.champDamage.isNotEmpty) buckets(ChampionDamage.all, s.champDamage, ChampionDamage.label),

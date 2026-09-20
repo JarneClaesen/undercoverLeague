@@ -78,8 +78,8 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
   swaps it. Icons are https URLs; only `assets/default_icon.jpg` is bundled.
 - Packs: `champions items spells runes abilities skinlines monsters`
   (`game.AllPacks`). `Filter{packs, champSeasons, itemSeasons, itemTiers,
-  champClasses, champRegions, champRanges, champResources, champDamage,
-  champDifficulty}`; legacy `useChampions/useItems` JSON is mapped onto
+  champClasses, champRegions, champLanes, champRanges, champResources,
+  champDamage, champDifficulty}`; legacy `useChampions/useItems` JSON is mapped onto
   `packs` by `Filter.UnmarshalJSON`. Zero season bounds mean "all";
   `itemTiers` null = all, `[]` = none; every champion list empty = all.
   The four bucket lists take the fixed enums `game.AllRanges` (`melee
@@ -89,7 +89,14 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
   carries `range resource damage difficulty`, set by
   `catalog.classifyChampion` from `championFull.json` (`damage` and
   `difficulty` are `""` for the few champions without Riot ratings, which
-  then match no damage/difficulty filter).
+  then match no damage/difficulty filter). `champLanes` takes
+  `game.AllLanes` (`top jungle mid bot support`), same matching; a
+  `Champion` has `lanes` (every lane with a non-zero play rate in Meraki's
+  `championrates.json`, `catalog.laneTable`, overridable per id via
+  `champions.lanes`), omitted when the feed did not know it, so it then
+  matches no lane filter. The lanes are the one part of the import that
+  may be missing: a Meraki failure falls back to the cached feed or to no
+  lanes (`Catalog.LanesPatch` is `""`) and never fails a refresh.
 - `game.Settings` embeds `Filter` (JSON flattened) plus `undercovers` (>= 1),
   `mrWhites` (needs `decoyWord`), `decoyWord`, `randomOrder` (default false;
   `Settings.UnmarshalJSON` exists because the embedded Filter's would
@@ -100,7 +107,9 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
 - The view carries `settings` (normalized) and, in the lobby phase only,
   `poolSize` (`{pack: count}`), `seasonRange`, `classes`, `regions`,
   `resources` (the resource buckets present, in `AllResources` order; the
-  other three enums are fixed so the client hard-codes them) and
+  other three enums are fixed so the client hard-codes them), `lanes` (the
+  lanes present, in `AllLanes` order; empty when no play rates were
+  imported, and the client then shows no lane row) and
   `dailyTheme` (`{id,title,description,filter}`, also at `GET /daily`).
 - Roles: `Civilian | Undercover | MrWhite | Spectator`. Undercovers get the
   decoy (`myWord` + `myDecoy: true`) when `decoyWord`, else nothing; Mr. White

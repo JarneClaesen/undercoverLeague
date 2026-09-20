@@ -71,11 +71,14 @@ func writeTemp(t *testing.T, content string) string {
 	return p
 }
 
-// ddragonStub serves the fixtures and counts requests per path.
+// ddragonStub serves the fixtures (Data Dragon and, on the same host, the
+// Meraki play-rate feed) and counts requests per path. merakiDown makes
+// the feed answer 503.
 type ddragonStub struct {
 	*httptest.Server
-	mu   sync.Mutex
-	hits map[string]int
+	mu         sync.Mutex
+	hits       map[string]int
+	merakiDown bool
 }
 
 func newDDragon(t *testing.T) *ddragonStub {
@@ -84,8 +87,15 @@ func newDDragon(t *testing.T) *ddragonStub {
 	s.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s.mu.Lock()
 		s.hits[r.URL.Path]++
+		down := s.merakiDown
 		s.mu.Unlock()
 		switch p := r.URL.Path; {
+		case p == championRatesPath:
+			if down {
+				http.Error(w, "meraki down", http.StatusServiceUnavailable)
+				return
+			}
+			w.Write([]byte(championRates))
 		case p == "/api/versions.json":
 			w.Write([]byte(`["16.18.1","16.17.1","3.15.5","lolpatch_3.7"]`))
 		case strings.HasSuffix(p, "/championFull.json"):
@@ -112,11 +122,29 @@ func (s *ddragonStub) count(path string) int {
 	return s.hits[path]
 }
 
+func (s *ddragonStub) setMerakiDown(down bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.merakiDown = down
+}
+
+// fetcher points both bases at the stub.
+func fetcher(url string) *Fetcher { return NewFetcher(url, url) }
+
+func lanesOf(c *game.Catalog, name string) []string {
+	for _, ch := range c.Champions {
+		if ch.Name == name {
+			return ch.Lanes
+		}
+	}
+	return nil
+}
+
 func TestServiceRefreshAndCache(t *testing.T) {
 	dd := newDDragon(t)
 	st := &fakeStore{}
 	ov := writeTemp(t, `{"items":{"exclude":["Health Potion"]}}`)
-	svc := New(NewFetcher(dd.URL), st, ov, nil)
+	svc := New(fetcher(dd.URL), st, ov, nil)
 
 	c, err := svc.Refresh(context.Background())
 	if err != nil {
@@ -145,11 +173,18 @@ func TestServiceRefreshAndCache(t *testing.T) {
 		}
 	}
 	if st.blobs[currentKey] == nil || st.blobs[itemsKey("3.15.5")] == nil || st.blobs[itemsKey("16.18.1")] == nil ||
-		st.blobs[championsKey] == nil || st.blobs[spellsKey] == nil || st.blobs[runesKey] == nil {
+		st.blobs[championsKey] == nil || st.blobs[spellsKey] == nil || st.blobs[runesKey] == nil || st.blobs[ratesKey] == nil {
 		t.Errorf("cache keys: %v", keys(st.blobs))
 	}
-	if svc.Status().Source != "ddragon" || svc.Status().Patch != "16.18.1" {
+	if svc.Status().Source != "ddragon" || svc.Status().Patch != "16.18.1" || svc.Status().LanesPatch != "16.3" {
 		t.Errorf("status %+v", svc.Status())
+	}
+	// Lanes come from the play-rate feed and are part of the catalog.
+	if c.LanesPatch != "16.3" || !slices.Equal(lanesOf(c, "Wukong"), []string{"top", "jungle"}) || lanesOf(c, "Newbie") != nil {
+		t.Errorf("lanes: patch %q Wukong %v Newbie %v", c.LanesPatch, lanesOf(c, "Wukong"), lanesOf(c, "Newbie"))
+	}
+	if got := c.Lanes(); !slices.Equal(got, []string{"top", "jungle", "mid", "support"}) {
+		t.Errorf("catalog lanes %v", got)
 	}
 
 	// Second refresh: the finished season comes from the cache, the current
@@ -173,6 +208,11 @@ func TestServiceRefreshAndCache(t *testing.T) {
 	if c2 := svc.Current(); len(c2.Abilities) != 20 || len(c2.SkinLines) != 4 || len(c2.Runes) != 6 {
 		t.Errorf("second refresh from cache: %d abilities %d skin lines %d runes", len(c2.Abilities), len(c2.SkinLines), len(c2.Runes))
 	}
+	// The play-rate feed is not versioned by patch, so it is fetched on
+	// every refresh.
+	if n := dd.count(championRatesPath); n != 2 {
+		t.Errorf("play rates fetched %d times", n)
+	}
 	// A stale cached copy (other patch) is replaced.
 	st.SaveBlob(championsKey, []byte(`{"version":"16.17.1","data":{}}`))
 	if _, err := svc.Refresh(context.Background()); err != nil {
@@ -182,11 +222,12 @@ func TestServiceRefreshAndCache(t *testing.T) {
 		t.Errorf("stale champion cache not refetched: %d", n)
 	}
 
-	// A new server process boots from the cache without touching the network.
-	svc2 := New(NewFetcher("http://127.0.0.1:1"), st, ov, nil)
+	// A new server process boots from the cache without touching the
+	// network, lanes included.
+	svc2 := New(fetcher("http://127.0.0.1:1"), st, ov, nil)
 	boot := svc2.Bootstrap()
-	if boot.Patch != "16.18.1" || svc2.Status().Source != "cache" {
-		t.Errorf("bootstrap from cache: %s %+v", boot.Patch, svc2.Status())
+	if boot.Patch != "16.18.1" || svc2.Status().Source != "cache" || svc2.Status().LanesPatch != "16.3" || len(boot.Lanes()) != 4 {
+		t.Errorf("bootstrap from cache: %s %+v %v", boot.Patch, svc2.Status(), boot.Lanes())
 	}
 
 	// Export lists seasons as numbers, not bitmasks.
@@ -199,12 +240,69 @@ func TestServiceRefreshAndCache(t *testing.T) {
 	}
 }
 
+func TestServiceMerakiOutage(t *testing.T) {
+	dd := newDDragon(t)
+	st := &fakeStore{}
+	svc := New(fetcher(dd.URL), st, "", nil)
+
+	// Nothing cached and Meraki down: the refresh still succeeds, just
+	// without lanes, so the client offers no lane filter.
+	dd.setMerakiDown(true)
+	c, err := svc.Refresh(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.LanesPatch != "" || len(c.Lanes()) != 0 || lanesOf(c, "Wukong") != nil || svc.Status().LanesPatch != "" {
+		t.Errorf("lanes without a feed: %q %v %v", c.LanesPatch, c.Lanes(), lanesOf(c, "Wukong"))
+	}
+	if st.blobs[ratesKey] != nil {
+		t.Error("a failed fetch was cached")
+	}
+	if p := c.PoolSize(game.Filter{Packs: []game.Pack{game.PackChampions}, ChampLanes: []string{"top"}}.Normalized(c)); p[game.PackChampions] != 0 {
+		t.Errorf("lane filter without lanes should empty the pool, got %v", p)
+	}
+
+	// Meraki back: lanes arrive and the feed is cached.
+	dd.setMerakiDown(false)
+	if c, err = svc.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if c.LanesPatch != "16.3" || !slices.Equal(lanesOf(c, "Wukong"), []string{"top", "jungle"}) || st.blobs[ratesKey] == nil {
+		t.Errorf("lanes after recovery: %q %v cached=%v", c.LanesPatch, lanesOf(c, "Wukong"), st.blobs[ratesKey] != nil)
+	}
+
+	// Meraki down again: the cached feed keeps the lanes and the patch.
+	dd.setMerakiDown(true)
+	if c, err = svc.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if c.LanesPatch != "16.3" || !slices.Equal(lanesOf(c, "Wukong"), []string{"top", "jungle"}) || !slices.Equal(lanesOf(c, "Blitzcrank"), []string{"support"}) {
+		t.Errorf("lanes from the cached feed: %q %v %v", c.LanesPatch, lanesOf(c, "Wukong"), lanesOf(c, "Blitzcrank"))
+	}
+	if n := dd.count(championRatesPath); n != 3 {
+		t.Errorf("play rates fetched %d times", n)
+	}
+
+	// A lane override wins over the feed, and [] takes every lane away.
+	ov := writeTemp(t, `{"champions":{"lanes":{"MonkeyKing":["MID"],"Blitzcrank":[]}}}`)
+	svc = New(fetcher(dd.URL), st, ov, nil)
+	if c, err = svc.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(lanesOf(c, "Wukong"), []string{"mid"}) || len(lanesOf(c, "Blitzcrank")) != 0 || !slices.Equal(lanesOf(c, "Master Yi"), []string{"jungle"}) {
+		t.Errorf("overrides: Wukong %v Blitzcrank %v Master Yi %v", lanesOf(c, "Wukong"), lanesOf(c, "Blitzcrank"), lanesOf(c, "Master Yi"))
+	}
+	if got := c.Lanes(); !slices.Equal(got, []string{"jungle", "mid", "support"}) {
+		t.Errorf("catalog lanes %v", got)
+	}
+}
+
 func TestServiceBootstrapOldCache(t *testing.T) {
 	// A catalog cached by a server from before the new packs existed
 	// still boots; the packs are simply empty until the next refresh.
 	st := &fakeStore{}
 	st.SaveBlob(currentKey, []byte(`{"patch":"16.17.1","champions":[{"name":"Ahri","icon":"https://x","season":1}],"items":[]}`))
-	svc := New(NewFetcher("http://127.0.0.1:1"), st, "", nil)
+	svc := New(fetcher("http://127.0.0.1:1"), st, "", nil)
 	c := svc.Bootstrap()
 	if c.Patch != "16.17.1" || svc.Status().Source != "cache" || len(c.Spells) != 0 || len(c.Champions[0].Tags) != 0 {
 		t.Errorf("old cache: %+v %+v", c, svc.Status())
@@ -215,7 +313,7 @@ func TestServiceBootstrapOldCache(t *testing.T) {
 }
 
 func TestServiceBootstrapEmbedded(t *testing.T) {
-	svc := New(NewFetcher("http://127.0.0.1:1"), &fakeStore{}, "", nil)
+	svc := New(fetcher("http://127.0.0.1:1"), &fakeStore{}, "", nil)
 	c := svc.Bootstrap()
 	if len(c.Champions) < 150 || len(c.Items) < 300 || svc.Status().Source != "embedded" {
 		t.Errorf("embedded: %d champions, %d items, %+v", len(c.Champions), len(c.Items), svc.Status())
@@ -231,7 +329,7 @@ func TestServiceBootstrapEmbedded(t *testing.T) {
 
 func TestServiceRunPublishes(t *testing.T) {
 	dd := newDDragon(t)
-	svc := New(NewFetcher(dd.URL), &fakeStore{}, "", nil)
+	svc := New(fetcher(dd.URL), &fakeStore{}, "", nil)
 	ctx, cancel := context.WithCancel(context.Background())
 	got := make(chan *game.Catalog, 1)
 	go svc.Run(ctx, time.Hour, func(c *game.Catalog) { got <- c })
@@ -300,6 +398,27 @@ func TestEmbeddedFallback(t *testing.T) {
 	}
 	if got := c.Resources(); !slices.Equal(got, game.AllResources) {
 		t.Errorf("resources %v", got)
+	}
+	// Lanes: every lane is played by someone and nearly every champion has
+	// at least one (a champion released after Meraki's last patch may lack
+	// them for a while).
+	if c.LanesPatch == "" || !slices.Equal(c.Lanes(), game.AllLanes) {
+		t.Errorf("lanes patch %q lanes %v", c.LanesPatch, c.Lanes())
+	}
+	laneless := 0
+	for _, ch := range c.Champions {
+		if len(ch.Lanes) == 0 {
+			laneless++
+			continue
+		}
+		for _, l := range ch.Lanes {
+			if !game.ValidLane(l) {
+				t.Errorf("%s has lane %q", ch.Name, l)
+			}
+		}
+	}
+	if laneless > 5 {
+		t.Errorf("%d champions without lanes", laneless)
 	}
 	linked := 0
 	for _, it := range c.Items {

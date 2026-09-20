@@ -427,6 +427,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 classes: lobby.classes,
                                 regions: lobby.regions,
                                 resources: lobby.resources,
+                                lanes: lobby.lanes,
                                 onChanged: _queueSettings,
                               )
                             : LobbyFiltersSummary(settings: settings, poolSize: lobby.poolSize),

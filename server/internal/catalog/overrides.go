@@ -14,9 +14,10 @@ import (
 // Overrides is the hand-curated correction layer on top of the automatic
 // import, read from a JSON file (server/deploy/catalog_overrides.json in
 // the repo, mounted into the container). Item names match display names
-// case-insensitively; champion seasons and regions are keyed by Data
-// Dragon id ("MonkeyKing"), champion exclusions by display name ("Wukong").
-// Excluding a champion also drops its abilities.
+// case-insensitively; champion seasons, regions and lanes are keyed by
+// Data Dragon id ("MonkeyKing"), champion exclusions by display name
+// ("Wukong"). Excluding a champion also drops its abilities. A lanes entry
+// replaces what the play-rate feed says for that champion ([] = no lane).
 //
 //	{
 //	  "items": {
@@ -25,7 +26,7 @@ import (
 //	    "include": [{"name": "Muramana", "icon": "https://…/3042.png", "tier": "legendary", "seasons": [3, 16]}],
 //	    "tiers": {"Long Sword": "component"}
 //	  },
-//	  "champions": {"exclude": [], "seasons": {"Ambessa": 14}, "regions": {"Zaahen": "Shurima"}},
+//	  "champions": {"exclude": [], "seasons": {"Ambessa": 14}, "regions": {"Zaahen": "Shurima"}, "lanes": {"Teemo": ["top"]}},
 //	  "skinLines": {"exclude": ["Count"]}
 //	}
 type Overrides struct {
@@ -51,9 +52,10 @@ type IncludedItem struct {
 }
 
 type ChampionOverrides struct {
-	Exclude []string          `json:"exclude"`
-	Seasons map[string]int    `json:"seasons"`
-	Regions map[string]string `json:"regions"` // id -> one of game.AllRegions
+	Exclude []string            `json:"exclude"`
+	Seasons map[string]int      `json:"seasons"`
+	Regions map[string]string   `json:"regions"` // id -> one of game.AllRegions
+	Lanes   map[string][]string `json:"lanes"`   // id -> subset of game.AllLanes
 }
 
 // SkinLineOverrides drops lines the name heuristic got wrong ("Count",
@@ -93,6 +95,13 @@ func LoadOverrides(path string) (Overrides, error) {
 			return Overrides{}, fmt.Errorf("%s: unknown region %q for %q", path, r, id)
 		}
 	}
+	for id, lanes := range ov.Champions.Lanes {
+		for _, l := range lanes {
+			if !game.ValidLane(l) {
+				return Overrides{}, fmt.Errorf("%s: unknown lane %q for %q", path, l, id)
+			}
+		}
+	}
 	return ov, nil
 }
 
@@ -127,6 +136,22 @@ func (o ItemOverrides) tier(name string) (game.Tier, bool) { return lookupFold(o
 func (o ChampionOverrides) excluded(name string) bool { return containsFold(o.Exclude, name) }
 
 func (o ChampionOverrides) season(id string) (int, bool) { return lookupFold(o.Seasons, id) }
+
+// lanes is the override for a champion id, in canonical spelling and
+// game.AllLanes order; ok is false when the file has no entry for it.
+func (o ChampionOverrides) lanes(id string) (lanes []string, ok bool) {
+	list, ok := lookupFold(o.Lanes, id)
+	if !ok {
+		return nil, false
+	}
+	lanes = []string{}
+	for _, l := range game.AllLanes {
+		if containsFold(list, l) {
+			lanes = append(lanes, l)
+		}
+	}
+	return lanes, true
+}
 
 func (o SkinLineOverrides) excluded(name string) bool { return containsFold(o.Exclude, name) }
 

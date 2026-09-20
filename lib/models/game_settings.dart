@@ -27,6 +27,11 @@ class GameSettings {
   /// Runeterra regions to keep; empty means every region.
   final Set<String> champRegions;
 
+  /// Lanes the champion must be played in (any of them), see
+  /// [ChampionLane]; empty means every lane. Lanes come from Riot's play
+  /// rates, so a catalog imported without them offers none (`Lobby.lanes`).
+  final Set<String> champLanes;
+
   /// Fixed buckets the server derives from Data Dragon, see [ChampionRange],
   /// [ChampionResource], [ChampionDamage] and [ChampionDifficulty]; empty
   /// means every value.
@@ -66,6 +71,7 @@ class GameSettings {
     this.itemTiers = const {...ItemTier.all},
     this.champClasses = const {},
     this.champRegions = const {},
+    this.champLanes = const {},
     this.champRanges = const {},
     this.champResources = const {},
     this.champDamage = const {},
@@ -93,6 +99,7 @@ class GameSettings {
       itemTiers: tiers == null ? {...ItemTier.all} : _stringSet(tiers),
       champClasses: _stringSet(json['champClasses']),
       champRegions: _stringSet(json['champRegions']),
+      champLanes: _stringSet(json['champLanes']),
       champRanges: _stringSet(json['champRanges']),
       champResources: _stringSet(json['champResources']),
       champDamage: _stringSet(json['champDamage']),
@@ -126,6 +133,7 @@ class GameSettings {
         'itemTiers': ItemTier.all.where(itemTiers.contains).toList(),
         'champClasses': champClasses.toList()..sort(),
         'champRegions': champRegions.toList()..sort(),
+        'champLanes': ChampionLane.all.where(champLanes.contains).toList(),
         'champRanges': ChampionRange.all.where(champRanges.contains).toList(),
         'champResources': ChampionResource.all.where(champResources.contains).toList(),
         'champDamage': ChampionDamage.all.where(champDamage.contains).toList(),
@@ -143,13 +151,19 @@ class GameSettings {
   bool get useItems => packs.contains(WordPack.items);
   bool get useAbilities => packs.contains(WordPack.abilities);
 
-  /// Whether the champion-only filters (seasons, classes, regions and the
-  /// four buckets) matter.
+  /// Whether the champion-only filters (seasons, classes, regions, lanes
+  /// and the four buckets) matter.
   bool get filtersChampions => useChampions || useAbilities;
 
   /// How many of the champion chip filters are narrowing the pool.
   int get activeChampionFilters =>
-      champClasses.length + champRegions.length + champRanges.length + champResources.length + champDamage.length + champDifficulty.length;
+      champClasses.length +
+      champRegions.length +
+      champLanes.length +
+      champRanges.length +
+      champResources.length +
+      champDamage.length +
+      champDifficulty.length;
 
   /// Impostors per game: the Undercovers plus Mr. Whites.
   int get impostors => undercovers + mrWhites;
@@ -161,6 +175,7 @@ class GameSettings {
     Set<String>? itemTiers,
     Set<String>? champClasses,
     Set<String>? champRegions,
+    Set<String>? champLanes,
     Set<String>? champRanges,
     Set<String>? champResources,
     Set<String>? champDamage,
@@ -180,6 +195,7 @@ class GameSettings {
         itemTiers: itemTiers ?? this.itemTiers,
         champClasses: champClasses ?? this.champClasses,
         champRegions: champRegions ?? this.champRegions,
+        champLanes: champLanes ?? this.champLanes,
         champRanges: champRanges ?? this.champRanges,
         champResources: champResources ?? this.champResources,
         champDamage: champDamage ?? this.champDamage,
@@ -194,8 +210,8 @@ class GameSettings {
       );
 
   /// These settings with the word-pool half replaced by [filter]'s (packs,
-  /// seasons, tiers, classes, regions, buckets); the rules stay. Used to apply the
-  /// daily theme, which only describes a pool.
+  /// seasons, tiers, classes, regions, lanes, buckets); the rules stay. Used
+  /// to apply the daily theme, which only describes a pool.
   GameSettings withFilterOf(GameSettings filter) => copyWith(
         packs: filter.packs,
         champSeasons: filter.champSeasons,
@@ -203,6 +219,7 @@ class GameSettings {
         itemTiers: filter.itemTiers,
         champClasses: filter.champClasses,
         champRegions: filter.champRegions,
+        champLanes: filter.champLanes,
         champRanges: filter.champRanges,
         champResources: filter.champResources,
         champDamage: filter.champDamage,
@@ -257,6 +274,7 @@ class GameSettings {
       _sameSet(other.itemTiers, itemTiers) &&
       _sameSet(other.champClasses, champClasses) &&
       _sameSet(other.champRegions, champRegions) &&
+      _sameSet(other.champLanes, champLanes) &&
       _sameSet(other.champRanges, champRanges) &&
       _sameSet(other.champResources, champResources) &&
       _sameSet(other.champDamage, champDamage) &&
@@ -277,6 +295,7 @@ class GameSettings {
         itemTiers.length,
         champClasses.length,
         champRegions.length,
+        champLanes.length,
         champRanges.length,
         champResources.length,
         champDamage.length,
@@ -379,6 +398,29 @@ class ChampionClass {
   static const tank = 'Tank';
 
   static const all = [assassin, fighter, mage, marksman, support, tank];
+}
+
+/// The positions a champion is played in, from Riot's per-position play
+/// rates (via Meraki Analytics); the lanes present in the catalog come with
+/// the lobby view (`lanes`) and are empty when the server never reached
+/// the feed, in which case no lane filter is offered.
+class ChampionLane {
+  static const top = 'top';
+  static const jungle = 'jungle';
+  static const mid = 'mid';
+  static const bot = 'bot';
+  static const support = 'support';
+
+  static const all = [top, jungle, mid, bot, support];
+
+  static String label(String v) => switch (v) {
+        top => 'Top',
+        jungle => 'Jungle',
+        mid => 'Mid',
+        bot => 'Bot',
+        support => 'Support',
+        _ => v,
+      };
 }
 
 /// Melee or ranged, from the base attack range (300+ is ranged).

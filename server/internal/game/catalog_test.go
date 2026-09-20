@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"math/rand/v2"
 	"slices"
+	"strconv"
 	"testing"
 	"time"
 )
 
 // testCatalog is a small hand-built pool covering the season, tier, class,
-// region, range, resource, damage and difficulty combinations the filter
-// tests need. Names are unique across packs. Yunara has no damage or
-// difficulty, like the few champions Data Dragon ships without ratings.
+// region, lane, range, resource, damage and difficulty combinations the
+// filter tests need. Names are unique across packs. Yunara has no damage,
+// difficulty or lanes, like the few champions Data Dragon ships without
+// ratings and a champion the play-rate feed has not seen yet.
 func testCatalog() *Catalog {
 	set := func(seasons ...int) SeasonSet {
 		var s SeasonSet
@@ -24,15 +26,15 @@ func testCatalog() *Catalog {
 		Patch: "16.18.1",
 		Champions: []Champion{
 			{Name: "Annie", Icon: "https://x/Annie_0.jpg", Season: 1, Tags: []string{"Mage"}, Region: "Noxus", ID: "Annie",
-				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyEasy},
+				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyEasy, Lanes: []string{LaneMid}},
 			{Name: "Ahri", Icon: "https://x/Ahri_0.jpg", Season: 1, Tags: []string{"Mage", "Assassin"}, Region: "Ionia", ID: "Ahri",
-				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyMedium},
+				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyMedium, Lanes: []string{LaneMid}},
 			{Name: "Aatrox", Icon: "https://x/Aatrox_0.jpg", Season: 3, Tags: []string{"Fighter"}, Region: "Runeterra", ID: "Aatrox",
-				Range: RangeMelee, Resource: ResourceOther, Damage: DamagePhysical, Difficulty: DifficultyMedium},
+				Range: RangeMelee, Resource: ResourceOther, Damage: DamagePhysical, Difficulty: DifficultyMedium, Lanes: []string{LaneTop, LaneJungle}},
 			{Name: "Zoe", Icon: "https://x/Zoe_0.jpg", Season: 7, Tags: []string{"Mage", "Support"}, Region: "Targon", ID: "Zoe",
-				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyHard},
+				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyHard, Lanes: []string{LaneMid, LaneSupport}},
 			{Name: "Mel", Icon: "https://x/Mel_0.jpg", Season: 15, Tags: []string{"Mage", "Support"}, Region: "Noxus", ID: "Mel",
-				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyMedium},
+				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyMedium, Lanes: []string{LaneMid, LaneSupport}},
 			{Name: "Yunara", Icon: "https://x/Yunara_0.jpg", Season: 16, Tags: []string{"Marksman", "Support"}, Region: "Ionia", ID: "Yunara",
 				Range: RangeRanged, Resource: ResourceMana},
 		},
@@ -109,6 +111,16 @@ func TestCatalogRanges(t *testing.T) {
 	if got := empty.Resources(); got == nil || len(got) != 0 {
 		t.Errorf("empty resources %#v", got)
 	}
+	// Lanes likewise: AllLanes order, only what is played (nobody is bot).
+	if got := c.Lanes(); !slices.Equal(got, []string{LaneTop, LaneJungle, LaneMid, LaneSupport}) {
+		t.Errorf("lanes %v", got)
+	}
+	if got := empty.Lanes(); got == nil || len(got) != 0 {
+		t.Errorf("empty lanes %#v", got)
+	}
+	if got := (&Catalog{Champions: []Champion{{Name: "Nobody"}}}).Lanes(); got == nil || len(got) != 0 {
+		t.Errorf("laneless catalog %#v", got)
+	}
 }
 
 func TestSeasonSet(t *testing.T) {
@@ -161,6 +173,14 @@ func TestPoolSize(t *testing.T) {
 		{"easy or hard", Filter{Packs: packs(PackChampions, PackAbilities), ChampDifficulty: []string{"hard", "easy"}}, PoolSize{PackChampions: 2, PackAbilities: 2}},
 		{"ranged mana mages of medium difficulty from Noxus", Filter{Packs: packs(PackChampions), ChampRanges: []string{"ranged"}, ChampResources: []string{"mana"}, ChampClasses: []string{"Mage"}, ChampDifficulty: []string{"medium"}, ChampRegions: []string{"Noxus"}}, PoolSize{PackChampions: 1}},
 		{"melee magic is nobody", Filter{Packs: packs(PackChampions), ChampRanges: []string{"melee"}, ChampDamage: []string{"magic"}}, PoolSize{PackChampions: 0}},
+		{"mid", Filter{Packs: packs(PackChampions, PackAbilities), ChampLanes: []string{"mid"}}, PoolSize{PackChampions: 4, PackAbilities: 4}},
+		{"support (any lane matches)", Filter{Packs: packs(PackChampions, PackAbilities), ChampLanes: []string{"Support"}}, PoolSize{PackChampions: 2, PackAbilities: 1}},
+		{"top or jungle", Filter{Packs: packs(PackChampions, PackAbilities), ChampLanes: []string{"jungle", "top"}}, PoolSize{PackChampions: 1, PackAbilities: 0}},
+		{"bot (nobody)", Filter{Packs: packs(PackChampions), ChampLanes: []string{"bot"}}, PoolSize{PackChampions: 0}},
+		{"laneless champion matches no lane", Filter{Packs: packs(PackChampions), ChampLanes: AllLanes}, PoolSize{PackChampions: 5}},
+		{"mid mages from Noxus", Filter{Packs: packs(PackChampions), ChampLanes: []string{"mid"}, ChampClasses: []string{"Mage"}, ChampRegions: []string{"Noxus"}}, PoolSize{PackChampions: 2}},
+		{"support at hard difficulty", Filter{Packs: packs(PackChampions), ChampLanes: []string{"support"}, ChampDifficulty: []string{"hard"}}, PoolSize{PackChampions: 1}},
+		{"lanes do not touch other packs", Filter{Packs: packs(PackItems, PackSpells, PackMonsters), ChampLanes: []string{"bot"}}, PoolSize{PackItems: 9, PackSpells: 2, PackMonsters: 4}},
 	}
 	for _, tc := range cases {
 		got := c.PoolSize(tc.f.Normalized(c))
@@ -298,8 +318,9 @@ func TestThemes(t *testing.T) {
 	}
 	// Bucket days whose abilities pack would be empty (the only melee and
 	// physical champion, Aatrox, has none) or that have too few champions
-	// (energy needs five, and nobody is manaless) are dropped too.
-	for _, unwanted := range []string{"melee", "steel", "energy", "manaless"} {
+	// (energy needs five, and nobody is manaless) are dropped too, and so
+	// are lane days: no lane reaches five champions in the fixture.
+	for _, unwanted := range []string{"melee", "steel", "energy", "manaless", "lane-top", "lane-jungle", "lane-mid", "lane-bot", "lane-support"} {
 		if _, ok := ids[unwanted]; ok {
 			t.Errorf("unexpected theme %s", unwanted)
 		}
@@ -371,6 +392,45 @@ func TestThemes(t *testing.T) {
 	for _, want := range []string{"melee", "steel"} {
 		if !slices.ContainsFunc(energy.Themes(), func(t Theme) bool { return t.ID == want }) {
 			t.Errorf("missing theme %s", want)
+		}
+	}
+
+	// Lane days need five champions in the lane: the fixture's four mid
+	// laners plus one make a Mid lane day; a laneless catalog has none.
+	lanes := testCatalog()
+	lanes.Champions = append(lanes.Champions, Champion{Name: "Syndra", Season: 2, Tags: []string{"Mage"}, Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyHard, Lanes: []string{LaneMid}})
+	lanes.Abilities = append(lanes.Abilities, Entry{Name: "Dark Sphere (Syndra)", Group: "Syndra", Champion: "Syndra", Season: 2})
+	var midDay *Theme
+	for _, th := range lanes.Themes() {
+		if th.ID == "lane-mid" {
+			midDay = &th
+		}
+		if th.ID == "lane-support" || th.ID == "lane-top" {
+			t.Errorf("lane day with too few champions: %s", th.ID)
+		}
+	}
+	if midDay == nil || midDay.Title != "Mid lane day" || !slices.Equal(midDay.Filter.Packs, []Pack{PackChampions, PackAbilities}) || !slices.Equal(midDay.Filter.ChampLanes, []string{LaneMid}) || midDay.Filter.Validate() != nil {
+		t.Errorf("mid lane day %+v", midDay)
+	}
+	if n := lanes.PoolSize(midDay.Filter.Normalized(lanes)); n[PackChampions] != 5 || n[PackAbilities] != 5 {
+		t.Errorf("mid lane day pool %v", n)
+	}
+	// Every lane gets a day once it has five champions with abilities, each
+	// under its own title.
+	for _, l := range AllLanes {
+		for j := 0; j < minRegionChampions; j++ {
+			n := l + strconv.Itoa(j)
+			lanes.Champions = append(lanes.Champions, Champion{Name: n, Season: 1, Tags: []string{"Tank"}, Range: RangeMelee, Resource: ResourceMana, Damage: DamageMixed, Difficulty: DifficultyEasy, Lanes: []string{l}})
+			lanes.Abilities = append(lanes.Abilities, Entry{Name: "Q (" + n + ")", Group: n, Champion: n, Season: 1})
+		}
+	}
+	titles := map[string]string{}
+	for _, th := range lanes.Themes() {
+		titles[th.ID] = th.Title
+	}
+	for id, want := range map[string]string{"lane-top": "Top lane day", "lane-jungle": "Jungler day", "lane-mid": "Mid lane day", "lane-bot": "Bot lane day", "lane-support": "Support day", "jungle": "Jungle day"} {
+		if titles[id] != want {
+			t.Errorf("%s titled %q, want %q", id, titles[id], want)
 		}
 	}
 
