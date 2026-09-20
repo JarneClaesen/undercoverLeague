@@ -104,13 +104,87 @@
   </script>
 
   <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
+    Loads flutter_bootstrap.js ourselves instead of via a plain script tag so
+    a new deploy is never served from a browser's stale copy: the bootstrap
+    is fetched fresh, its content hash is compared with the last one this
+    browser ran, and on a change the legacy service worker, its caches and
+    the HTTP-cached core files are all refreshed before the app starts.
   -->
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    (async function () {
+      var KEY = 'undercover.build';
+      var CORE = [
+        'main.dart.js',
+        'flutter.js',
+        'manifest.json',
+        'assets/AssetManifest.bin',
+        'assets/AssetManifest.bin.json',
+        'assets/FontManifest.json',
+        'assets/fonts/MaterialIcons-Regular.otf'
+      ];
+
+      function hash(text) {
+        var h = 5381;
+        for (var i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+        return (h >>> 0).toString(16);
+      }
+
+      function run(source) {
+        var script = document.createElement('script');
+        script.textContent = source;
+        document.body.appendChild(script);
+      }
+
+      var previous = null;
+      try { previous = localStorage.getItem(KEY); } catch (_) {}
+
+      var source;
+      try {
+        source = await fetch('flutter_bootstrap.js', { cache: 'no-store' }).then(function (r) {
+          if (!r.ok) throw new Error(r.status);
+          return r.text();
+        });
+      } catch (_) {
+        // Server unreachable or blocked: fall back to whatever the browser has.
+        var fallback = document.createElement('script');
+        fallback.src = 'flutter_bootstrap.js';
+        document.body.appendChild(fallback);
+        return;
+      }
+
+      var current = hash(source);
+      if (previous !== current) {
+        // Builds before this one shipped Flutter's caching service worker.
+        // It answers fetches from its own cache, so it has to go first, and
+        // the page must reload to stop being controlled by it.
+        var reloaded = false;
+        try { reloaded = sessionStorage.getItem(KEY + '.reloaded') === current; } catch (_) {}
+        if ('serviceWorker' in navigator) {
+          try {
+            var regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(function (r) { return r.unregister(); }));
+            if (regs.length && !reloaded) {
+              try { sessionStorage.setItem(KEY + '.reloaded', current); } catch (_) {}
+              location.reload();
+              return;
+            }
+          } catch (_) {}
+        }
+        if ('caches' in window) {
+          try {
+            var keys = await caches.keys();
+            await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          } catch (_) {}
+        }
+        // `reload` bypasses the HTTP cache and replaces the stored entry, so
+        // the requests the bootstrap is about to make hit the new files.
+        await Promise.all(CORE.map(function (url) {
+          return fetch(url, { cache: 'reload' }).catch(function () {});
+        }));
+        try { localStorage.setItem(KEY, current); } catch (_) {}
+      }
+      run(source);
+    })();
+  </script>
 </body>
 </html>

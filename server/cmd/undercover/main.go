@@ -100,9 +100,11 @@ func main() {
 }
 
 // webHandler serves the Flutter web build. Anything that is not an existing
-// file and looks like a route falls back to index.html; every response is
-// no-cache so a deploy is picked up on the next load (Flutter's service
-// worker does its own fingerprinted caching underneath).
+// file and looks like a route falls back to index.html. The entry files that
+// decide which build runs are never stored by the browser; everything else
+// is no-cache (kept, but revalidated on every load) so a deploy is picked up
+// on the next visit. index.html's loader does the rest for browsers that
+// still hold copies from before these headers existed.
 func webHandler(dir string) http.Handler {
 	fs := http.FileServer(http.Dir(dir))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -111,11 +113,21 @@ func webHandler(dir string) http.Handler {
 		if info, err := os.Stat(full); err != nil || info.IsDir() && p != "/" {
 			if path.Ext(p) == "" {
 				r.URL.Path = "/"
+				p = "/"
 			}
 		}
-		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Cache-Control", cacheControl(p))
 		fs.ServeHTTP(w, r)
 	})
+}
+
+// cacheControl picks the caching policy for one path of the web build.
+func cacheControl(p string) string {
+	switch p {
+	case "/", "/index.html", "/flutter_bootstrap.js", "/flutter_service_worker.js", "/version.json":
+		return "no-store"
+	}
+	return "no-cache"
 }
 
 func purgeLoop(ctx context.Context, st *store.Store, h *hub.Hub, log *slog.Logger) {
