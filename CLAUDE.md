@@ -13,14 +13,17 @@ Every deploy must replace what browsers already hold. Two pieces do that:
    `version.json` as `Cache-Control: no-store`, everything else as `no-cache`
    (kept, revalidated on every load). `main_test.go` pins these.
 2. **Loader in `web/index.html`** — instead of `<script src="flutter_bootstrap.js">`,
-   an inline script fetches the bootstrap with `cache: 'no-store'`, hashes its text
-   and compares it with `localStorage['undercover.build']`. On a change it
-   unregisters any service worker (old Flutter builds shipped a caching one; if one
-   was registered it reloads the page once, guarded by `sessionStorage`), deletes
-   all Cache Storage caches, refetches the core files (`main.dart.js`, `flutter.js`,
-   the asset/font manifests, `MaterialIcons-Regular.otf`) with `cache: 'reload'` so
-   the HTTP cache is overwritten, stores the new hash, and only then runs the
-   bootstrap inline. If the fetch fails it falls back to a plain script tag.
+   an inline script first checks for a service worker (old Flutter builds shipped a
+   caching one that answers fetches from its cache regardless of fetch options): if
+   one is registered or still controls the page it unregisters it, deletes all
+   Cache Storage caches and reloads once (guarded by `sessionStorage`). It then
+   fetches `flutter_bootstrap.js?t=<now>` with `cache: 'no-store'` (the query keeps a
+   lingering worker from matching its cache), hashes the text and compares it with
+   `localStorage['undercover.build']`. On a change it clears caches again, refetches
+   the core files (`main.dart.js`, `flutter.js`, the asset/font manifests,
+   `MaterialIcons-Regular.otf`) with `cache: 'reload'` so the HTTP cache is
+   overwritten, stores the new hash, and only then runs the bootstrap inline. If the
+   fetch fails it falls back to a plain script tag.
 
 Rules: don't reintroduce a plain bootstrap `<script>` tag; if Flutter adds another
 unhashed core file that changes between builds, add it to the `CORE` list; keep the

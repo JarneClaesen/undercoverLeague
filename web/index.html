@@ -138,9 +138,41 @@
       var previous = null;
       try { previous = localStorage.getItem(KEY); } catch (_) {}
 
+      async function clearCaches() {
+        if (!('caches' in window)) return;
+        try {
+          var keys = await caches.keys();
+          await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        } catch (_) {}
+      }
+
+      // Builds before this one shipped Flutter's caching service worker. It
+      // answers fetches from its own cache regardless of fetch options, so
+      // while one controls this page nothing below can be trusted: drop it
+      // and its caches, then reload once so the next load is uncontrolled.
+      if ('serviceWorker' in navigator) {
+        try {
+          var regs = await navigator.serviceWorker.getRegistrations();
+          var controlled = !!navigator.serviceWorker.controller;
+          if (regs.length || controlled) {
+            await Promise.all(regs.map(function (r) { return r.unregister(); }));
+            await clearCaches();
+            var reloaded = false;
+            try { reloaded = sessionStorage.getItem(KEY + '.reloaded') === '1'; } catch (_) {}
+            if (!reloaded) {
+              try { sessionStorage.setItem(KEY + '.reloaded', '1'); } catch (_) {}
+              location.reload();
+              return;
+            }
+          }
+        } catch (_) {}
+      }
+
       var source;
       try {
-        source = await fetch('flutter_bootstrap.js', { cache: 'no-store' }).then(function (r) {
+        // The query string keeps any lingering service worker from matching
+        // this request against its cache; the server ignores it.
+        source = await fetch('flutter_bootstrap.js?t=' + Date.now(), { cache: 'no-store' }).then(function (r) {
           if (!r.ok) throw new Error(r.status);
           return r.text();
         });
@@ -154,28 +186,7 @@
 
       var current = hash(source);
       if (previous !== current) {
-        // Builds before this one shipped Flutter's caching service worker.
-        // It answers fetches from its own cache, so it has to go first, and
-        // the page must reload to stop being controlled by it.
-        var reloaded = false;
-        try { reloaded = sessionStorage.getItem(KEY + '.reloaded') === current; } catch (_) {}
-        if ('serviceWorker' in navigator) {
-          try {
-            var regs = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(regs.map(function (r) { return r.unregister(); }));
-            if (regs.length && !reloaded) {
-              try { sessionStorage.setItem(KEY + '.reloaded', current); } catch (_) {}
-              location.reload();
-              return;
-            }
-          } catch (_) {}
-        }
-        if ('caches' in window) {
-          try {
-            var keys = await caches.keys();
-            await Promise.all(keys.map(function (k) { return caches.delete(k); }));
-          } catch (_) {}
-        }
+        await clearCaches();
         // `reload` bypasses the HTTP cache and replaces the stored entry, so
         // the requests the bootstrap is about to make hit the new files.
         await Promise.all(CORE.map(function (url) {

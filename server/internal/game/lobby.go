@@ -85,6 +85,10 @@ type Lobby struct {
 	// LastEliminated is nil before the first vote, "" when a vote eliminated
 	// nobody (tie or skip), else the eliminated player's name.
 	LastEliminated *string `json:"lastEliminated"`
+	// Settings is the host's word-pool filter, kept between games. Zero
+	// values mean "everything" (see Filter) so rows saved before filters
+	// existed behave as before.
+	Settings Filter `json:"settings"`
 
 	// Sessions maps resume token -> player. Never included in a View.
 	Sessions map[string]string `json:"sessions"`
@@ -100,6 +104,7 @@ func New(id, host string, now time.Time) *Lobby {
 		Players:   []string{host},
 		GamePhase: PhaseLobby,
 		CreatedAt: now.UnixMilli(),
+		Settings:  DefaultFilter(),
 		Sessions:  map[string]string{},
 	}
 	l.clearGame()
@@ -131,6 +136,11 @@ func (l *Lobby) Normalize() {
 	}
 	if l.Sessions == nil {
 		l.Sessions = map[string]string{}
+	}
+	// Rows from before filters existed have both categories off, which
+	// Validate would reject; they meant "everything".
+	if !l.Settings.UseChampions && !l.Settings.UseItems {
+		l.Settings = DefaultFilter()
 	}
 }
 
@@ -219,12 +229,28 @@ func (l *Lobby) Leave(name string) (closed bool) {
 // Game flow
 // ---------------------------------------------------------------------------
 
-func (l *Lobby) Start(caller string, useChampions, useItems bool, rng *rand.Rand, words *Words) error {
+// SetSettings replaces the word-pool filter. Only the host may, and only
+// while no game is running: the pool is drawn at Start.
+func (l *Lobby) SetSettings(caller string, f Filter) error {
 	if caller != l.Host {
 		return ErrNotHost
 	}
-	if !useChampions && !useItems {
-		return invalid("At least one of champions or items must be enabled.")
+	if l.GameStarted {
+		return invalid("Settings can only be changed in the lobby.")
+	}
+	if err := f.Validate(); err != nil {
+		return err
+	}
+	l.Settings = f
+	return nil
+}
+
+func (l *Lobby) Start(caller string, rng *rand.Rand, c *Catalog) error {
+	if caller != l.Host {
+		return ErrNotHost
+	}
+	if err := l.Settings.Validate(); err != nil {
+		return err
 	}
 	// A double tap on "Start Game" is not an error.
 	if l.GameStarted {
@@ -234,7 +260,10 @@ func (l *Lobby) Start(caller string, useChampions, useItems bool, rng *rand.Rand
 		return invalid("Need at least 3 players.")
 	}
 
-	word, isChampion := DrawWord(useChampions, useItems, rng, words)
+	word, isChampion, err := DrawWord(l.Settings.Normalized(c), rng, c)
+	if err != nil {
+		return err
+	}
 	order, undercover := DrawRoles(l.Players, rng)
 
 	l.clearGame()
