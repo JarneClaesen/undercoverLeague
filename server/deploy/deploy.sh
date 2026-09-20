@@ -24,6 +24,9 @@ cp -r build/web server/web
 echo "==> uploading and building on the server"
 tar -C server -czf - --exclude='*.db' --exclude='*.db-*' . |
   ssh hetzner 'set -e
+    # Start from an empty tree: tar never deletes, so files removed here
+    # would otherwise linger on the box and break the Go build.
+    rm -rf /opt/undercover
     mkdir -p /opt/undercover
     tar -xzf - -C /opt/undercover
     cd /opt/undercover/deploy
