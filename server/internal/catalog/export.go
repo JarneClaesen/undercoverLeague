@@ -15,7 +15,8 @@ type Export struct {
 	Seasons   game.SeasonRange `json:"seasons"`
 	Classes   []string         `json:"classes"`
 	Regions   []string         `json:"regions"`
-	Champions []game.Champion  `json:"champions"`
+	Resources []string         `json:"resources"` // resource buckets present; the other three enums are fixed
+	Champions []game.Champion  `json:"champions"` // each with range, resource, damage and difficulty
 	Items     []ExportItem     `json:"items"`
 	Spells    []game.Entry     `json:"spells"`
 	Runes     []game.Entry     `json:"runes"`
@@ -38,7 +39,7 @@ func (s *Service) Export() Export {
 	c := s.Current()
 	st := s.Status()
 	e := Export{
-		Patch: st.Patch, Source: st.Source, Classes: []string{}, Regions: []string{},
+		Patch: st.Patch, Source: st.Source, Classes: []string{}, Regions: []string{}, Resources: []string{},
 		Champions: []game.Champion{}, Items: []ExportItem{},
 		Spells: []game.Entry{}, Runes: []game.Entry{}, Abilities: []game.Entry{}, SkinLines: []game.Entry{}, Monsters: []game.Entry{},
 	}
@@ -50,7 +51,7 @@ func (s *Service) Export() Export {
 		return e
 	}
 	e.Seasons = c.SeasonRange()
-	e.Classes, e.Regions = c.Classes(), c.Regions()
+	e.Classes, e.Regions, e.Resources = c.Classes(), c.Regions(), c.Resources()
 	e.Champions = c.Champions
 	for _, it := range c.Items {
 		e.Items = append(e.Items, ExportItem{Name: it.Name, Icon: it.Icon, Seasons: it.Seasons.Seasons(), Tier: it.Tier, From: it.From, Into: it.Into, Gold: it.Gold})

@@ -132,13 +132,80 @@ func importChampions(base string, raw map[string]rawChampionFull, season func(id
 		if ch.ID == "" || name == "" {
 			continue
 		}
-		out = append(out, game.Champion{
+		c := game.Champion{
 			Name: name, Icon: ChampionArt(base, ch.ID), Season: season(ch.ID),
 			Tags: slices.Clone(ch.Tags), Region: region(ch.ID), ID: ch.ID,
-		})
+		}
+		c.Range, c.Resource, c.Damage, c.Difficulty = classifyChampion(ch)
+		out = append(out, c)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
+}
+
+// rangedFrom is the base attack range from which a champion counts as
+// ranged. Melee champions sit at 125-225; the shortest ranged one (Rakan)
+// has 300. Lillia (325) is the one champion this misfiles, since Riot's
+// own melee/ranged flag is not in Data Dragon.
+const rangedFrom = 300
+
+// damageLean is how far info.attack must exceed info.magic (or the
+// reverse) for a champion to count as physical (magic) rather than mixed.
+// Riven (8/1) and Zed (9/1) are physical, Ahri (3/8) and Lux (2/9) magic,
+// Jax (7/7), Kayle (6/7) and Corki (8/6) mixed; 3 splits the roster into
+// roughly 70 physical, 60 magic and 40 mixed.
+const damageLean = 3
+
+// classifyChampion buckets a champion by attack range, resource bar and
+// Riot's 0-10 attack/magic/difficulty ratings:
+//
+//	range:      attackrange >= rangedFrom -> ranged, else melee
+//	resource:   Mana -> mana, Energy -> energy, None or "" -> none,
+//	            anything else (Fury, Rage, Heat, Grit, Flow, ...) -> other
+//	damage:     attack - magic >= damageLean -> physical,
+//	            <= -damageLean -> magic, else mixed
+//	difficulty: 1-3 easy, 4-6 medium, 7-10 hard
+//
+// Damage and difficulty are "" when the ratings are all zero (Akshan,
+// Rell, Seraphine and Vex ship without them): such a champion is left out
+// of those filters when they are active, exactly like a champion whose
+// region is unknown.
+func classifyChampion(ch rawChampionFull) (rng, resource, damage, difficulty string) {
+	rng = game.RangeMelee
+	if ch.Stats.AttackRange >= rangedFrom {
+		rng = game.RangeRanged
+	}
+	switch strings.ToLower(strings.TrimSpace(ch.Partype)) {
+	case "mana":
+		resource = game.ResourceMana
+	case "energy":
+		resource = game.ResourceEnergy
+	case "none", "":
+		resource = game.ResourceNone
+	default:
+		resource = game.ResourceOther
+	}
+	if ch.Info.Attack == 0 && ch.Info.Magic == 0 && ch.Info.Difficulty == 0 {
+		return rng, resource, "", ""
+	}
+	switch lean := ch.Info.Attack - ch.Info.Magic; {
+	case lean >= damageLean:
+		damage = game.DamagePhysical
+	case lean <= -damageLean:
+		damage = game.DamageMagic
+	default:
+		damage = game.DamageMixed
+	}
+	switch d := ch.Info.Difficulty; {
+	case d <= 0:
+	case d <= 3:
+		difficulty = game.DifficultyEasy
+	case d <= 6:
+		difficulty = game.DifficultyMedium
+	default:
+		difficulty = game.DifficultyHard
+	}
+	return rng, resource, damage, difficulty
 }
 
 // importAbilities lists every champion's passive and four spells as

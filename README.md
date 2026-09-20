@@ -53,10 +53,18 @@ fetched by the server at start and every 12 h, so a new champion shows up
 without an app release; the monsters pack is a static list. Pictures are
 Data Dragon URLs (loading-screen art for champions, versioned item icons,
 so removed items keep theirs). The host picks the packs and filters the
-pool per lobby: champions by release season, class and region (also
-narrowing the abilities pack), items by the seasons they were in the
-Summoner's Rift shop (S3 = 2013 is the oldest Data Dragon has) and by
-tier (starter, consumables & trinkets, boots, components, legendary).
+pool per lobby: champions by release season, class, region, range
+(melee / ranged), resource (mana / energy / manaless / fury & other),
+damage type (physical / magic / mixed) and difficulty (easy / medium /
+hard) — all of which also narrow the abilities pack — and items by the
+seasons they were in the Summoner's Rift shop (S3 = 2013 is the oldest
+Data Dragon has) and by tier (starter, consumables & trinkets, boots,
+components, legendary). The four champion buckets come straight from
+`championFull.json`: range from the base attack range (300 and up is
+ranged), resource from `partype`, damage from Riot's attack vs. magic
+ratings (a lead of 3 or more decides, else mixed) and difficulty from
+its 1–10 rating (1–3, 4–6, 7–10); the handful of champions Riot ships
+without ratings have no damage or difficulty bucket.
 Everyone in the lobby sees the settings and the resulting counts; the
 host's last choice is remembered on the device. Each day `/daily` (and
 the lobby view) offers a themed preset picked from the catalog by date.

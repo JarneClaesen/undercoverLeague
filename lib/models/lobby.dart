@@ -164,12 +164,13 @@ class Lobby {
   final GameSettings settings;
 
   /// Only present in the lobby phase: what [settings] can draw from, which
-  /// seasons the sliders may span, the classes and regions in the catalog
-  /// and today's theme.
+  /// seasons the sliders may span, the classes, regions and resource
+  /// buckets in the catalog and today's theme.
   final PoolSize? poolSize;
   final SeasonRange? seasonRange;
   final List<String> classes;
   final List<String> regions;
+  final List<String> resources;
   final DailyTheme? dailyTheme;
 
   /// Lobby-lifetime scoreboard and achievements (player -> ...).
@@ -219,6 +220,7 @@ class Lobby {
     this.seasonRange,
     this.classes = const [],
     this.regions = const [],
+    this.resources = const [],
     this.dailyTheme,
     this.scores = const {},
     this.gamesPlayed = 0,
@@ -266,6 +268,7 @@ class Lobby {
       seasonRange: json['seasonRange'] is Map ? SeasonRange.fromJson((json['seasonRange'] as Map).cast()) : null,
       classes: _strings(json['classes']),
       regions: _strings(json['regions']),
+      resources: _strings(json['resources']),
       dailyTheme: json['dailyTheme'] is Map ? DailyTheme.fromJson((json['dailyTheme'] as Map).cast()) : null,
       scores: {for (final e in _map<Object?>(json['scores']).entries) e.key: _int(e.value)},
       gamesPlayed: _int(json['gamesPlayed']),

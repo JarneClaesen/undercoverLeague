@@ -78,9 +78,18 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
   swaps it. Icons are https URLs; only `assets/default_icon.jpg` is bundled.
 - Packs: `champions items spells runes abilities skinlines monsters`
   (`game.AllPacks`). `Filter{packs, champSeasons, itemSeasons, itemTiers,
-  champClasses, champRegions}`; legacy `useChampions/useItems` JSON is mapped
-  onto `packs` by `Filter.UnmarshalJSON`. Zero season bounds mean "all";
-  `itemTiers` null = all, `[]` = none; classes/regions empty = all.
+  champClasses, champRegions, champRanges, champResources, champDamage,
+  champDifficulty}`; legacy `useChampions/useItems` JSON is mapped onto
+  `packs` by `Filter.UnmarshalJSON`. Zero season bounds mean "all";
+  `itemTiers` null = all, `[]` = none; every champion list empty = all.
+  The four bucket lists take the fixed enums `game.AllRanges` (`melee
+  ranged`), `AllResources` (`mana energy none other`), `AllDamages`
+  (`physical magic mixed`) and `AllDifficulties` (`easy medium hard`),
+  matched case-insensitively and echoed back canonical. Each `Champion`
+  carries `range resource damage difficulty`, set by
+  `catalog.classifyChampion` from `championFull.json` (`damage` and
+  `difficulty` are `""` for the few champions without Riot ratings, which
+  then match no damage/difficulty filter).
 - `game.Settings` embeds `Filter` (JSON flattened) plus `undercovers` (>= 1),
   `mrWhites` (needs `decoyWord`), `decoyWord`, `randomOrder` (default false;
   `Settings.UnmarshalJSON` exists because the embedded Filter's would
@@ -89,7 +98,9 @@ CanvasKit comes from gstatic under an engine-revision URL, so it needs no handli
   the lobby; `Start` also requires `2*(undercovers+mrWhites) < active players`.
   `lib/models/game_settings.dart` mirrors this.
 - The view carries `settings` (normalized) and, in the lobby phase only,
-  `poolSize` (`{pack: count}`), `seasonRange`, `classes`, `regions` and
+  `poolSize` (`{pack: count}`), `seasonRange`, `classes`, `regions`,
+  `resources` (the resource buckets present, in `AllResources` order; the
+  other three enums are fixed so the client hard-codes them) and
   `dailyTheme` (`{id,title,description,filter}`, also at `GET /daily`).
 - Roles: `Civilian | Undercover | MrWhite | Spectator`. Undercovers get the
   decoy (`myWord` + `myDecoy: true`) when `decoyWord`, else nothing; Mr. White

@@ -11,17 +11,22 @@ import (
 // sent to every player. Zero season bounds mean "no bound" and are filled
 // in from the catalog by Normalized, so a lobby saved before filters
 // existed keeps drawing from everything. A nil ItemTiers means every tier;
-// an empty non-nil slice means none. Classes and regions are the opposite:
-// nil or empty means every class/region. Seasons apply to champions and
-// items; seasons, classes and regions also reach the abilities pack
-// through the champion each ability belongs to.
+// an empty non-nil slice means none. The champion lists (classes, regions,
+// ranges, resources, damage, difficulty) are the opposite: nil or empty
+// means every value. Seasons apply to champions and items; every champion
+// filter also reaches the abilities pack through the champion each ability
+// belongs to.
 type Filter struct {
-	Packs        []Pack   `json:"packs"`        // enabled packs; nil on old rows (see UnmarshalJSON)
-	ChampSeasons [2]int   `json:"champSeasons"` // inclusive [lo, hi]
-	ItemSeasons  [2]int   `json:"itemSeasons"`
-	ItemTiers    []Tier   `json:"itemTiers"`
-	ChampClasses []string `json:"champClasses"` // Data Dragon tags, see AllClasses
-	ChampRegions []string `json:"champRegions"` // see AllRegions
+	Packs           []Pack   `json:"packs"`        // enabled packs; nil on old rows (see UnmarshalJSON)
+	ChampSeasons    [2]int   `json:"champSeasons"` // inclusive [lo, hi]
+	ItemSeasons     [2]int   `json:"itemSeasons"`
+	ItemTiers       []Tier   `json:"itemTiers"`
+	ChampClasses    []string `json:"champClasses"`    // Data Dragon tags, see AllClasses
+	ChampRegions    []string `json:"champRegions"`    // see AllRegions
+	ChampRanges     []string `json:"champRanges"`     // see AllRanges
+	ChampResources  []string `json:"champResources"`  // see AllResources
+	ChampDamage     []string `json:"champDamage"`     // see AllDamages
+	ChampDifficulty []string `json:"champDifficulty"` // see AllDifficulties
 }
 
 func DefaultFilter() Filter {
@@ -91,12 +96,27 @@ func (f Filter) Validate() error {
 			return invalid("Unknown region: " + r)
 		}
 	}
+	for _, e := range []struct {
+		list, all []string
+		what      string
+	}{
+		{f.ChampRanges, AllRanges, "range"},
+		{f.ChampResources, AllResources, "resource"},
+		{f.ChampDamage, AllDamages, "damage type"},
+		{f.ChampDifficulty, AllDifficulties, "difficulty"},
+	} {
+		for _, v := range e.list {
+			if !containsFold(e.all, v) {
+				return invalid("Unknown champion " + e.what + ": " + v)
+			}
+		}
+	}
 	return nil
 }
 
 // Normalized fills unbounded seasons from the catalog, clamps the rest
 // into it, sorts/dedupes packs and tiers (nil tiers -> all, nil packs ->
-// the default) and canonicalizes classes and regions (never nil). The
+// the default) and canonicalizes the champion lists (never nil). The
 // result is what the view carries, so clients always see concrete values.
 func (f Filter) Normalized(c *Catalog) Filter {
 	out := f
@@ -120,6 +140,10 @@ func (f Filter) Normalized(c *Catalog) Filter {
 	}
 	out.ChampClasses = canonicalFold(f.ChampClasses, AllClasses)
 	out.ChampRegions = canonicalFold(f.ChampRegions, AllRegions)
+	out.ChampRanges = canonicalFold(f.ChampRanges, AllRanges)
+	out.ChampResources = canonicalFold(f.ChampResources, AllResources)
+	out.ChampDamage = canonicalFold(f.ChampDamage, AllDamages)
+	out.ChampDifficulty = canonicalFold(f.ChampDifficulty, AllDifficulties)
 	return out
 }
 

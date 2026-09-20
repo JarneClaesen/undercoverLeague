@@ -41,14 +41,31 @@ type rawChampion struct {
 }
 
 // rawChampionFull is one entry of championFull.json: the champion list
-// plus, per champion, classes, abilities and skins in a single file.
+// plus, per champion, classes, ratings, base stats, abilities and skins in
+// a single file.
 type rawChampionFull struct {
 	ID      string     `json:"id"`
 	Name    string     `json:"name"`
-	Tags    []string   `json:"tags"` // Fighter, Mage, ... primary first
+	Tags    []string   `json:"tags"`    // Fighter, Mage, ... primary first
+	Partype string     `json:"partype"` // resource bar: Mana, Energy, None, Fury, ...
+	Info    rawInfo    `json:"info"`
+	Stats   rawStats   `json:"stats"`
 	Spells  []rawSpell `json:"spells"`
 	Passive rawSpell   `json:"passive"`
 	Skins   []rawSkin  `json:"skins"`
+}
+
+// rawInfo is Riot's 0-10 champion ratings (the bars on the collection
+// page). A few champions ship with all zeros.
+type rawInfo struct {
+	Attack     int `json:"attack"`
+	Defense    int `json:"defense"`
+	Magic      int `json:"magic"`
+	Difficulty int `json:"difficulty"`
+}
+
+type rawStats struct {
+	AttackRange float64 `json:"attackrange"` // base auto-attack range
 }
 
 type rawSpell struct {

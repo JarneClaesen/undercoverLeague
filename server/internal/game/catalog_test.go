@@ -8,9 +8,10 @@ import (
 	"time"
 )
 
-// testCatalog is a small hand-built pool covering the season, tier, class
-// and region combinations the filter tests need. Names are unique across
-// packs.
+// testCatalog is a small hand-built pool covering the season, tier, class,
+// region, range, resource, damage and difficulty combinations the filter
+// tests need. Names are unique across packs. Yunara has no damage or
+// difficulty, like the few champions Data Dragon ships without ratings.
 func testCatalog() *Catalog {
 	set := func(seasons ...int) SeasonSet {
 		var s SeasonSet
@@ -22,12 +23,18 @@ func testCatalog() *Catalog {
 	c := &Catalog{
 		Patch: "16.18.1",
 		Champions: []Champion{
-			{Name: "Annie", Icon: "https://x/Annie_0.jpg", Season: 1, Tags: []string{"Mage"}, Region: "Noxus", ID: "Annie"},
-			{Name: "Ahri", Icon: "https://x/Ahri_0.jpg", Season: 1, Tags: []string{"Mage", "Assassin"}, Region: "Ionia", ID: "Ahri"},
-			{Name: "Aatrox", Icon: "https://x/Aatrox_0.jpg", Season: 3, Tags: []string{"Fighter"}, Region: "Runeterra", ID: "Aatrox"},
-			{Name: "Zoe", Icon: "https://x/Zoe_0.jpg", Season: 7, Tags: []string{"Mage", "Support"}, Region: "Targon", ID: "Zoe"},
-			{Name: "Mel", Icon: "https://x/Mel_0.jpg", Season: 15, Tags: []string{"Mage", "Support"}, Region: "Noxus", ID: "Mel"},
-			{Name: "Yunara", Icon: "https://x/Yunara_0.jpg", Season: 16, Tags: []string{"Marksman", "Support"}, Region: "Ionia", ID: "Yunara"},
+			{Name: "Annie", Icon: "https://x/Annie_0.jpg", Season: 1, Tags: []string{"Mage"}, Region: "Noxus", ID: "Annie",
+				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyEasy},
+			{Name: "Ahri", Icon: "https://x/Ahri_0.jpg", Season: 1, Tags: []string{"Mage", "Assassin"}, Region: "Ionia", ID: "Ahri",
+				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyMedium},
+			{Name: "Aatrox", Icon: "https://x/Aatrox_0.jpg", Season: 3, Tags: []string{"Fighter"}, Region: "Runeterra", ID: "Aatrox",
+				Range: RangeMelee, Resource: ResourceOther, Damage: DamagePhysical, Difficulty: DifficultyMedium},
+			{Name: "Zoe", Icon: "https://x/Zoe_0.jpg", Season: 7, Tags: []string{"Mage", "Support"}, Region: "Targon", ID: "Zoe",
+				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyHard},
+			{Name: "Mel", Icon: "https://x/Mel_0.jpg", Season: 15, Tags: []string{"Mage", "Support"}, Region: "Noxus", ID: "Mel",
+				Range: RangeRanged, Resource: ResourceMana, Damage: DamageMagic, Difficulty: DifficultyMedium},
+			{Name: "Yunara", Icon: "https://x/Yunara_0.jpg", Season: 16, Tags: []string{"Marksman", "Support"}, Region: "Ionia", ID: "Yunara",
+				Range: RangeRanged, Resource: ResourceMana},
 		},
 		Items: []Item{
 			{Name: "Doran's Blade", Icon: "https://x/1055.png", Seasons: set(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Tier: TierStarter, Gold: 450},
@@ -95,6 +102,13 @@ func TestCatalogRanges(t *testing.T) {
 	if got := empty.Classes(); len(got) != 0 {
 		t.Errorf("empty classes %v", got)
 	}
+	// Resources come in AllResources order and only list what is present.
+	if got := c.Resources(); !slices.Equal(got, []string{ResourceMana, ResourceOther}) {
+		t.Errorf("resources %v", got)
+	}
+	if got := empty.Resources(); got == nil || len(got) != 0 {
+		t.Errorf("empty resources %#v", got)
+	}
 }
 
 func TestSeasonSet(t *testing.T) {
@@ -134,6 +148,19 @@ func TestPoolSize(t *testing.T) {
 		{"ionia", Filter{Packs: packs(PackChampions, PackAbilities), ChampRegions: []string{"Ionia"}}, PoolSize{PackChampions: 2, PackAbilities: 2}},
 		{"noxus mages before S10", Filter{Packs: packs(PackChampions, PackAbilities), ChampRegions: []string{"Noxus"}, ChampClasses: []string{"Mage"}, ChampSeasons: [2]int{1, 10}}, PoolSize{PackChampions: 1, PackAbilities: 1}},
 		{"champion filters do not touch other packs", Filter{Packs: packs(PackSpells, PackRunes, PackSkinLines, PackMonsters), ChampSeasons: [2]int{2, 2}, ChampRegions: []string{"Void"}}, PoolSize{PackSpells: 2, PackRunes: 4, PackSkinLines: 2, PackMonsters: 4}},
+		{"melee", Filter{Packs: packs(PackChampions, PackAbilities), ChampRanges: []string{"Melee"}}, PoolSize{PackChampions: 1, PackAbilities: 0}},
+		{"ranged", Filter{Packs: packs(PackChampions), ChampRanges: []string{"ranged"}}, PoolSize{PackChampions: 5}},
+		{"both ranges is everything", Filter{Packs: packs(PackChampions), ChampRanges: []string{"melee", "ranged"}}, PoolSize{PackChampions: 6}},
+		{"mana", Filter{Packs: packs(PackChampions, PackAbilities), ChampResources: []string{"mana"}}, PoolSize{PackChampions: 5, PackAbilities: 4}},
+		{"energy (none in the fixture)", Filter{Packs: packs(PackChampions), ChampResources: []string{"energy"}}, PoolSize{PackChampions: 0}},
+		{"other or none", Filter{Packs: packs(PackChampions), ChampResources: []string{"none", "other"}}, PoolSize{PackChampions: 1}},
+		{"magic", Filter{Packs: packs(PackChampions, PackAbilities), ChampDamage: []string{"magic"}}, PoolSize{PackChampions: 4, PackAbilities: 4}},
+		{"physical", Filter{Packs: packs(PackChampions), ChampDamage: []string{"physical"}}, PoolSize{PackChampions: 1}},
+		{"unrated champion matches no damage", Filter{Packs: packs(PackChampions), ChampDamage: []string{"physical", "magic", "mixed"}}, PoolSize{PackChampions: 5}},
+		{"medium", Filter{Packs: packs(PackChampions), ChampDifficulty: []string{"medium"}}, PoolSize{PackChampions: 3}},
+		{"easy or hard", Filter{Packs: packs(PackChampions, PackAbilities), ChampDifficulty: []string{"hard", "easy"}}, PoolSize{PackChampions: 2, PackAbilities: 2}},
+		{"ranged mana mages of medium difficulty from Noxus", Filter{Packs: packs(PackChampions), ChampRanges: []string{"ranged"}, ChampResources: []string{"mana"}, ChampClasses: []string{"Mage"}, ChampDifficulty: []string{"medium"}, ChampRegions: []string{"Noxus"}}, PoolSize{PackChampions: 1}},
+		{"melee magic is nobody", Filter{Packs: packs(PackChampions), ChampRanges: []string{"melee"}, ChampDamage: []string{"magic"}}, PoolSize{PackChampions: 0}},
 	}
 	for _, tc := range cases {
 		got := c.PoolSize(tc.f.Normalized(c))
@@ -264,10 +291,27 @@ func TestThemes(t *testing.T) {
 	if _, ok := ids["class-fighter"]; ok {
 		t.Error("fighter day offered although no fighter has abilities")
 	}
-	for _, want := range []string{"class-mage", "class-assassin", "class-support", "og", "fresh", "boots", "components", "spells", "runes", "jungle", "fashion"} {
+	for _, want := range []string{"class-mage", "class-assassin", "class-support", "ranged", "spellbound", "easy", "hard", "og", "fresh", "boots", "components", "spells", "runes", "jungle", "fashion"} {
 		if _, ok := ids[want]; !ok {
 			t.Errorf("missing theme %s in %v", want, sortedKeys(boolKeys(ids)))
 		}
+	}
+	// Bucket days whose abilities pack would be empty (the only melee and
+	// physical champion, Aatrox, has none) or that have too few champions
+	// (energy needs five, and nobody is manaless) are dropped too.
+	for _, unwanted := range []string{"melee", "steel", "energy", "manaless"} {
+		if _, ok := ids[unwanted]; ok {
+			t.Errorf("unexpected theme %s", unwanted)
+		}
+	}
+	if th := ids["ranged"]; !slices.Equal(th.Filter.Packs, []Pack{PackChampions, PackAbilities}) || !slices.Equal(th.Filter.ChampRanges, []string{RangeRanged}) || th.Title != "Ranged day" {
+		t.Errorf("ranged day %+v", th)
+	}
+	if th := ids["hard"]; !slices.Equal(th.Filter.ChampDifficulty, []string{DifficultyHard}) || th.Title != "Hard mode" {
+		t.Errorf("hard mode %+v", th)
+	}
+	if th := ids["spellbound"]; !slices.Equal(th.Filter.ChampDamage, []string{DamageMagic}) {
+		t.Errorf("spellbound %+v", th)
 	}
 	// Season 16 alone has one champion, so Fresh reaches back until it
 	// has five: S3-S16 is only four (Aatrox, Zoe, Mel, Yunara), so it ends
@@ -301,6 +345,33 @@ func TestThemes(t *testing.T) {
 	}
 	if noxus == nil || noxus.Title != "Noxus Day" || !slices.Equal(noxus.Filter.ChampRegions, []string{"Noxus"}) {
 		t.Errorf("noxus day %+v", noxus)
+	}
+
+	// Five energy champions with abilities make an Energy day; four do not.
+	energy := testCatalog()
+	for i, n := range []string{"Zed", "Akali", "Shen", "Kennen", "Lee Sin"} {
+		energy.Champions = append(energy.Champions, Champion{Name: n, Season: 1, Tags: []string{"Assassin"}, Range: RangeMelee, Resource: ResourceEnergy, Damage: DamagePhysical, Difficulty: DifficultyHard})
+		energy.Abilities = append(energy.Abilities, Entry{Name: "Q (" + n + ")", Group: n, Champion: n, Season: 1})
+		if i == 3 {
+			if slices.ContainsFunc(energy.Themes(), func(t Theme) bool { return t.ID == "energy" }) {
+				t.Error("energy day with four champions")
+			}
+		}
+	}
+	var energyDay *Theme
+	for _, th := range energy.Themes() {
+		if th.ID == "energy" {
+			energyDay = &th
+		}
+	}
+	if energyDay == nil || energyDay.Title != "Energy day" || !slices.Equal(energyDay.Filter.ChampResources, []string{ResourceEnergy}) {
+		t.Errorf("energy day %+v", energyDay)
+	}
+	// ... and now melee and physical champions have abilities too.
+	for _, want := range []string{"melee", "steel"} {
+		if !slices.ContainsFunc(energy.Themes(), func(t Theme) bool { return t.ID == want }) {
+			t.Errorf("missing theme %s", want)
+		}
 	}
 
 	// A catalog without the new packs drops the themes that need them.

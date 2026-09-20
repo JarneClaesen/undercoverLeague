@@ -27,6 +27,14 @@ class GameSettings {
   /// Runeterra regions to keep; empty means every region.
   final Set<String> champRegions;
 
+  /// Fixed buckets the server derives from Data Dragon, see [ChampionRange],
+  /// [ChampionResource], [ChampionDamage] and [ChampionDifficulty]; empty
+  /// means every value.
+  final Set<String> champRanges;
+  final Set<String> champResources;
+  final Set<String> champDamage;
+  final Set<String> champDifficulty;
+
   // --- Rules ----------------------------------------------------------------
 
   /// Players who get a decoy word (or nothing); at least 1.
@@ -58,6 +66,10 @@ class GameSettings {
     this.itemTiers = const {...ItemTier.all},
     this.champClasses = const {},
     this.champRegions = const {},
+    this.champRanges = const {},
+    this.champResources = const {},
+    this.champDamage = const {},
+    this.champDifficulty = const {},
     this.undercovers = 1,
     this.mrWhites = 0,
     this.decoyWord = false,
@@ -81,6 +93,10 @@ class GameSettings {
       itemTiers: tiers == null ? {...ItemTier.all} : _stringSet(tiers),
       champClasses: _stringSet(json['champClasses']),
       champRegions: _stringSet(json['champRegions']),
+      champRanges: _stringSet(json['champRanges']),
+      champResources: _stringSet(json['champResources']),
+      champDamage: _stringSet(json['champDamage']),
+      champDifficulty: _stringSet(json['champDifficulty']),
       undercovers: undercovers < 1 ? 1 : undercovers,
       mrWhites: (json['mrWhites'] as num?)?.toInt() ?? 0,
       decoyWord: json['decoyWord'] as bool? ?? false,
@@ -110,6 +126,10 @@ class GameSettings {
         'itemTiers': ItemTier.all.where(itemTiers.contains).toList(),
         'champClasses': champClasses.toList()..sort(),
         'champRegions': champRegions.toList()..sort(),
+        'champRanges': ChampionRange.all.where(champRanges.contains).toList(),
+        'champResources': ChampionResource.all.where(champResources.contains).toList(),
+        'champDamage': ChampionDamage.all.where(champDamage.contains).toList(),
+        'champDifficulty': ChampionDifficulty.all.where(champDifficulty.contains).toList(),
         'undercovers': undercovers,
         'mrWhites': mrWhites,
         'decoyWord': decoyWord,
@@ -123,8 +143,13 @@ class GameSettings {
   bool get useItems => packs.contains(WordPack.items);
   bool get useAbilities => packs.contains(WordPack.abilities);
 
-  /// Whether the champion-only filters (seasons, classes, regions) matter.
+  /// Whether the champion-only filters (seasons, classes, regions and the
+  /// four buckets) matter.
   bool get filtersChampions => useChampions || useAbilities;
+
+  /// How many of the champion chip filters are narrowing the pool.
+  int get activeChampionFilters =>
+      champClasses.length + champRegions.length + champRanges.length + champResources.length + champDamage.length + champDifficulty.length;
 
   /// Impostors per game: the Undercovers plus Mr. Whites.
   int get impostors => undercovers + mrWhites;
@@ -136,6 +161,10 @@ class GameSettings {
     Set<String>? itemTiers,
     Set<String>? champClasses,
     Set<String>? champRegions,
+    Set<String>? champRanges,
+    Set<String>? champResources,
+    Set<String>? champDamage,
+    Set<String>? champDifficulty,
     int? undercovers,
     int? mrWhites,
     bool? decoyWord,
@@ -151,6 +180,10 @@ class GameSettings {
         itemTiers: itemTiers ?? this.itemTiers,
         champClasses: champClasses ?? this.champClasses,
         champRegions: champRegions ?? this.champRegions,
+        champRanges: champRanges ?? this.champRanges,
+        champResources: champResources ?? this.champResources,
+        champDamage: champDamage ?? this.champDamage,
+        champDifficulty: champDifficulty ?? this.champDifficulty,
         undercovers: undercovers ?? this.undercovers,
         mrWhites: mrWhites ?? this.mrWhites,
         decoyWord: decoyWord ?? this.decoyWord,
@@ -161,8 +194,8 @@ class GameSettings {
       );
 
   /// These settings with the word-pool half replaced by [filter]'s (packs,
-  /// seasons, tiers, classes, regions); the rules stay. Used to apply a
-  /// preset or the daily theme, which only describe a pool.
+  /// seasons, tiers, classes, regions, buckets); the rules stay. Used to apply the
+  /// daily theme, which only describes a pool.
   GameSettings withFilterOf(GameSettings filter) => copyWith(
         packs: filter.packs,
         champSeasons: filter.champSeasons,
@@ -170,6 +203,10 @@ class GameSettings {
         itemTiers: filter.itemTiers,
         champClasses: filter.champClasses,
         champRegions: filter.champRegions,
+        champRanges: filter.champRanges,
+        champResources: filter.champResources,
+        champDamage: filter.champDamage,
+        champDifficulty: filter.champDifficulty,
       );
 
   /// Clamps both ranges into what the catalog offers, so defaults saved
@@ -220,6 +257,10 @@ class GameSettings {
       _sameSet(other.itemTiers, itemTiers) &&
       _sameSet(other.champClasses, champClasses) &&
       _sameSet(other.champRegions, champRegions) &&
+      _sameSet(other.champRanges, champRanges) &&
+      _sameSet(other.champResources, champResources) &&
+      _sameSet(other.champDamage, champDamage) &&
+      _sameSet(other.champDifficulty, champDifficulty) &&
       other.undercovers == undercovers &&
       other.mrWhites == mrWhites &&
       other.decoyWord == decoyWord &&
@@ -236,6 +277,10 @@ class GameSettings {
         itemTiers.length,
         champClasses.length,
         champRegions.length,
+        champRanges.length,
+        champResources.length,
+        champDamage.length,
+        champDifficulty.length,
         undercovers,
         mrWhites,
         decoyWord,
@@ -324,7 +369,7 @@ class ItemTier {
 }
 
 /// Champion classes (Data Dragon tags) and regions the server knows; the
-/// live lists come with the lobby view, these are for presets and tests.
+/// live lists come with the lobby view, these are for tests.
 class ChampionClass {
   static const assassin = 'Assassin';
   static const fighter = 'Fighter';
@@ -334,6 +379,72 @@ class ChampionClass {
   static const tank = 'Tank';
 
   static const all = [assassin, fighter, mage, marksman, support, tank];
+}
+
+/// Melee or ranged, from the base attack range (300+ is ranged).
+class ChampionRange {
+  static const melee = 'melee';
+  static const ranged = 'ranged';
+
+  static const all = [melee, ranged];
+
+  static String label(String v) => switch (v) {
+        melee => 'Melee',
+        ranged => 'Ranged',
+        _ => v,
+      };
+}
+
+/// The resource bar, bucketed by the server; the buckets actually present
+/// in the catalog come with the lobby view (`resources`), since a catalog
+/// can lack energy champions.
+class ChampionResource {
+  static const mana = 'mana';
+  static const energy = 'energy';
+  static const none = 'none';
+  static const other = 'other';
+
+  static const all = [mana, energy, none, other];
+
+  static String label(String v) => switch (v) {
+        mana => 'Mana',
+        energy => 'Energy',
+        none => 'Manaless',
+        other => 'Fury & other',
+        _ => v,
+      };
+}
+
+/// Main damage type, from Riot's attack vs. magic ratings.
+class ChampionDamage {
+  static const physical = 'physical';
+  static const magic = 'magic';
+  static const mixed = 'mixed';
+
+  static const all = [physical, magic, mixed];
+
+  static String label(String v) => switch (v) {
+        physical => 'Physical',
+        magic => 'Magic',
+        mixed => 'Mixed',
+        _ => v,
+      };
+}
+
+/// Riot's 1-10 difficulty rating in three steps.
+class ChampionDifficulty {
+  static const easy = 'easy';
+  static const medium = 'medium';
+  static const hard = 'hard';
+
+  static const all = [easy, medium, hard];
+
+  static String label(String v) => switch (v) {
+        easy => 'Easy',
+        medium => 'Medium',
+        hard => 'Hard',
+        _ => v,
+      };
 }
 
 /// The turn-timer lengths the lobby offers, in seconds; 0 = off.

@@ -69,6 +69,40 @@ var AllRegions = []string{
 
 func ValidRegion(r string) bool { return slices.Contains(AllRegions, r) }
 
+// The four fixed champion buckets below are derived by the importer from
+// championFull.json (see catalog.classifyChampion); a champion has exactly
+// one of each, or "" when Data Dragon has no data for it (damage and
+// difficulty only). Validation is case-insensitive like classes/regions.
+const (
+	RangeMelee  = "melee"  // attack range under 300
+	RangeRanged = "ranged" // attack range 300 and up
+
+	ResourceMana   = "mana"
+	ResourceEnergy = "energy"
+	ResourceNone   = "none"  // manaless: Data Dragon "None" or ""
+	ResourceOther  = "other" // Fury, Rage, Heat, Grit, Flow, Blood Well, ...
+
+	DamagePhysical = "physical"
+	DamageMagic    = "magic"
+	DamageMixed    = "mixed"
+
+	DifficultyEasy   = "easy"   // info.difficulty 1-3
+	DifficultyMedium = "medium" // 4-6
+	DifficultyHard   = "hard"   // 7-10
+)
+
+var (
+	AllRanges       = []string{RangeMelee, RangeRanged}
+	AllResources    = []string{ResourceMana, ResourceEnergy, ResourceNone, ResourceOther}
+	AllDamages      = []string{DamagePhysical, DamageMagic, DamageMixed}
+	AllDifficulties = []string{DifficultyEasy, DifficultyMedium, DifficultyHard}
+)
+
+func ValidRange(s string) bool      { return containsFold(AllRanges, s) }
+func ValidResource(s string) bool   { return containsFold(AllResources, s) }
+func ValidDamage(s string) bool     { return containsFold(AllDamages, s) }
+func ValidDifficulty(s string) bool { return containsFold(AllDifficulties, s) }
+
 // SeasonSet is a bitmask of seasons (bit s = season s). Seasons are numbered
 // by year: S1 = 2011 ... S16 = 2026, which is also the Data Dragon major
 // version from S3 on.
@@ -110,6 +144,13 @@ type Champion struct {
 	Tags   []string `json:"tags,omitempty"`   // Data Dragon classes, primary first
 	Region string   `json:"region,omitempty"` // one of AllRegions, "" when unknown
 	ID     string   `json:"id,omitempty"`     // Data Dragon id, e.g. MonkeyKing
+
+	// Fixed buckets, see AllRanges etc. Damage and Difficulty are "" for
+	// the few champions Data Dragon ships without info ratings.
+	Range      string `json:"range,omitempty"`
+	Resource   string `json:"resource,omitempty"`
+	Damage     string `json:"damage,omitempty"`
+	Difficulty string `json:"difficulty,omitempty"`
 }
 
 type Item struct {
@@ -200,6 +241,24 @@ func (c *Catalog) Regions() []string {
 	return sortedKeys(set)
 }
 
+// Resources lists the resource buckets present, in AllResources order:
+// energy is rare enough that a filtered catalog can lack it entirely.
+func (c *Catalog) Resources() []string {
+	set := map[string]bool{}
+	for _, ch := range c.Champions {
+		if ch.Resource != "" {
+			set[ch.Resource] = true
+		}
+	}
+	out := []string{}
+	for _, r := range AllResources {
+		if set[r] {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
 func sortedKeys(set map[string]bool) []string {
 	out := make([]string, 0, len(set))
 	for k := range set {
@@ -209,8 +268,9 @@ func sortedKeys(set map[string]bool) []string {
 	return out
 }
 
-// FilterChampions returns the champions matching f's seasons, classes and
-// regions (whether or not the champions pack is enabled).
+// FilterChampions returns the champions matching f's seasons, classes,
+// regions, range, resource, damage and difficulty (whether or not the
+// champions pack is enabled).
 func (c *Catalog) FilterChampions(f Filter) []Champion {
 	var out []Champion
 	for _, ch := range c.Champions {
@@ -230,6 +290,18 @@ func (c *Catalog) champMatches(ch Champion, f Filter) bool {
 	}
 	if len(f.ChampRegions) > 0 && !containsFold(f.ChampRegions, ch.Region) {
 		return false
+	}
+	// The buckets: an unknown ("") damage or difficulty matches nothing
+	// once that filter is active, like an unknown region.
+	for _, b := range []struct {
+		want []string
+		have string
+	}{
+		{f.ChampRanges, ch.Range}, {f.ChampResources, ch.Resource}, {f.ChampDamage, ch.Damage}, {f.ChampDifficulty, ch.Difficulty},
+	} {
+		if len(b.want) > 0 && !containsFold(b.want, b.have) {
+			return false
+		}
 	}
 	return true
 }
@@ -526,19 +598,25 @@ type Theme struct {
 	Filter      Filter `json:"filter"`
 }
 
-// minRegionChampions is how many champions a region needs for its own day.
+// minRegionChampions is how many champions a region (or the energy
+// resource) needs for its own day.
 const minRegionChampions = 5
 
 // Themes lists every theme this catalog can play: one per region with
-// enough champions, one per class, and the fixed ones below. Themes whose
+// enough champions, one per class, one per range/resource/damage/
+// difficulty bucket worth a day, and the fixed ones below. Themes whose
 // packs would be empty (an old fallback without them) are left out so the
 // daily pick can always start a game.
 func (c *Catalog) Themes() []Theme {
 	var out []Theme
 	byRegion := map[string]int{}
+	energy := 0
 	for _, ch := range c.Champions {
 		if ch.Region != "" {
 			byRegion[ch.Region]++
+		}
+		if ch.Resource == ResourceEnergy {
+			energy++
 		}
 	}
 	for _, r := range c.Regions() {
@@ -570,7 +648,28 @@ func (c *Catalog) Themes() []Theme {
 	if fresh < current {
 		freshDesc = "Only champions released in Seasons " + strconv.Itoa(fresh) + " to " + strconv.Itoa(current) + "."
 	}
+	champs := []Pack{PackChampions, PackAbilities}
 	out = append(out,
+		Theme{ID: "melee", Title: "Melee day", Description: "Only melee champions and their abilities.",
+			Filter: Filter{Packs: champs, ChampRanges: []string{RangeMelee}}},
+		Theme{ID: "ranged", Title: "Ranged day", Description: "Only ranged champions and their abilities.",
+			Filter: Filter{Packs: champs, ChampRanges: []string{RangeRanged}}},
+	)
+	if energy >= minRegionChampions {
+		out = append(out, Theme{ID: "energy", Title: "Energy day", Description: "Only champions that run on energy, and their abilities.",
+			Filter: Filter{Packs: champs, ChampResources: []string{ResourceEnergy}}})
+	}
+	out = append(out,
+		Theme{ID: "manaless", Title: "Manaless day", Description: "Only champions with no resource bar, and their abilities.",
+			Filter: Filter{Packs: champs, ChampResources: []string{ResourceNone}}},
+		Theme{ID: "spellbound", Title: "Spellbound", Description: "Only magic-damage champions and their abilities.",
+			Filter: Filter{Packs: champs, ChampDamage: []string{DamageMagic}}},
+		Theme{ID: "steel", Title: "Steel & bone", Description: "Only physical-damage champions and their abilities.",
+			Filter: Filter{Packs: champs, ChampDamage: []string{DamagePhysical}}},
+		Theme{ID: "easy", Title: "Easy pickings", Description: "Only the easiest champions to pick up, and their abilities.",
+			Filter: Filter{Packs: champs, ChampDifficulty: []string{DifficultyEasy}}},
+		Theme{ID: "hard", Title: "Hard mode", Description: "Only the hardest champions to master, and their abilities.",
+			Filter: Filter{Packs: champs, ChampDifficulty: []string{DifficultyHard}}},
 		Theme{ID: "og", Title: "OG", Description: "Only champions released in Seasons 1 to 3.",
 			Filter: Filter{Packs: []Pack{PackChampions}, ChampSeasons: [2]int{1, 3}}},
 		Theme{ID: "fresh", Title: "Fresh", Description: freshDesc,

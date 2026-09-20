@@ -21,10 +21,12 @@ class LobbyFilters extends StatefulWidget {
   final SeasonRange? seasonRange;
   final PoolSize? poolSize;
 
-  /// Classes and regions present in the catalog (from the lobby view);
-  /// empty hides the matching chips.
+  /// Classes, regions and resource buckets present in the catalog (from
+  /// the lobby view); empty hides the matching chips. Range, damage and
+  /// difficulty are fixed lists.
   final List<String> classes;
   final List<String> regions;
+  final List<String> resources;
   final ValueChanged<GameSettings> onChanged;
 
   const LobbyFilters({
@@ -34,6 +36,7 @@ class LobbyFilters extends StatefulWidget {
     required this.poolSize,
     this.classes = const [],
     this.regions = const [],
+    this.resources = const [],
     required this.onChanged,
   });
 
@@ -69,8 +72,7 @@ class _LobbyFiltersState extends State<LobbyFilters> {
     final s = _current;
     final range = widget.seasonRange;
     final champFilters = s.filtersChampions;
-    final hasChampionChips = widget.classes.isNotEmpty || widget.regions.isNotEmpty;
-    final activeChampionFilters = s.champClasses.length + s.champRegions.length;
+    final activeChampionFilters = s.activeChampionFilters;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -127,7 +129,10 @@ class _LobbyFiltersState extends State<LobbyFilters> {
             ],
           ),
         ],
-        if (champFilters && hasChampionChips) ...[
+        // Range, damage and difficulty are fixed lists, so the section is
+        // always there; a catalog too old to carry them just counts nothing
+        // for those chips, which the pool size shows.
+        if (champFilters) ...[
           const SizedBox(height: 14),
           InkWell(
             onTap: () => setState(() => _championFiltersOpen = !_championFiltersOpen),
@@ -160,48 +165,49 @@ class _LobbyFiltersState extends State<LobbyFilters> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (widget.classes.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Classes · none selected means every class',
-                          style: textTheme.bodySmall?.copyWith(color: hextech.textSecondary),
+                      if (widget.classes.isNotEmpty)
+                        _ChipRow(
+                          hint: 'Classes · none selected means every class',
+                          values: widget.classes,
+                          selected: s.champClasses,
+                          onToggled: (c, on) => _commit(s.copyWith(champClasses: _toggled(s.champClasses, c, on))),
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final c in widget.classes)
-                              HextechChip(
-                                label: c,
-                                dense: true,
-                                selected: s.champClasses.contains(c),
-                                onSelected: (on) => _commit(s.copyWith(champClasses: _toggled(s.champClasses, c, on))),
-                              ),
-                          ],
+                      if (widget.regions.isNotEmpty)
+                        _ChipRow(
+                          hint: 'Regions · none selected means every region',
+                          values: widget.regions,
+                          selected: s.champRegions,
+                          onToggled: (r, on) => _commit(s.copyWith(champRegions: _toggled(s.champRegions, r, on))),
                         ),
-                      ],
-                      if (widget.regions.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          'Regions · none selected means every region',
-                          style: textTheme.bodySmall?.copyWith(color: hextech.textSecondary),
+                      _ChipRow(
+                        hint: 'Range · melee, ranged or both',
+                        values: ChampionRange.all,
+                        label: ChampionRange.label,
+                        selected: s.champRanges,
+                        onToggled: (v, on) => _commit(s.copyWith(champRanges: _toggled(s.champRanges, v, on))),
+                      ),
+                      if (widget.resources.isNotEmpty)
+                        _ChipRow(
+                          hint: 'Resource · what the champion runs on',
+                          values: widget.resources,
+                          label: ChampionResource.label,
+                          selected: s.champResources,
+                          onToggled: (v, on) => _commit(s.copyWith(champResources: _toggled(s.champResources, v, on))),
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final r in widget.regions)
-                              HextechChip(
-                                label: r,
-                                dense: true,
-                                selected: s.champRegions.contains(r),
-                                onSelected: (on) => _commit(s.copyWith(champRegions: _toggled(s.champRegions, r, on))),
-                              ),
-                          ],
-                        ),
-                      ],
+                      _ChipRow(
+                        hint: 'Damage · by Riot\'s attack and magic ratings',
+                        values: ChampionDamage.all,
+                        label: ChampionDamage.label,
+                        selected: s.champDamage,
+                        onToggled: (v, on) => _commit(s.copyWith(champDamage: _toggled(s.champDamage, v, on))),
+                      ),
+                      _ChipRow(
+                        hint: 'Difficulty · Riot\'s rating in three steps',
+                        values: ChampionDifficulty.all,
+                        label: ChampionDifficulty.label,
+                        selected: s.champDifficulty,
+                        onToggled: (v, on) => _commit(s.copyWith(champDifficulty: _toggled(s.champDifficulty, v, on))),
+                      ),
                     ],
                   )
                 : const SizedBox(width: double.infinity),
@@ -242,6 +248,52 @@ class LobbyPresetsRow extends StatelessWidget {
                   selected: false,
                   onSelected: (_) => onSelected(preset),
                 ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// One labelled row of multi-select chips inside the champion filters:
+/// a hint line, then a chip per value; none selected means every value.
+class _ChipRow extends StatelessWidget {
+  final String hint;
+  final List<String> values;
+  final String Function(String value)? label;
+  final Set<String> selected;
+  final void Function(String value, bool on) onToggled;
+
+  const _ChipRow({
+    required this.hint,
+    required this.values,
+    this.label,
+    required this.selected,
+    required this.onToggled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final hextech = context.hextech;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 10),
+        Text(hint, style: textTheme.bodySmall?.copyWith(color: hextech.textSecondary)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final v in values)
+              HextechChip(
+                label: label?.call(v) ?? v,
+                dense: true,
+                selected: selected.contains(v),
+                onSelected: (on) => onToggled(v, on),
               ),
           ],
         ),
@@ -381,9 +433,18 @@ class LobbyFiltersSummary extends StatelessWidget {
 
   static String describe(GameSettings s) {
     String range((int, int) r) => r.$1 == r.$2 ? 'S${r.$1}' : 'S${r.$1}–S${r.$2}';
+    // Classes and regions are proper nouns and read as they are; the
+    // buckets get their labels, lower-cased so "Mage, melee, hard" reads
+    // as one phrase.
+    String buckets(List<String> all, Set<String> picked, String Function(String) label) =>
+        all.where(picked.contains).map((v) => label(v).toLowerCase()).join('/');
     final champExtras = <String>[
       if (s.champClasses.isNotEmpty) (s.champClasses.toList()..sort()).join('/'),
       if (s.champRegions.isNotEmpty) (s.champRegions.toList()..sort()).join('/'),
+      if (s.champRanges.isNotEmpty) buckets(ChampionRange.all, s.champRanges, ChampionRange.label),
+      if (s.champResources.isNotEmpty) buckets(ChampionResource.all, s.champResources, ChampionResource.label),
+      if (s.champDamage.isNotEmpty) buckets(ChampionDamage.all, s.champDamage, ChampionDamage.label),
+      if (s.champDifficulty.isNotEmpty) buckets(ChampionDifficulty.all, s.champDifficulty, ChampionDifficulty.label),
     ];
     final champSuffix = champExtras.isEmpty ? '' : ' (${champExtras.join(', ')})';
     final parts = <String>[

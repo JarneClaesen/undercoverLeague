@@ -156,27 +156,33 @@ func TestImportItems(t *testing.T) {
 	}
 }
 
-// championsFull is a trimmed championFull.json: tags, spells, passive
-// and skins in the shapes the importer reads. Skin names cover the forms
-// the line heuristic must handle.
+// championsFull is a trimmed championFull.json: tags, partype, info,
+// stats, spells, passive and skins in the shapes the importer reads. Skin
+// names cover the forms the line heuristic must handle; info and stats are
+// the real values of patch 16.18 (Newbie's zeros are what Riot ships for
+// Akshan, Rell, Seraphine and Vex).
 const championsFull = `{"data":{
- "Ahri":{"id":"Ahri","name":"Ahri","tags":["Mage","Assassin"],
+ "Ahri":{"id":"Ahri","name":"Ahri","tags":["Mage","Assassin"],"partype":"Mana",
+   "info":{"attack":3,"defense":4,"magic":8,"difficulty":5},"stats":{"attackrange":550},
    "passive":{"name":"Essence Theft","image":{"full":"Ahri_SoulEater2.png"}},
    "spells":[{"name":"Orb of Deception","image":{"full":"AhriQ.png"}},{"name":"Fox-Fire","image":{"full":"AhriW.png"}},{"name":"Charm","image":{"full":"AhriE.png"}},{"name":"Spirit Rush","image":{"full":"AhriR.png"}}],
    "skins":[{"num":0,"name":"default"},{"num":1,"name":"Dynasty Ahri"},{"num":4,"name":"Star Guardian Ahri"},{"num":7,"name":"K/DA Ahri"},{"num":8,"name":"Prestige K/DA Ahri"},{"num":9,"name":"K/DA Ahri (2022)"},{"num":10,"name":"Ahri Snow Day"},{"num":11,"name":"Ahri's Fox Party"}]},
- "MonkeyKing":{"id":"MonkeyKing","name":"Wukong","tags":["Fighter","Tank"],
+ "MonkeyKing":{"id":"MonkeyKing","name":"Wukong","tags":["Fighter","Tank"],"partype":"Mana",
+   "info":{"attack":8,"defense":5,"magic":2,"difficulty":3},"stats":{"attackrange":175},
    "passive":{"name":"Stone Skin","image":{"full":"MonkeyKingStoneSkin.png"}},
    "spells":[{"name":"Crushing Blow","image":{"full":"MonkeyKingDoubleAttack.png"}},{"name":"Warrior Trickster","image":{"full":"MonkeyKingDecoy.png"}},{"name":"Nimbus Strike","image":{"full":"MonkeyKingNimbus.png"}},{"name":"Cyclone","image":{"full":"MonkeyKingSpinToWin.png"}}],
    "skins":[{"num":0,"name":"default"},{"num":3,"name":"Star Guardian Wukong"},{"num":6,"name":"Wukong Snow Day (Ruby)"},{"num":8,"name":"Radiant Wukong"}]},
- "MasterYi":{"id":"MasterYi","name":"Master Yi","tags":["Assassin","Fighter"],
+ "MasterYi":{"id":"MasterYi","name":"Master Yi","tags":["Assassin","Fighter"],"partype":"Mana",
+   "info":{"attack":10,"defense":4,"magic":2,"difficulty":4},"stats":{"attackrange":125},
    "passive":{"name":"Double Strike","image":{"full":"MasterYi_Passive1.png"}},
    "spells":[{"name":"Alpha Strike","image":{"full":"AlphaStrike.png"}},{"name":"Meditate","image":{"full":"Meditate.png"}},{"name":"Wuju Style","image":{"full":"WujuStyle.png"}},{"name":"Highlander","image":{"full":"Highlander.png"}}],
    "skins":[{"num":0,"name":"default"},{"num":5,"name":"PROJECT: Yi"},{"num":9,"name":"Snow Man Yi"},{"num":12,"name":"K/DA Master Yi"}]},
- "Blitzcrank":{"id":"Blitzcrank","name":"Blitzcrank","tags":["Tank","Support"],
+ "Blitzcrank":{"id":"Blitzcrank","name":"Blitzcrank","tags":["Tank","Support"],"partype":"Mana",
+   "info":{"attack":4,"defense":8,"magic":5,"difficulty":4},"stats":{"attackrange":125},
    "passive":{"name":"Mana Barrier","image":{"full":"Blitzcrank_ManaBarrier.png"}},
    "spells":[{"name":"Rocket Grab","image":{"full":"RocketGrab.png"}},{"name":"Overdrive","image":{"full":"Overdrive.png"}},{"name":"Power Fist","image":{"full":"PowerFist.png"}},{"name":"Static Field","image":{"full":"StaticField.png"}}],
    "skins":[{"num":0,"name":"default"},{"num":2,"name":"Beezcrank"},{"num":3,"name":"PROJECT: Blitzcrank"},{"num":4,"name":"Blitzcrank"}]},
- "Newbie":{"id":"Newbie","name":"Newbie","tags":["Marksman"],"passive":{"name":"","image":{"full":""}},"spells":[],"skins":[{"num":0,"name":"default"}]},
+ "Newbie":{"id":"Newbie","name":"Newbie","tags":["Marksman"],"partype":"Blood Well","info":{"attack":0,"defense":0,"magic":0,"difficulty":0},"stats":{"attackrange":300},"passive":{"name":"","image":{"full":""}},"spells":[],"skins":[{"num":0,"name":"default"}]},
  "Broken":{"id":"","name":"x","tags":[],"skins":[]}
 }}`
 
@@ -244,6 +250,65 @@ func TestImportChampions(t *testing.T) {
 	// Regions: static table, override for an id the table lacks.
 	if got[0].Region != "Ionia" || got[3].Region != "Void" || got[3].Season != 0 {
 		t.Errorf("regions %+v %+v", got[0], got[3])
+	}
+	// Buckets from partype, info and stats.
+	ahri, newbie := got[0], got[3]
+	if ahri.Range != game.RangeRanged || ahri.Resource != game.ResourceMana || ahri.Damage != game.DamageMagic || ahri.Difficulty != game.DifficultyMedium {
+		t.Errorf("Ahri buckets %+v", ahri)
+	}
+	if wukong.Range != game.RangeMelee || wukong.Resource != game.ResourceMana || wukong.Damage != game.DamagePhysical || wukong.Difficulty != game.DifficultyEasy {
+		t.Errorf("Wukong buckets %+v", wukong)
+	}
+	// 300 is the shortest ranged range; a Blood Well is "other"; all-zero
+	// ratings leave damage and difficulty unknown.
+	if newbie.Range != game.RangeRanged || newbie.Resource != game.ResourceOther || newbie.Damage != "" || newbie.Difficulty != "" {
+		t.Errorf("Newbie buckets %+v", newbie)
+	}
+}
+
+// TestClassifyChampion pins the bucket rules against real patch 16.18
+// ratings so the thresholds stay sane when they are tuned.
+func TestClassifyChampion(t *testing.T) {
+	champ := func(partype string, attack, magic, difficulty int, attackRange float64) rawChampionFull {
+		return rawChampionFull{Partype: partype, Info: rawInfo{Attack: attack, Magic: magic, Difficulty: difficulty}, Stats: rawStats{AttackRange: attackRange}}
+	}
+	cases := []struct {
+		name                              string
+		in                                rawChampionFull
+		rng, resource, damage, difficulty string
+	}{
+		{"Riven", champ("None", 8, 1, 8, 125), "melee", "none", "physical", "hard"},
+		{"Ahri", champ("Mana", 3, 8, 5, 550), "ranged", "mana", "magic", "medium"},
+		{"Jax", champ("Mana", 7, 7, 5, 125), "melee", "mana", "mixed", "medium"},
+		{"Zed", champ("Energy", 9, 1, 7, 125), "melee", "energy", "physical", "hard"},
+		{"Lux", champ("Mana", 2, 9, 5, 550), "ranged", "mana", "magic", "medium"},
+		{"Garen", champ("None", 7, 1, 5, 175), "melee", "none", "physical", "medium"},
+		{"Kayle", champ("Mana", 6, 7, 7, 175), "melee", "mana", "mixed", "hard"},
+		{"Corki", champ("Mana", 8, 6, 6, 550), "ranged", "mana", "mixed", "medium"},
+		{"Kai'Sa (lean of exactly 5)", champ("Mana", 8, 3, 6, 525), "ranged", "mana", "physical", "medium"},
+		{"Amumu (lean of exactly -6)", champ("Mana", 2, 8, 3, 125), "melee", "mana", "magic", "easy"},
+		{"Katarina", champ("None", 4, 9, 8, 125), "melee", "none", "magic", "hard"},
+		{"Bel'Veth (empty partype)", champ("", 4, 7, 10, 150), "melee", "none", "magic", "hard"},
+		{"Tryndamere", champ("Fury", 10, 2, 5, 175), "melee", "other", "physical", "medium"},
+		{"Gnar", champ("Rage", 6, 5, 8, 175), "melee", "other", "mixed", "hard"},
+		{"Yasuo", champ("Flow", 8, 4, 10, 175), "melee", "other", "physical", "hard"},
+		{"Rakan (300 is ranged)", champ("Mana", 2, 8, 5, 300), "ranged", "mana", "magic", "medium"},
+		{"Nilah (225 is melee)", champ("Mana", 9, 2, 8, 225), "melee", "mana", "physical", "hard"},
+		{"Rell (no ratings)", champ("Mana", 0, 0, 0, 175), "melee", "mana", "", ""},
+		{"lean of 2 is mixed", champ("mana", 6, 4, 6, 125), "melee", "mana", "mixed", "medium"},
+		{"lean of 3 is physical", champ("MANA", 6, 3, 3, 125), "melee", "mana", "physical", "easy"},
+		{"difficulty 1 and 10", champ("Mana", 5, 5, 1, 125), "melee", "mana", "mixed", "easy"},
+		{"difficulty 10", champ("Mana", 5, 5, 10, 125), "melee", "mana", "mixed", "hard"},
+		{"difficulty 7", champ("Mana", 5, 5, 7, 125), "melee", "mana", "mixed", "hard"},
+	}
+	for _, tc := range cases {
+		rng, resource, damage, difficulty := classifyChampion(tc.in)
+		if rng != tc.rng || resource != tc.resource || damage != tc.damage || difficulty != tc.difficulty {
+			t.Errorf("%s: got %s/%s/%s/%s, want %s/%s/%s/%s", tc.name, rng, resource, damage, difficulty, tc.rng, tc.resource, tc.damage, tc.difficulty)
+		}
+		if (rng != "" && !game.ValidRange(rng)) || !game.ValidResource(resource) || (damage != "" && !game.ValidDamage(damage)) || (difficulty != "" && !game.ValidDifficulty(difficulty)) {
+			t.Errorf("%s: bucket outside the enums: %s/%s/%s/%s", tc.name, rng, resource, damage, difficulty)
+		}
 	}
 }
 

@@ -15,6 +15,10 @@ void main() {
       itemTiers: {ItemTier.legendary, ItemTier.boots},
       champClasses: {'Tank', 'Mage'},
       champRegions: {'Shurima'},
+      champRanges: {ChampionRange.ranged, ChampionRange.melee},
+      champResources: {ChampionResource.other, ChampionResource.energy},
+      champDamage: {ChampionDamage.mixed},
+      champDifficulty: {ChampionDifficulty.hard, ChampionDifficulty.easy},
       undercovers: 2,
       mrWhites: 1,
       decoyWord: true,
@@ -32,6 +36,10 @@ void main() {
       'itemTiers': ['boots', 'legendary'],
       'champClasses': ['Mage', 'Tank'],
       'champRegions': ['Shurima'],
+      'champRanges': ['melee', 'ranged'],
+      'champResources': ['energy', 'other'],
+      'champDamage': ['mixed'],
+      'champDifficulty': ['easy', 'hard'],
       'undercovers': 2,
       'mrWhites': 1,
       'decoyWord': true,
@@ -56,6 +64,22 @@ void main() {
     expect(d.rotateHost, isFalse);
     expect(d.champClasses, isEmpty);
     expect(d.champRegions, isEmpty);
+    expect(d.champRanges, isEmpty);
+    expect(d.champResources, isEmpty);
+    expect(d.champDamage, isEmpty);
+    expect(d.champDifficulty, isEmpty);
+    expect(d.activeChampionFilters, 0);
+    expect(ChampionRange.all, ['melee', 'ranged']);
+    expect(ChampionResource.all, ['mana', 'energy', 'none', 'other']);
+    expect(ChampionDamage.all, ['physical', 'magic', 'mixed']);
+    expect(ChampionDifficulty.all, ['easy', 'medium', 'hard']);
+    expect(ChampionResource.label('none'), 'Manaless');
+    expect(ChampionResource.label('other'), 'Fury & other');
+    // A row saved before the bucket filters existed loads with them open.
+    final old = GameSettings.fromJson({'packs': ['champions'], 'champClasses': ['Mage']});
+    expect(old.champClasses, {'Mage'});
+    expect(old.champRanges, isEmpty);
+    expect(old.champDifficulty, isEmpty);
     expect(WordPack.all, ['champions', 'items', 'spells', 'runes', 'abilities', 'skinlines', 'monsters']);
   });
 
@@ -257,6 +281,7 @@ void main() {
       'poolSize': {'abilities': 700},
       'classes': ['Assassin', 'Mage'],
       'regions': ['Ionia', 'Shurima'],
+      'resources': ['mana', 'none'],
       'dailyTheme': {
         'id': 'shurima',
         'title': 'Shurima Day',
@@ -306,6 +331,8 @@ void main() {
     expect(lobby.poolSize!.total, 700);
     expect(lobby.classes, ['Assassin', 'Mage']);
     expect(lobby.regions, ['Ionia', 'Shurima']);
+    expect(lobby.resources, ['mana', 'none']);
+    expect(Lobby.fromJson({}).resources, isEmpty);
     expect(lobby.dailyTheme!.title, 'Shurima Day');
     expect(lobby.dailyTheme!.filter.packs, {'champions', 'abilities'});
     expect(lobby.dailyTheme!.filter.champRegions, {'Shurima'});
@@ -340,6 +367,31 @@ void main() {
         ),
       ),
       'Champions S1–S16 (Mage) · Abilities · Monsters',
+    );
+    // Buckets follow classes and regions, in the server's order and
+    // lower-cased, so the line reads as one phrase.
+    expect(
+      LobbyFiltersSummary.describe(
+        const GameSettings(
+          packs: {WordPack.champions},
+          champSeasons: (1, 16),
+          champClasses: {'Mage'},
+          champRanges: {ChampionRange.melee},
+          champDifficulty: {ChampionDifficulty.hard},
+        ),
+      ),
+      'Champions S1–S16 (Mage, melee, hard)',
+    );
+    expect(
+      LobbyFiltersSummary.describe(
+        const GameSettings(
+          packs: {WordPack.abilities},
+          champSeasons: (3, 16),
+          champResources: {ChampionResource.other, ChampionResource.none},
+          champDamage: {ChampionDamage.magic, ChampionDamage.physical},
+        ),
+      ),
+      'Abilities S3–S16 (manaless/fury & other, physical/magic)',
     );
     expect(
       LobbyRulesSummary.describe(const GameSettings(undercovers: 2, mrWhites: 1, decoyWord: true, randomOrder: true, turnSeconds: 60)),

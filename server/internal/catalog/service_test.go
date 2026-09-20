@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -280,10 +281,25 @@ func TestEmbeddedFallback(t *testing.T) {
 	if len(c.Spells) < 8 || len(c.Runes) < 60 || len(c.Abilities) < 5*len(c.Champions)-5 || len(c.SkinLines) < 150 || len(c.Monsters) < 20 {
 		t.Errorf("packs: %d spells %d runes %d abilities %d skin lines %d monsters", len(c.Spells), len(c.Runes), len(c.Abilities), len(c.SkinLines), len(c.Monsters))
 	}
+	unrated := 0
 	for _, ch := range c.Champions {
-		if len(ch.Tags) == 0 || ch.Region == "" || ch.ID == "" {
-			t.Errorf("champion without tags/region/id: %+v", ch)
+		if len(ch.Tags) == 0 || ch.Region == "" || ch.ID == "" || !game.ValidRange(ch.Range) || !game.ValidResource(ch.Resource) {
+			t.Errorf("champion without tags/region/id/range/resource: %+v", ch)
 		}
+		if (ch.Damage == "") != (ch.Difficulty == "") || (ch.Damage != "" && (!game.ValidDamage(ch.Damage) || !game.ValidDifficulty(ch.Difficulty))) {
+			t.Errorf("champion with odd damage/difficulty: %+v", ch)
+		}
+		if ch.Damage == "" {
+			unrated++
+		}
+	}
+	// Riot ships a handful of champions with all-zero ratings; if this
+	// grows, the ratings feed has probably changed shape.
+	if unrated > 6 {
+		t.Errorf("%d champions without damage/difficulty", unrated)
+	}
+	if got := c.Resources(); !slices.Equal(got, game.AllResources) {
+		t.Errorf("resources %v", got)
 	}
 	linked := 0
 	for _, it := range c.Items {
