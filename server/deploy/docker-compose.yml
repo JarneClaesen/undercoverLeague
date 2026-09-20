@@ -16,7 +16,7 @@ services:
         aliases: [undercover]
     healthcheck:
       # distroless has no curl; the binary probes itself.
-      test: ["/undercover", "-healthcheck"]
+      test: ["CMD", "/undercover", "-healthcheck"]
       interval: 30s
       timeout: 5s
       retries: 3
